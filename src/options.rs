@@ -1,0 +1,654 @@
+use std::ffi::OsStr;
+use std::fmt;
+
+use log::*;
+
+use dns::{QClass, find_qtype_number, qtype};
+use dns::record::{A, find_other_qtype_number};
+
+use crate::connect::TransportType;
+use crate::output::{OutputFormat, UseColours, TextFormat};
+use crate::requests::{RequestGenerator, Inputs, ProtocolTweaks, UseEDNS};
+use crate::resolve::Resolver;
+use crate::txid::TxidGenerator;
+
+
+/// The command-line options used when running dog.
+#[derive(PartialEq, Debug)]
+pub struct Options {
+
+    /// The requests to make and how they should be generated.
+    pub requests: RequestGenerator,
+
+    /// Whether to display the time taken after every query.
+    pub measure_time: bool,
+
+    /// How to format the output data.
+    pub format: OutputFormat,
+}
+
+impl Options {
+
+    /// Parses and interprets a set of options from the user’s command-line
+    /// arguments.
+    ///
+    /// This returns an `Ok` set of options if successful and running
+    /// normally, a `Help` or `Version` variant if one of those options is
+    /// specified, or an error variant if there’s an invalid option or
+    /// inconsistency within the options after they were parsed.
+    #[allow(unused_results)]
+    pub fn getopts<C>(args: C) -> OptionsResult
+    where C: IntoIterator,
+          C::Item: AsRef<OsStr>,
+    {
+        let mut opts = getopts::Options::new();
+
+        // Query options
+        opts.optmulti("q", "query",       "Host name or IP address to query", "HOST");
+        opts.optmulti("t", "type",        "Type of the DNS record being queried (A, MX, NS...)", "TYPE");
+        opts.optmulti("n", "nameserver",  "Address of the nameserver to send packets to", "ADDR");
+        opts.optmulti("",  "class",       "Network class of the DNS record being queried (IN, CH, HS)", "CLASS");
+
+        // Sending options
+        opts.optopt ("",  "edns",         "Whether to OPT in to EDNS (disable, hide, show)", "SETTING");
+        opts.optopt ("",  "txid",         "Set the transaction ID to a specific value", "NUMBER");
+        opts.optopt ("Z", "",             "Uncommon protocol tweaks", "TWEAKS");
+
+        // Protocol options
+        opts.optflag("U", "udp",          "Use the DNS protocol over UDP");
+        opts.optflag("T", "tcp",          "Use the DNS protocol over TCP");
+        opts.optflag("S", "tls",          "Use the DNS-over-TLS protocol");
+        opts.optflag("H", "https",        "Use the DNS-over-HTTPS protocol");
+
+        // Output options
+        opts.optopt ("",  "color",        "When to use terminal colors",  "WHEN");
+        opts.optopt ("",  "colour",       "When to use terminal colours", "WHEN");
+        opts.optflag("J", "json",         "Display the output as JSON");
+        opts.optflag("",  "seconds",      "Do not format durations, display them as seconds");
+        opts.optflag("1", "short",        "Short mode: display nothing but the first result");
+        opts.optflag("",  "time",         "Print how long the response took to arrive");
+
+        // Meta options
+        opts.optflag("v", "version",      "Print version information");
+        opts.optflag("?", "help",         "Print list of command-line options");
+
+        let matches = match opts.parse(args) {
+            Ok(m)  => m,
+            Err(e) => return OptionsResult::InvalidOptionsFormat(e),
+        };
+
+        let uc = UseColours::deduce(&matches);
+
+        if matches.opt_present("version") {
+            OptionsResult::Version(uc)
+        }
+        else if matches.opt_present("help") {
+            OptionsResult::Help(HelpReason::Flag, uc)
+        }
+        else {
+            match Self::deduce(matches) {
+                Ok(opts) => {
+                    if opts.requests.inputs.domains.is_empty() {
+                        OptionsResult::Help(HelpReason::NoDomains, uc)
+                    }
+                    else {
+                        OptionsResult::Ok(opts)
+                    }
+                }
+                Err(e) => {
+                    OptionsResult::InvalidOptions(e)
+                }
+            }
+        }
+    }
+
+    fn deduce(matches: getopts::Matches) -> Result<Self, OptionsError> {
+        let measure_time = matches.opt_present("time");
+        let format = OutputFormat::deduce(&matches);
+        let requests = RequestGenerator::deduce(matches)?;
+
+        Ok(Self { requests, measure_time, format })
+    }
+}
+
+
+impl RequestGenerator {
+    fn deduce(matches: getopts::Matches) -> Result<Self, OptionsError> {
+        let edns = UseEDNS::deduce(&matches)?;
+        let txid_generator = TxidGenerator::deduce(&matches)?;
+        let protocol_tweaks = ProtocolTweaks::deduce(&matches)?;
+        let inputs = Inputs::deduce(matches)?;
+
+        Ok(Self { inputs, txid_generator, edns, protocol_tweaks })
+    }
+}
+
+
+impl Inputs {
+    fn deduce(matches: getopts::Matches) -> Result<Self, OptionsError> {
+        let mut inputs = Self::default();
+        inputs.load_transport_types(&matches);
+        inputs.load_named_args(&matches)?;
+        inputs.load_free_args(matches)?;
+        inputs.load_fallbacks();
+        Ok(inputs)
+    }
+
+    fn load_transport_types(&mut self, matches: &getopts::Matches) {
+        if matches.opt_present("https") {
+            self.transport_types.push(TransportType::HTTPS);
+        }
+
+        if matches.opt_present("tls") {
+            self.transport_types.push(TransportType::TLS);
+        }
+
+        if matches.opt_present("tcp") {
+            self.transport_types.push(TransportType::TCP);
+        }
+
+        if matches.opt_present("udp") {
+            self.transport_types.push(TransportType::UDP);
+        }
+    }
+
+    fn load_named_args(&mut self, matches: &getopts::Matches) -> Result<(), OptionsError> {
+        for domain in matches.opt_strs("query") {
+            self.domains.push(domain);
+        }
+
+        for qtype in matches.opt_strs("type") {
+            self.add_type(&qtype)?;
+        }
+
+        for ns in matches.opt_strs("nameserver") {
+            self.add_nameserver(&ns)?;
+        }
+
+        for qclass in matches.opt_strs("class") {
+            self.add_class(&qclass)?;
+        }
+
+        Ok(())
+    }
+
+    fn add_type(&mut self, input: &str) -> Result<(), OptionsError> {
+        if input == "OPT" {
+            return Err(OptionsError::QueryTypeOPT);
+        }
+
+        let type_number = find_qtype_number(input)
+            .or_else(|| find_other_qtype_number(input))
+            .or_else(|| input.parse().ok());
+
+        match type_number {
+            Some(qtype)  => Ok(self.types.push(qtype)),
+            None         => Err(OptionsError::InvalidQueryType(input.into())),
+        }
+    }
+
+    fn add_nameserver(&mut self, input: &str) -> Result<(), OptionsError> {
+        self.resolvers.push(Resolver::Specified(input.into()));
+        Ok(())
+    }
+
+    fn parse_class_name(&self, input: &str) -> Option<QClass> {
+        match input {
+            "IN"  => Some(QClass::IN),
+            "CH"  => Some(QClass::CH),
+            "HS"  => Some(QClass::HS),
+            _     => None,
+        }
+    }
+
+    fn add_class(&mut self, input: &str) -> Result<(), OptionsError> {
+        let qclass = self.parse_class_name(input)
+            .or_else(|| input.parse().ok().map(QClass::Other));
+
+        match qclass {
+            Some(class)  => Ok(self.classes.push(class)),
+            None         => Err(OptionsError::InvalidQueryClass(input.into())),
+        }
+    }
+
+    fn load_free_args(&mut self, matches: getopts::Matches) -> Result<(), OptionsError> {
+        for a in matches.free {
+            if a.starts_with('@') {
+                trace!("Got nameserver -> {:?}", &a[1..]);
+                self.add_nameserver(&a[1..])?;
+            }
+            else if a.chars().all(char::is_uppercase) {
+                if let Some(class) = self.parse_class_name(&a) {
+                    trace!("Got qclass -> {:?}", &a);
+                    self.classes.push(class);
+                }
+                else {
+                    trace!("Got qtype -> {:?}", &a);
+                    self.add_type(&a)?;
+                }
+            }
+            else {
+                trace!("Got domain -> {:?}", &a);
+                self.domains.push(a);
+            }
+        }
+
+        Ok(())
+    }
+
+    fn load_fallbacks(&mut self) {
+        if self.types.is_empty() {
+            self.types.push(qtype!(A));
+        }
+
+        if self.classes.is_empty() {
+            self.classes.push(QClass::IN);
+        }
+
+        if self.resolvers.is_empty() {
+            self.resolvers.push(Resolver::SystemDefault);
+        }
+
+        if self.transport_types.is_empty() {
+            self.transport_types.push(TransportType::Automatic);
+        }
+    }
+}
+
+
+impl TxidGenerator {
+    fn deduce(matches: &getopts::Matches) -> Result<Self, OptionsError> {
+        if let Some(starting_txid) = matches.opt_str("txid") {
+            if let Ok(start) = starting_txid.parse() {
+                Ok(Self::Sequence(start))
+            }
+            else {
+                Err(OptionsError::InvalidTxid(starting_txid))
+            }
+        }
+        else {
+            Ok(Self::Random)
+        }
+    }
+}
+
+
+impl OutputFormat {
+    fn deduce(matches: &getopts::Matches) -> Self {
+        if matches.opt_present("short") {
+            let summary_format = TextFormat::deduce(matches);
+            Self::Short(summary_format)
+        }
+        else if matches.opt_present("json") {
+            Self::JSON
+        }
+        else {
+            let use_colours = UseColours::deduce(matches);
+            let summary_format = TextFormat::deduce(matches);
+            Self::Text(use_colours, summary_format)
+        }
+    }
+}
+
+
+impl UseColours {
+    fn deduce(matches: &getopts::Matches) -> Self {
+        match matches.opt_str("color").or_else(|| matches.opt_str("colour")).unwrap_or_default().as_str() {
+            "automatic" | "auto" | ""  => Self::Automatic,
+            "always"    | "yes"        => Self::Always,
+            "never"     | "no"         => Self::Never,
+            otherwise => {
+                warn!("Unknown colour setting {:?}", otherwise);
+                Self::Automatic
+            },
+        }
+    }
+}
+
+
+impl TextFormat {
+    fn deduce(matches: &getopts::Matches) -> Self {
+        let format_durations = ! matches.opt_present("seconds");
+        Self { format_durations }
+    }
+}
+
+
+impl UseEDNS {
+    fn deduce(matches: &getopts::Matches) -> Result<Self, OptionsError> {
+        if let Some(edns) = matches.opt_str("edns") {
+            match edns.as_str() {
+                "disable" | "off"  => Ok(Self::Disable),
+                "hide"             => Ok(Self::SendAndHide),
+                "show"             => Ok(Self::SendAndShow),
+                oh                 => Err(OptionsError::InvalidEDNS(oh.into())),
+            }
+        }
+        else {
+            Ok(Self::SendAndHide)
+        }
+    }
+}
+
+
+impl ProtocolTweaks {
+    fn deduce(matches: &getopts::Matches) -> Result<Self, OptionsError> {
+        let mut tweaks = Self::default();
+
+        if let Some(tweak_strs) = matches.opt_str("Z") {
+            for tweak_str in tweak_strs.split(',') {
+                match &*tweak_str {
+                    "authentic"  => { tweaks.set_authentic_flag = true; },
+                    otherwise    => return Err(OptionsError::InvalidTweak(otherwise.into())),
+                }
+            }
+        }
+
+        Ok(tweaks)
+    }
+}
+
+
+/// The result of the `Options::getopts` function.
+#[derive(PartialEq, Debug)]
+pub enum OptionsResult {
+
+    /// The options were parsed successfully.
+    Ok(Options),
+
+    /// There was an error (from `getopts`) parsing the arguments.
+    InvalidOptionsFormat(getopts::Fail),
+
+    /// There was an error with the combination of options the user selected.
+    InvalidOptions(OptionsError),
+
+    /// Can’t run any checks because there’s help to display!
+    Help(HelpReason, UseColours),
+
+    /// One of the arguments was `--version`, to display the version number.
+    Version(UseColours),
+}
+
+/// The reason that help is being displayed. If it’s for the `--help` flag,
+/// then we shouldn’t return an error exit status.
+#[derive(PartialEq, Debug, Copy, Clone)]
+pub enum HelpReason {
+
+    /// Help was requested with the `--help` flag.
+    Flag,
+
+    /// There were no domains being queried, so display help instead.
+    /// Unlike `dig`, we don’t implicitly search for the root domain.
+    NoDomains,
+}
+
+/// Something wrong with the combination of options the user has picked.
+#[derive(PartialEq, Debug)]
+pub enum OptionsError {
+    TooManyProtocols,
+    InvalidEDNS(String),
+    InvalidQueryType(String),
+    InvalidQueryClass(String),
+    InvalidTxid(String),
+    InvalidTweak(String),
+    QueryTypeOPT,
+}
+
+impl fmt::Display for OptionsError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::TooManyProtocols       => write!(f, "Too many protocols"),
+            Self::InvalidEDNS(edns)      => write!(f, "Invalid EDNS setting {:?}", edns),
+            Self::InvalidQueryType(qt)   => write!(f, "Invalid query type {:?}", qt),
+            Self::InvalidQueryClass(qc)  => write!(f, "Invalid query class {:?}", qc),
+            Self::InvalidTxid(txid)      => write!(f, "Invalid transaction ID {:?}", txid),
+            Self::InvalidTweak(tweak)    => write!(f, "Invalid protocol tweak {:?}", tweak),
+            Self::QueryTypeOPT           => write!(f, "OPT request is sent by default (see -Z flag)"),
+        }
+    }
+}
+
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use pretty_assertions::assert_eq;
+    use dns::record::*;
+
+    impl Inputs {
+        fn fallbacks() -> Self {
+            Inputs {
+                domains:         vec![ /* No domains by default */ ],
+                types:           vec![ qtype!(A) ],
+                classes:         vec![ QClass::IN ],
+                resolvers:       vec![ Resolver::SystemDefault ],
+                transport_types: vec![ TransportType::Automatic ],
+            }
+        }
+    }
+
+    impl OptionsResult {
+        fn unwrap(self) -> Options {
+            match self {
+                Self::Ok(o)  => o,
+                _            => panic!("{:?}", self),
+            }
+        }
+    }
+
+    // help tests
+
+    #[test]
+    fn help() {
+        assert_eq!(Options::getopts(&[ "--help" ]),
+                   OptionsResult::Help(HelpReason::Flag, UseColours::Automatic));
+    }
+
+    #[test]
+    fn help_no_colour() {
+        assert_eq!(Options::getopts(&[ "--help", "--colour=never" ]),
+                   OptionsResult::Help(HelpReason::Flag, UseColours::Never));
+    }
+
+    #[test]
+    fn version() {
+        assert_eq!(Options::getopts(&[ "--version" ]),
+                   OptionsResult::Version(UseColours::Automatic));
+    }
+
+    #[test]
+    fn version_yes_color() {
+        assert_eq!(Options::getopts(&[ "--version", "--color", "always" ]),
+                   OptionsResult::Version(UseColours::Always));
+    }
+
+    #[test]
+    fn fail() {
+        assert_eq!(Options::getopts(&[ "--pear" ]),
+                   OptionsResult::InvalidOptionsFormat(getopts::Fail::UnrecognizedOption("pear".into())));
+    }
+
+    #[test]
+    fn empty() {
+        let nothing: Vec<&str> = vec![];
+        assert_eq!(Options::getopts(nothing),
+                   OptionsResult::Help(HelpReason::NoDomains, UseColours::Automatic));
+    }
+
+    #[test]
+    fn an_unrelated_argument() {
+        assert_eq!(Options::getopts(&[ "--time" ]),
+                   OptionsResult::Help(HelpReason::NoDomains, UseColours::Automatic));
+    }
+
+    // query tests
+
+    #[test]
+    fn just_domain() {
+        let options = Options::getopts(&[ "lookup.dog" ]).unwrap();
+        assert_eq!(options.requests.inputs, Inputs {
+            domains:    vec![ String::from("lookup.dog") ],
+            .. Inputs::fallbacks()
+        });
+    }
+
+    #[test]
+    fn just_named_domain() {
+        let options = Options::getopts(&[ "-q", "lookup.dog" ]).unwrap();
+        assert_eq!(options.requests.inputs, Inputs {
+            domains:    vec![ String::from("lookup.dog") ],
+            .. Inputs::fallbacks()
+        });
+    }
+
+    #[test]
+    fn domain_and_type() {
+        let options = Options::getopts(&[ "lookup.dog", "SOA" ]).unwrap();
+        assert_eq!(options.requests.inputs, Inputs {
+            domains:    vec![ String::from("lookup.dog") ],
+            types:      vec![ qtype!(SOA) ],
+            .. Inputs::fallbacks()
+        });
+    }
+
+    #[test]
+    fn domain_and_nameserver() {
+        let options = Options::getopts(&[ "lookup.dog", "@1.1.1.1" ]).unwrap();
+        assert_eq!(options.requests.inputs, Inputs {
+            domains:    vec![ String::from("lookup.dog") ],
+            resolvers:  vec![ Resolver::Specified("1.1.1.1".into()) ],
+            .. Inputs::fallbacks()
+        });
+    }
+
+    #[test]
+    fn domain_and_class() {
+        let options = Options::getopts(&[ "lookup.dog", "CH" ]).unwrap();
+        assert_eq!(options.requests.inputs, Inputs {
+            domains:    vec![ String::from("lookup.dog") ],
+            classes:    vec![ QClass::CH ],
+            .. Inputs::fallbacks()
+        });
+    }
+
+    #[test]
+    fn all_free() {
+        let options = Options::getopts(&[ "lookup.dog", "CH", "NS", "@1.1.1.1" ]).unwrap();
+        assert_eq!(options.requests.inputs, Inputs {
+            domains:    vec![ String::from("lookup.dog") ],
+            classes:    vec![ QClass::CH ],
+            types:      vec![ qtype!(NS) ],
+            resolvers:  vec![ Resolver::Specified("1.1.1.1".into()) ],
+            .. Inputs::fallbacks()
+        });
+    }
+
+    #[test]
+    fn all_parameters() {
+        let options = Options::getopts(&[ "-q", "lookup.dog", "--class", "CH", "--type", "SOA", "--nameserver", "1.1.1.1" ]).unwrap();
+        assert_eq!(options.requests.inputs, Inputs {
+            domains:    vec![ String::from("lookup.dog") ],
+            classes:    vec![ QClass::CH ],
+            types:      vec![ qtype!(SOA) ],
+            resolvers:  vec![ Resolver::Specified("1.1.1.1".into()) ],
+            .. Inputs::fallbacks()
+        });
+    }
+
+    #[test]
+    fn two_types() {
+        let options = Options::getopts(&[ "-q", "lookup.dog", "--type", "SRV", "--type", "AAAA" ]).unwrap();
+        assert_eq!(options.requests.inputs, Inputs {
+            domains:    vec![ String::from("lookup.dog") ],
+            types:      vec![ qtype!(SRV), qtype!(AAAA) ],
+            .. Inputs::fallbacks()
+        });
+    }
+
+    #[test]
+    fn two_classes() {
+        let options = Options::getopts(&[ "-q", "lookup.dog", "--class", "IN", "--class", "CH" ]).unwrap();
+        assert_eq!(options.requests.inputs, Inputs {
+            domains:    vec![ String::from("lookup.dog") ],
+            classes:    vec![ QClass::IN, QClass::CH ],
+            .. Inputs::fallbacks()
+        });
+    }
+
+    #[test]
+    fn all_mixed_1() {
+        let options = Options::getopts(&[ "lookup.dog", "--class", "CH", "SOA", "--nameserver", "1.1.1.1" ]).unwrap();
+        assert_eq!(options.requests.inputs, Inputs {
+            domains:    vec![ String::from("lookup.dog") ],
+            classes:    vec![ QClass::CH ],
+            types:      vec![ qtype!(SOA) ],
+            resolvers:  vec![ Resolver::Specified("1.1.1.1".into()) ],
+            .. Inputs::fallbacks()
+        });
+    }
+
+    #[test]
+    fn all_mixed_2() {
+        let options = Options::getopts(&[ "CH", "SOA", "MX", "IN", "-q", "lookup.dog", "--class", "HS" ]).unwrap();
+        assert_eq!(options.requests.inputs, Inputs {
+            domains:    vec![ String::from("lookup.dog") ],
+            classes:    vec![ QClass::HS, QClass::CH, QClass::IN ],
+            types:      vec![ qtype!(SOA), qtype!(MX) ],
+            .. Inputs::fallbacks()
+        });
+    }
+
+    #[test]
+    fn all_mixed_3() {
+        let options = Options::getopts(&[ "lookup.dog", "--nameserver", "1.1.1.1", "--nameserver", "1.0.0.1" ]).unwrap();
+        assert_eq!(options.requests.inputs, Inputs {
+            domains:    vec![ String::from("lookup.dog") ],
+            resolvers:  vec![ Resolver::Specified("1.1.1.1".into()),
+                              Resolver::Specified("1.0.0.1".into()), ],
+            .. Inputs::fallbacks()
+        });
+    }
+
+    #[test]
+    fn explicit_numerics() {
+        let options = Options::getopts(&[ "11", "--class", "22", "--type", "33" ]).unwrap();
+        assert_eq!(options.requests.inputs, Inputs {
+            domains:    vec![ String::from("11") ],
+            classes:    vec![ QClass::Other(22) ],
+            types:      vec![ 33 ],
+            .. Inputs::fallbacks()
+        });
+    }
+
+    // invalid options tests
+
+    #[test]
+    fn invalid_named_class() {
+        assert_eq!(Options::getopts(&[ "lookup.dog", "--class", "tubes" ]),
+                   OptionsResult::InvalidOptions(OptionsError::InvalidQueryClass("tubes".into())));
+    }
+
+    #[test]
+    fn invalid_named_type() {
+        assert_eq!(Options::getopts(&[ "lookup.dog", "--type", "tubes" ]),
+                   OptionsResult::InvalidOptions(OptionsError::InvalidQueryType("tubes".into())));
+    }
+
+    #[test]
+    fn invalid_capsword() {
+        assert_eq!(Options::getopts(&[ "SMH", "lookup.dog" ]),
+                   OptionsResult::InvalidOptions(OptionsError::InvalidQueryType("SMH".into())));
+    }
+
+    #[test]
+    fn invalid_txid() {
+        assert_eq!(Options::getopts(&[ "lookup.dog", "--txid=0x1234" ]),
+                   OptionsResult::InvalidOptions(OptionsError::InvalidTxid("0x1234".into())));
+    }
+
+    #[test]
+    fn opt() {
+        assert_eq!(Options::getopts(&[ "OPT", "lookup.dog" ]),
+                   OptionsResult::InvalidOptions(OptionsError::QueryTypeOPT));
+    }
+}

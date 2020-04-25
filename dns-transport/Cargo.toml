@@ -1,0 +1,23 @@
+[package]
+name = "dns-transport"
+version = "0.1.0"
+authors = ["Benjamin Sago <ogham@bsago.me>"]
+edition = "2018"
+
+
+[dependencies]
+derive_more = "0.99"
+
+# dns wire protocol
+dns = { path = "../dns" }
+
+# logging
+log = "0.4"
+
+# networking
+async-trait = "0.1"
+hyper = "0.13"
+hyper-tls = "0.4"
+native-tls = "0.2"
+tokio = { version = "0.2", features = ["dns", "tcp", "udp", "io-util"] }  # dns is used to resolve nameservers
+tokio-tls = "0.3"

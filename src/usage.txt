@@ -1,0 +1,38 @@
+\4mUsage:\0m
+  \1mdog\0m \1;33m[OPTIONS]\0m [--] \32m<arguments>\0m
+
+\4mExamples:\0m
+  \1mdog\0m \32mexample.net\0m                          Query a domain using default settings
+  \1mdog\0m \32mexample.net MX\0m                       ...looking up MX records instead
+  \1mdog\0m \32mexample.net MX @1.1.1.1\0m              ...using a specific nameserver instead
+  \1mdog\0m \32mexample.net MX @1.1.1.1\0m \1;33m-T\0m           ...using TCP rather than UDP
+  \1mdog\0m \1;33m-q\0m \33mexample.net\0m \1;33m-t\0m \33mMX\0m \1;33m-n\0m \33m1.1.1.1\0m \1;33m-T\0m   As above, but using explicit arguments
+
+\4mQuery options:\0m
+  \32m<arguments>\0m              Human-readable host names, nameservers, types, or classes
+  \1;33m-q\0m, \1;33m--query\0m=\33mHOST\0m         Host name or IP address to query
+  \1;33m-t\0m, \1;33m--type\0m=\33mTYPE\0m          Type of the DNS record being queried (A, MX, NS...)
+  \1;33m-n\0m, \1;33m--nameserver\0m=\33mADDR\0m    Address of the nameserver to send packets to
+  \1;33m--class\0m=\33mCLASS\0m            Network class of the DNS record being queried (IN, CH, HS)
+
+\4mSending options:\0m
+  \1;33m--edns\0m=\33mSETTING\0m           Whether to OPT in to EDNS (disable, hide, show)
+  \1;33m--txid\0m=\33mNUMBER\0m            Set the transaction ID to a specific value
+  \1;33m-Z\0m=\33mTWEAKS\0m                Uncommon protocol tweaks
+
+\4mProtocol options:\0m
+  \1;33m-U\0m, \1;33m--udp\0m                Use the DNS protocol over UDP
+  \1;33m-T\0m, \1;33m--tcp\0m                Use the DNS protocol over TCP
+  \1;33m-S\0m, \1;33m--tls\0m                Use the DNS-over-TLS protocol
+  \1;33m-H\0m, \1;33m--https\0m              Use the DNS-over-HTTPS protocol
+
+\4mOutput options:\0m
+  \1;33m-1\0m, \1;33m--short\0m              Short mode: display nothing but the first result
+  \1;33m-J\0m, \1;33m--json\0m               Display the output as JSON
+  \1;33m--color\0m, \1;33m--colour\0m=\33mWHEN\0m   When to colourise the output (always, automatic, never)
+  \1;33m--seconds\0m                Do not format durations, display them as seconds
+  \1;33m--time\0m                   Print how long the response took to arrive
+
+\4mMeta options:\0m
+  \1;33m-?\0m, \1;33m--help\0m               Print list of command-line options
+  \1;33m-v\0m, \1;33m--version\0m            Print version information
