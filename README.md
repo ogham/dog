@@ -83,3 +83,8 @@ For documentation on how to use dog, see the website: <https://dns.lookup.dog>
 ## See also
 
 `mutt`, `tail`, `sleep`, `roff`
+
+
+## Licence
+
+dog’s source code is under the [MIT Licence](LICENCE).
