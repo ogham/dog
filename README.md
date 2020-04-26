@@ -1,4 +1,4 @@
-# dog
+# dog [![Build status](https://travis-ci.org/ogham/dog.svg)](https://travis-ci.org/ogham/dog)
 
 Dogs _can_ look up!
 
