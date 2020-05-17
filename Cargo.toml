@@ -3,7 +3,10 @@ name = "dog"
 version = "0.1.0-pre"
 authors = ["Benjamin Sago <ogham@bsago.me>"]
 edition = "2018"
-exclude = ["/completions/*", "/man/*", "/xtests/*", "/clippy.toml", "/screenshots.png", "/README.md"]
+exclude = [
+    "/completions/*", "/man/*", "/xtests/*",
+    "/clippy.toml", "/dog-screenshot.png", "/Justfile", "/README.md",
+]
 
 [[bin]]
 name = "dog"
