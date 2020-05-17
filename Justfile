@@ -11,6 +11,7 @@ export DOG_DEBUG := ""
 # compiles the dog binary (in release mode)
 @build-release:
     cargo build --release --verbose
+    strip target/release/dog
 
 # runs unit tests
 @test:

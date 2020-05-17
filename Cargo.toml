@@ -18,6 +18,10 @@ members = [
   "dns-transport",
 ]
 
+[profile.release]
+lto = true
+overflow-checks = true
+panic = "abort"
 
 [dependencies]
 
