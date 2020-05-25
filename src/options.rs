@@ -259,7 +259,7 @@ impl Inputs {
 impl TxidGenerator {
     fn deduce(matches: &getopts::Matches) -> Result<Self, OptionsError> {
         if let Some(starting_txid) = matches.opt_str("txid") {
-            if let Ok(start) = starting_txid.parse() {
+            if let Some(start) = parse_dec_or_hex(&starting_txid) {
                 Ok(Self::Sequence(start))
             }
             else {
@@ -268,6 +268,31 @@ impl TxidGenerator {
         }
         else {
             Ok(Self::Random)
+        }
+    }
+}
+
+fn parse_dec_or_hex(input: &str) -> Option<u16> {
+    if input.starts_with("0x") {
+        match u16::from_str_radix(&input[2..], 16) {
+            Ok(num) => {
+                Some(num)
+            }
+            Err(e) => {
+                warn!("Error parsing hex number: {}", e);
+                None
+            }
+        }
+    }
+    else {
+        match input.parse() {
+            Ok(num) => {
+                Some(num)
+            }
+            Err(e) => {
+                warn!("Error parsing number: {}", e);
+                None
+            }
         }
     }
 }
@@ -642,13 +667,28 @@ mod test {
 
     #[test]
     fn invalid_txid() {
-        assert_eq!(Options::getopts(&[ "lookup.dog", "--txid=0x1234" ]),
-                   OptionsResult::InvalidOptions(OptionsError::InvalidTxid("0x1234".into())));
+        assert_eq!(Options::getopts(&[ "lookup.dog", "--txid=0x10000" ]),
+                   OptionsResult::InvalidOptions(OptionsError::InvalidTxid("0x10000".into())));
     }
 
     #[test]
     fn opt() {
         assert_eq!(Options::getopts(&[ "OPT", "lookup.dog" ]),
                    OptionsResult::InvalidOptions(OptionsError::QueryTypeOPT));
+    }
+
+    // txid tests
+
+    #[test]
+    fn number_parsing() {
+        assert_eq!(parse_dec_or_hex("1234"),    Some(1234));
+        assert_eq!(parse_dec_or_hex("0x1234"),  Some(0x1234));
+        assert_eq!(parse_dec_or_hex("0xABcd"),  Some(0xABcd));
+
+        assert_eq!(parse_dec_or_hex("65536"),   None);
+        assert_eq!(parse_dec_or_hex("0x65536"), None);
+
+        assert_eq!(parse_dec_or_hex(""),        None);
+        assert_eq!(parse_dec_or_hex("0x"),      None);
     }
 }
