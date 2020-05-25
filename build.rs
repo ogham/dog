@@ -24,6 +24,8 @@ use regex::Regex;
 
 /// The build script entry point.
 fn main() -> io::Result<()> {
+    #![allow(clippy::write_with_newline)]
+
     let usage   = include_str!("src/usage.txt");
     let tagline = "dog \\1;32m●\\0m command-line DNS client";
     let url     = "https://dns.lookup.dog/";

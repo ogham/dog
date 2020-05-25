@@ -72,7 +72,10 @@ impl Table {
 
     /// Prints the formatted table to stdout.
     pub fn print(self, duration: Option<Duration>) {
-        if ! self.rows.is_empty() {
+        if self.rows.is_empty() {
+            println!("No results");
+        }
+        else {
             let qtype_len = self.max_qtype_len();
             let qname_len = self.max_qname_len();
             let ttl_len   = self.max_ttl_len();
@@ -103,9 +106,6 @@ impl Table {
 
                 println!(" {} {}", self.format_section(r.section), r.summary);
             }
-        }
-        else {
-            println!("No results");
         }
 
         if let Some(dur) = duration {
@@ -139,7 +139,7 @@ impl Table {
     }
 
     fn max_ttl_len(&self) -> usize {
-        self.rows.iter().map(|r| r.ttl.as_ref().map_or(0, |e| e.len())).max().unwrap()
+        self.rows.iter().map(|r| r.ttl.as_ref().map_or(0, String::len)).max().unwrap()
     }
 
     fn format_section(&self, section: Section) -> ANSIString<'static> {

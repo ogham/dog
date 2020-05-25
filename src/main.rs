@@ -14,6 +14,8 @@
 #![warn(clippy::all, clippy::pedantic)]
 #![allow(clippy::enum_glob_use)]
 #![allow(clippy::module_name_repetitions)]
+#![allow(clippy::unit_arg)]
+#![allow(clippy::useless_let_if_seq)]
 #![allow(clippy::wildcard_imports)]
 
 #![deny(unsafe_code)]

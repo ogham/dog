@@ -29,11 +29,11 @@ impl Wire for MX {
         let preference = c.read_u16::<BigEndian>()?;
         let exchange = c.read_labels()?;
 
-        if 2 + exchange.len() + 1 != len as usize {
-            warn!("Expected length {} but read {} bytes", len, 2 + exchange.len() + 1);
+        if 2 + exchange.len() + 1 == len as usize {
+            debug!("Length {} is correct", len);
         }
         else {
-            debug!("Length {} is correct", len);
+            warn!("Expected length {} but read {} bytes", len, 2 + exchange.len() + 1);
         }
 
         Ok(MX { preference, exchange })

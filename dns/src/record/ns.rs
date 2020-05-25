@@ -24,11 +24,11 @@ impl Wire for NS {
     fn read(len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let nameserver = c.read_labels()?;
 
-        if nameserver.len() + 1 != len as usize {
-            warn!("Expected length {} but read {} bytes", len, nameserver.len() + 1);
+        if nameserver.len() + 1 == len as usize {
+            debug!("Length {} is correct", nameserver.len() + 1);
         }
         else {
-            debug!("Length {} is correct", nameserver.len() + 1);
+            warn!("Expected length {} but read {} bytes", len, nameserver.len() + 1);
         }
 
         Ok(NS { nameserver })

@@ -67,7 +67,7 @@ impl Transport for UdpTransport {
         debug!("Sent {} bytes", len);
 
         info!("Waiting to receive...");
-        let mut buf = vec![0u8; 1024];
+        let mut buf = vec![0; 1024];
         let len = socket.recv(&mut buf).await?;
 
         info!("Received {} bytes of data", len);

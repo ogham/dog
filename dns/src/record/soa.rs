@@ -56,11 +56,11 @@ impl Wire for SOA {
         let minimum_ttl      = c.read_u32::<BigEndian>()?;
 
         let got_length = mname.len() + rname.len() + 4 * 5 + 2;
-        if got_length != len as usize {
-            warn!("Expected length {} but got {}", len, got_length);
+        if got_length == len as usize {
+            debug!("Length {} is correct", len);
         }
         else {
-            debug!("Length {} is correct", len);
+            warn!("Expected length {} but got {}", len, got_length);
         }
 
         Ok(SOA {

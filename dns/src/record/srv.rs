@@ -39,11 +39,11 @@ impl Wire for SRV {
         let target   = c.read_labels()?;
 
         let got_length = 3 * 2 + target.len() + 1;
-        if got_length != len as usize {
-            warn!("Expected length {} but got {}", len, got_length);
+        if got_length == len as usize {
+            debug!("Length {} is correct", len);
         }
         else {
-            debug!("Length {} is correct", len);
+            warn!("Expected length {} but got {}", len, got_length);
         }
 
         Ok(SRV { priority, weight, port, target })
