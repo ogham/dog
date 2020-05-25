@@ -144,7 +144,7 @@ impl OutputFormat {
         true
     }
 
-    pub fn print_error(&self, error: TransportError) {
+    pub fn print_error(self, error: TransportError) {
     	match self {
     		Self::Short(..) | Self::Text(..) => {
     			eprintln!("Error [{}]: {}", erroneous_phase(&error), error_message(error));
@@ -270,7 +270,7 @@ impl TextFormat {
 }
 
 impl OutputFormat {
-    fn json_queries(&self, queries: &[Query]) -> JsonValue {
+    fn json_queries(self, queries: &[Query]) -> JsonValue {
         let queries = queries.iter().map(|q| {
             json!({
                 "name": q.qname,
@@ -282,7 +282,7 @@ impl OutputFormat {
         json!(queries)
     }
 
-    fn json_answers(&self, answers: &[Answer]) -> JsonValue {
+    fn json_answers(self, answers: &[Answer]) -> JsonValue {
         let answers = answers.iter().map(|a| {
             match a {
                 Answer::Standard { qname, qclass, ttl, record } => {
@@ -309,7 +309,7 @@ impl OutputFormat {
         json!(answers)
     }
 
-    fn json_record(&self, record: &Record) -> JsonValue {
+    fn json_record(self, record: &Record) -> JsonValue {
         match record {
             Record::A(rec)      => json!({ "type": "A",     "address": rec.address.to_string() }),
             Record::AAAA(rec)   => json!({ "type": "AAAA",  "address": rec.address.to_string() }),
