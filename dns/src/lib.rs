@@ -9,6 +9,13 @@
 #![warn(trivial_casts, trivial_numeric_casts)]
 #![warn(unused)]
 
+#![warn(clippy::all, clippy::pedantic)]
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::must_use_candidate)]
+#![allow(clippy::struct_excessive_bools)]
+#![allow(clippy::wildcard_imports)]
+
 #![deny(unsafe_code)]
 
 

@@ -11,6 +11,11 @@
 #![warn(trivial_casts, trivial_numeric_casts)]
 #![warn(unused)]
 
+#![warn(clippy::all, clippy::pedantic)]
+#![allow(clippy::enum_glob_use)]
+#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::wildcard_imports)]
+
 #![deny(unsafe_code)]
 
 

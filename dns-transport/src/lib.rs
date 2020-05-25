@@ -11,6 +11,11 @@
 #![warn(trivial_casts, trivial_numeric_casts)]
 #![warn(unused)]
 
+#![warn(clippy::all, clippy::pedantic)]
+#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::pub_enum_variant_names)]
+#![allow(clippy::wildcard_imports)]
+
 #![deny(unsafe_code)]
 
 use async_trait::async_trait;

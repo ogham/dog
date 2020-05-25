@@ -5,7 +5,7 @@ authors = ["Benjamin Sago <ogham@bsago.me>"]
 edition = "2018"
 exclude = [
     "/completions/*", "/man/*", "/xtests/*",
-    "/clippy.toml", "/dog-screenshot.png", "/Justfile", "/README.md",
+    "/dog-screenshot.png", "/Justfile", "/README.md", "/.rustfmt.toml", "/.travis.yml",
 ]
 
 [[bin]]

@@ -40,7 +40,5 @@ export DOG_DEBUG := ""
 
 # lints the code
 @clippy:
-    cargo clippy -- -A clippy::module_name_repetitions \
-                    -A clippy::module_inception \
-                    -A clippy::non_ascii_literal \
-                    -A clippy::use_self
+    touch dns/src/lib.rs
+    cargo clippy
