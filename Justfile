@@ -42,3 +42,8 @@ export DOG_DEBUG := ""
 @clippy:
     touch dns/src/lib.rs
     cargo clippy
+
+# updates versions, and checks for outdated ones
+@update:
+    cargo update; cargo outdated
+    cd dns/fuzz; cargo update; cargo outdated
