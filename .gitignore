@@ -1,2 +1,3 @@
 /target
+/tarpaulin-report.html
 fuzz-*.log

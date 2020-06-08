@@ -43,6 +43,10 @@ export DOG_DEBUG := ""
     touch dns/src/lib.rs
     cargo clippy
 
+# generates a code coverage report using tarpaulin via docker
+@coverage-docker:
+    docker run --security-opt seccomp=unconfined -v "${PWD}:/volume" xd009642/tarpaulin cargo tarpaulin --all --out Html
+
 # updates versions, and checks for outdated ones
 @update:
     cargo update; cargo outdated
