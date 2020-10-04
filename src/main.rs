@@ -77,12 +77,12 @@ fn main() {
         }
 
         OptionsResult::InvalidOptionsFormat(oe) => {
-            eprintln!("Invalid options: {:?}", oe);
+            eprintln!("Invalid options: {}", oe);
             exit(exits::OPTIONS_ERROR);
         }
 
         OptionsResult::InvalidOptions(why) => {
-            eprintln!("{}", why);
+            eprintln!("Invalid options: {}", why);
             exit(exits::OPTIONS_ERROR);
         }
     }
