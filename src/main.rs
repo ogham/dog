@@ -20,15 +20,11 @@
 
 #![deny(unsafe_code)]
 
-
-use std::env;
-use std::process::exit;
-use std::time::Instant;
-
 use log::*;
 
 mod colours;
 mod connect;
+mod logger;
 mod output;
 mod requests;
 mod resolve;
@@ -42,13 +38,15 @@ use self::options::*;
 /// Configures logging, parses the command-line options, and handles any
 /// errors before passing control over to the Dog type.
 fn main() {
-    configure_logger();
+    use std::env;
+    use std::process::exit;
+
+    logger::configure(env::var_os("DOG_DEBUG"));
 
     match Options::getopts(env::args_os().skip(1)) {
         OptionsResult::Ok(options) => {
             info!("Running with options -> {:#?}", options);
-            let dog = Dog::init(options);
-            exit(dog.run());
+            exit(run(options));
         }
 
         OptionsResult::Help(help_reason, use_colours) => {
@@ -91,75 +89,47 @@ fn main() {
 }
 
 
-/// Checks the `DOG_DEBUG` environment variable, enabling debug logging if
-/// it’s non-empty.
-fn configure_logger() {
-    let present = match env::var_os("DOG_DEBUG") {
-        Some(debug)  => debug.len() > 0,
-        None         => false,
-    };
+fn run(Options { requests, format, measure_time }: Options) -> i32 {
+    use std::time::Instant;
 
-    let mut logs = env_logger::Builder::new();
-    if present {
-        let _ = logs.filter(None, log::LevelFilter::Debug);
-    }
-    else {
-        let _ = logs.filter(None, log::LevelFilter::Off);
-    }
+    let mut runtime = dns_transport::Runtime::new().expect("Failed to create runtime");
+    let should_show_opt = requests.edns.should_show();
 
-    logs.init()
-}
+    let mut responses = Vec::new();
+    let timer = if measure_time { Some(Instant::now()) } else { None };
 
-struct Dog {
-    options: Options,
-}
+    let mut errored = false;
+    for (request, transport) in requests.generate() {
+        let result = runtime.block_on(async { transport.send(&request).await });
 
-impl Dog {
-    fn init(options: Options) -> Self {
-        Self { options }
-    }
-
-    fn run(self) -> i32 {
-        let Options { requests, format, measure_time } = self.options;
-        let mut runtime = dns_transport::Runtime::new().expect("Failed to create runtime");
-        let should_show_opt = requests.edns.should_show();
-
-        let mut responses = Vec::new();
-        let timer = if measure_time { Some(Instant::now()) } else { None };
-
-        let mut errored = false;
-        for (request, transport) in requests.generate() {
-            let result = runtime.block_on(async { transport.send(&request).await });
-
-            match result {
-                Ok(mut response) => {
-                    if ! should_show_opt {
-                        response.answers.retain(dns::Answer::is_standard);
-                        response.authorities.retain(dns::Answer::is_standard);
-                        response.additionals.retain(dns::Answer::is_standard);
-                    }
-
-                    responses.push(response);
+        match result {
+            Ok(mut response) => {
+                if ! should_show_opt {
+                    response.answers.retain(dns::Answer::is_standard);
+                    response.authorities.retain(dns::Answer::is_standard);
+                    response.additionals.retain(dns::Answer::is_standard);
                 }
-                Err(e) => {
-                    format.print_error(e);
-                    errored = true;
-                }
+
+                responses.push(response);
+            }
+            Err(e) => {
+                format.print_error(e);
+                errored = true;
             }
         }
+    }
 
-        let duration = timer.map(|t| t.elapsed());
-        if format.print(responses, duration) {
-            if errored {
-                exits::NETWORK_ERROR
-            }
-            else {
-                exits::SUCCESS
-            }
+    let duration = timer.map(|t| t.elapsed());
+    if format.print(responses, duration) {
+        if errored {
+            exits::NETWORK_ERROR
         }
         else {
-            exits::NO_SHORT_RESULTS
+            exits::SUCCESS
         }
+    }
+    else {
+        exits::NO_SHORT_RESULTS
     }
 }
 
