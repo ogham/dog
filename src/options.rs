@@ -645,6 +645,46 @@ mod test {
         });
     }
 
+    #[test]
+    fn edns_and_tweaks() {
+        let options = Options::getopts(&[ "dom.ain", "--edns", "show", "-Z", "authentic" ]).unwrap();
+        assert_eq!(options.requests.edns, UseEDNS::SendAndShow);
+        assert_eq!(options.requests.protocol_tweaks.set_authentic_flag, true);
+    }
+
+    #[test]
+    fn short_mode() {
+        let tf = TextFormat { format_durations: true };
+        let options = Options::getopts(&[ "dom.ain", "--short" ]).unwrap();
+        assert_eq!(options.format, OutputFormat::Short(tf));
+
+        let tf = TextFormat { format_durations: false };
+        let options = Options::getopts(&[ "dom.ain", "--short", "--seconds" ]).unwrap();
+        assert_eq!(options.format, OutputFormat::Short(tf));
+    }
+
+    #[test]
+    fn json_output() {
+        let options = Options::getopts(&[ "dom.ain", "--json" ]).unwrap();
+        assert_eq!(options.format, OutputFormat::JSON);
+    }
+
+    #[test]
+    fn specific_txid() {
+        let options = Options::getopts(&[ "dom.ain", "--txid", "1234" ]).unwrap();
+        assert_eq!(options.requests.txid_generator,
+                   TxidGenerator::Sequence(1234));
+    }
+
+    #[test]
+    fn all_transport_types() {
+        use crate::connect::TransportType::*;
+
+        let options = Options::getopts(&[ "dom.ain", "--https", "--tls", "--tcp", "--udp" ]).unwrap();
+        assert_eq!(options.requests.inputs.transport_types,
+                   vec![ HTTPS, TLS, TCP, UDP ]);
+    }
+
     // invalid options tests
 
     #[test]
@@ -669,6 +709,18 @@ mod test {
     fn invalid_txid() {
         assert_eq!(Options::getopts(&[ "lookup.dog", "--txid=0x10000" ]),
                    OptionsResult::InvalidOptions(OptionsError::InvalidTxid("0x10000".into())));
+    }
+
+    #[test]
+    fn invalid_edns() {
+        assert_eq!(Options::getopts(&[ "--edns=yep" ]),
+                   OptionsResult::InvalidOptions(OptionsError::InvalidEDNS("yep".into())));
+    }
+
+    #[test]
+    fn invalid_tweaks() {
+        assert_eq!(Options::getopts(&[ "-Zsleep" ]),
+                   OptionsResult::InvalidOptions(OptionsError::InvalidTweak("sleep".into())));
     }
 
     #[test]
