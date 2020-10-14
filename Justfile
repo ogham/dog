@@ -51,3 +51,13 @@ export DOG_DEBUG := ""
 @update:
     cargo update; cargo outdated
     cd dns/fuzz; cargo update; cargo outdated
+
+
+# builds the man pages
+@man:
+    mkdir -p "${CARGO_TARGET_DIR:-target}/man"
+    pandoc --standalone -f markdown -t man man/dog.1.md > "${CARGO_TARGET_DIR:-target}/man/dog.1"
+
+# builds and previews the man page
+@man-preview: man
+    man "${CARGO_TARGET_DIR:-target}/man/dog.1"
