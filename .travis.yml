@@ -1,12 +1,15 @@
 language: rust
 rust:
+  - 1.42.0
   - stable
   - beta
   - nightly
+
 os:
   - linux
   - osx
+
 jobs:
+  fast_finish: true
   allow_failures:
     - rust: nightly
-  fast_finish: true
