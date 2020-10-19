@@ -1,0 +1,169 @@
+# A records
+
+[[cmd]]
+name = "Look up an existing A record using TLS"
+shell = "dog a-example.lookup.dog @1.1.1.1 --short --tls"
+stdout = { string = '10.20.30.40' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing A record using TLS"
+shell = "dog non.existent @1.1.1.1 --short --tls"
+stdout = { empty = true }
+stderr = { string = "No results" }
+status = 2
+tags = [ "live", "cloudflare" ]
+
+
+# AAAA records
+
+[[cmd]]
+name = "Look up an existing AAAA record using TLS"
+shell = "dog AAAA aaaa-example.lookup.dog @1.1.1.1 --short --tls"
+stdout = { string = '::1' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing AAAA record using TLS"
+shell = "dog AAAA non.existent @1.1.1.1 --short --tls"
+stdout = { empty = true }
+stderr = { string = "No results" }
+status = 2
+tags = [ "live", "cloudflare" ]
+
+
+# CAA records
+
+[[cmd]]
+name = "Look up an existing CAA record using TLS"
+shell = "dog CAA caa-example.lookup.dog @1.1.1.1 --short --tls"
+stdout = { string = '"issue" "some.certificate.authority" (non-critical)' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing CAA record using TLS"
+shell = "dog CAA non.existent @1.1.1.1 --short --tls"
+stdout = { empty = true }
+stderr = { string = "No results" }
+status = 2
+tags = [ "live", "cloudflare" ]
+
+
+# CNAME records
+
+[[cmd]]
+name = "Look up an existing CNAME record using TLS"
+shell = "dog CNAME cname-example.lookup.dog @1.1.1.1 --short --tls"
+stdout = { string = '"dns.lookup.dog."' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing CNAME record using TLS"
+shell = "dog CNAME non.existent @1.1.1.1 --short --tls"
+stdout = { empty = true }
+stderr = { string = "No results" }
+status = 2
+tags = [ "live", "cloudflare" ]
+
+
+# MX records
+
+[[cmd]]
+name = "Look up an existing MX record using TLS"
+shell = "dog MX mx-example.lookup.dog @1.1.1.1 --short --tls"
+stdout = { string = '10 "some.mail.server."' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing MX record using TLS"
+shell = "dog MX non.existent @1.1.1.1 --short --tls"
+stdout = { empty = true }
+stderr = { string = "No results" }
+status = 2
+tags = [ "live", "cloudflare" ]
+
+
+# NS records
+
+[[cmd]]
+name = "Look up an existing NS record using TLS"
+shell = "dog NS lookup.dog @1.1.1.1 --short --tls"
+stdout = { string = 'ns1' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing NS record using TLS"
+shell = "dog NS non.existent @1.1.1.1 --short --tls"
+stdout = { empty = true }
+stderr = { string = "No results" }
+status = 2
+tags = [ "live", "cloudflare" ]
+
+
+# SOA records
+
+[[cmd]]
+name = "Look up an existing SOA record using TLS"
+shell = "dog SOA lookup.dog @1.1.1.1 --short --tls"
+stdout = { string = 'ns1' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing SOA record using TLS"
+shell = "dog MX non.existent @1.1.1.1 --short --tls"
+stdout = { empty = true }
+stderr = { string = "No results" }
+status = 2
+tags = [ "live", "cloudflare" ]
+
+
+# SRV records
+
+[[cmd]]
+name = "Look up an existing SRV record using TLS"
+shell = "dog SRV srv-example.lookup.dog @1.1.1.1 --short --tls"
+stdout = { string = '20 "dns.lookup.dog.":5000' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing SRV record using TLS"
+shell = "dog SRV non.existent @1.1.1.1 --short --tls"
+stdout = { empty = true }
+stderr = { string = "No results" }
+status = 2
+tags = [ "live", "cloudflare" ]
+
+
+# TXT records
+
+[[cmd]]
+name = "Look up an existing TXT record using TLS"
+shell = "dog TXT txt-example.lookup.dog @1.1.1.1 --short --tls"
+stdout = { string = '"Cache Invalidation and Naming Things"' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing TXT record using TLS"
+shell = "dog TXT non.existent @1.1.1.1 --short --tls"
+stdout = { empty = true }
+stderr = { string = "No results" }
+status = 2
+tags = [ "live", "cloudflare" ]

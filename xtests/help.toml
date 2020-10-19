@@ -1,0 +1,58 @@
+# help
+
+[[cmd]]
+shell = "dog --help"
+stdout = { string = "dog ●" }
+stderr = { empty = true }
+status = 0
+
+[[cmd]]
+shell = "dog --help --color=automatic"
+stdout = { string = "dog ●" }
+stderr = { empty = true }
+status = 0
+
+[[cmd]]
+shell = "dog --help --colour=always"
+stdout = { string = "dog \u001B[1;32m●\u001B[0m" }
+stderr = { empty = true }
+status = 0
+
+[[cmd]]
+shell = "dog --help --color=never"
+stdout = { string = "dog ●" }
+stderr = { empty = true }
+status = 0
+
+[[cmd]]
+shell = "dog"
+stdout = { string = "dog ●" }
+stderr = { empty = true }
+status = 3
+
+
+# versions
+
+[[cmd]]
+shell = "dog --version"
+stdout = { string = "dog ●" }
+stderr = { empty = true }
+status = 0
+
+[[cmd]]
+shell = "dog --version --colour=automatic"
+stdout = { string = "dog ●" }
+stderr = { empty = true }
+status = 0
+
+[[cmd]]
+shell = "dog --version --color=always"
+stdout = { string = "dog \u001B[1;32m●\u001B[0m" }
+stderr = { empty = true }
+status = 0
+
+[[cmd]]
+shell = "dog --version --colour=never"
+stdout = { string = "dog ●" }
+stderr = { empty = true }
+status = 0

@@ -1,5 +1,5 @@
-all: build test
-all-release: build-release test-release
+all: build test xtests
+all-release: build-release test-release xtests-release
 
 export DOG_DEBUG := ""
 
@@ -20,6 +20,14 @@ export DOG_DEBUG := ""
 # runs unit tests (in release mode)
 @test-release:
     cargo test --release --all --verbose
+
+# runs extended tests
+@xtests:
+    specsheet xtests/*.toml -O cmd.target.dog="${CARGO_TARGET_DIR:-../target}/debug/dog"
+
+# runs extended tests (in release mode)
+@xtests-release:
+    specsheet xtests/*.toml -O cmd.target.dog="${CARGO_TARGET_DIR:-../target}/release/dog"
 
 # renders the documentation
 @doc args="":

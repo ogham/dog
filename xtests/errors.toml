@@ -1,0 +1,17 @@
+[[cmd]]
+shell = "dog --wibble"
+stdout = { empty = true }
+stderr = { string = "wibble" }
+status = 3
+
+[[cmd]]
+shell = "dog XYZZY dns.google"
+stdout = { empty = true }
+stderr = { string = "XYZZY" }
+status = 3
+
+[[cmd]]
+shell = "dog OPT dns.google"
+stdout = { empty = true }
+stderr = { string = "OPT request is sent by default" }
+status = 3

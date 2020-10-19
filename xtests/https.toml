@@ -1,0 +1,169 @@
+# A records
+
+[[cmd]]
+name = "Look up an existing A record using HTTPS"
+shell = "dog a-example.lookup.dog @https://cloudflare-dns.com/dns-query --short --https"
+stdout = { string = '10.20.30.40' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing A record using HTTPS"
+shell = "dog non.existent @https://cloudflare-dns.com/dns-query --short --https"
+stdout = { empty = true }
+stderr = { string = "No results" }
+status = 2
+tags = [ "live", "cloudflare" ]
+
+
+# AAAA records
+
+[[cmd]]
+name = "Look up an existing AAAA record using HTTPS"
+shell = "dog AAAA aaaa-example.lookup.dog @https://cloudflare-dns.com/dns-query --short --https"
+stdout = { string = '::1' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing AAAA record using HTTPS"
+shell = "dog AAAA non.existent @https://cloudflare-dns.com/dns-query --short --https"
+stdout = { empty = true }
+stderr = { string = "No results" }
+status = 2
+tags = [ "live", "cloudflare" ]
+
+
+# CAA records
+
+[[cmd]]
+name = "Look up an existing CAA record using HTTPS"
+shell = "dog CAA caa-example.lookup.dog @https://cloudflare-dns.com/dns-query --short --https"
+stdout = { string = '"issue" "some.certificate.authority" (non-critical)' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing CAA record using HTTPS"
+shell = "dog CAA non.existent @https://cloudflare-dns.com/dns-query --short --https"
+stdout = { empty = true }
+stderr = { string = "No results" }
+status = 2
+tags = [ "live", "cloudflare" ]
+
+
+# CNAME records
+
+[[cmd]]
+name = "Look up an existing CNAME record using HTTPS"
+shell = "dog CNAME cname-example.lookup.dog @https://cloudflare-dns.com/dns-query --short --https"
+stdout = { string = '"dns.lookup.dog."' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing CNAME record using HTTPS"
+shell = "dog CNAME non.existent @https://cloudflare-dns.com/dns-query --short --https"
+stdout = { empty = true }
+stderr = { string = "No results" }
+status = 2
+tags = [ "live", "cloudflare" ]
+
+
+# MX records
+
+[[cmd]]
+name = "Look up an existing MX record using HTTPS"
+shell = "dog MX mx-example.lookup.dog @https://cloudflare-dns.com/dns-query --short --https"
+stdout = { string = '10 "some.mail.server."' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing MX record using HTTPS"
+shell = "dog MX non.existent @https://cloudflare-dns.com/dns-query --short --https"
+stdout = { empty = true }
+stderr = { string = "No results" }
+status = 2
+tags = [ "live", "cloudflare" ]
+
+
+# NS records
+
+[[cmd]]
+name = "Look up an existing NS record using HTTPS"
+shell = "dog NS lookup.dog @https://cloudflare-dns.com/dns-query --short --https"
+stdout = { string = 'ns1' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing NS record using HTTPS"
+shell = "dog NS non.existent @https://cloudflare-dns.com/dns-query --short --https"
+stdout = { empty = true }
+stderr = { string = "No results" }
+status = 2
+tags = [ "live", "cloudflare" ]
+
+
+# SOA records
+
+[[cmd]]
+name = "Look up an existing SOA record using HTTPS"
+shell = "dog SOA lookup.dog @https://cloudflare-dns.com/dns-query --short --https"
+stdout = { string = 'ns1' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing SOA record using HTTPS"
+shell = "dog MX non.existent @https://cloudflare-dns.com/dns-query --short --https"
+stdout = { empty = true }
+stderr = { string = "No results" }
+status = 2
+tags = [ "live", "cloudflare" ]
+
+
+# SRV records
+
+[[cmd]]
+name = "Look up an existing SRV record using HTTPS"
+shell = "dog SRV srv-example.lookup.dog @https://cloudflare-dns.com/dns-query --short --https"
+stdout = { string = '20 "dns.lookup.dog.":5000' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing SRV record using HTTPS"
+shell = "dog SRV non.existent @https://cloudflare-dns.com/dns-query --short --https"
+stdout = { empty = true }
+stderr = { string = "No results" }
+status = 2
+tags = [ "live", "cloudflare" ]
+
+
+# TXT records
+
+[[cmd]]
+name = "Look up an existing TXT record using HTTPS"
+shell = "dog TXT txt-example.lookup.dog @https://cloudflare-dns.com/dns-query --short --https"
+stdout = { string = '"Cache Invalidation and Naming Things"' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing TXT record using HTTPS"
+shell = "dog TXT non.existent @https://cloudflare-dns.com/dns-query --short --https"
+stdout = { empty = true }
+stderr = { string = "No results" }
+status = 2
+tags = [ "live", "cloudflare" ]

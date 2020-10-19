@@ -68,6 +68,16 @@ To build, download the source code and run:
 And the binary will be present in `target/release/dog`.
 
 
+### Testing
+
+dog has an integration test suite written as [Specsheet](https://specsheet.software/) check documents.
+If you have a copy installed, you can run:
+
+    just xtests
+
+And it will test the compiled binary by making DNS requests over the network, checking that dog returns results and does not crash.
+
+
 ### Minimum supported Rust version
 
 Currently, dog is built and tested against the most recent stable Rust version, with no compatibility guarantees for any older versions.

@@ -1,0 +1,169 @@
+# A records
+
+[[cmd]]
+name = "Look up an existing A record formatted as JSON"
+shell = "dog a-example.lookup.dog @1.1.1.1 --json"
+stdout = { string = '10.20.30.40' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing A record formatted as JSON"
+shell = "dog non.existent @1.1.1.1 --json"
+stdout = { string = '[]' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+
+# AAAA records
+
+[[cmd]]
+name = "Look up an existing AAAA record formatted as JSON"
+shell = "dog AAAA aaaa-example.lookup.dog @1.1.1.1 --json"
+stdout = { string = '::1' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing AAAA record formatted as JSON"
+shell = "dog AAAA non.existent @1.1.1.1 --json"
+stdout = { string = '[]' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+
+# CAA records
+
+[[cmd]]
+name = "Look up an existing CAA record formatted as JSON"
+shell = "dog CAA caa-example.lookup.dog @1.1.1.1 --json"
+stdout = { string = '"some.certificate.authority"' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing CAA record formatted as JSON"
+shell = "dog CAA non.existent @1.1.1.1 --json"
+stdout = { string = '[]' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+
+# CNAME records
+
+[[cmd]]
+name = "Look up an existing CNAME record formatted as JSON"
+shell = "dog CNAME cname-example.lookup.dog @1.1.1.1 --json"
+stdout = { string = '"dns.lookup.dog."' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing CNAME record formatted as JSON"
+shell = "dog CNAME non.existent @1.1.1.1 --json"
+stdout = { string = '[]' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+
+# MX records
+
+[[cmd]]
+name = "Look up an existing MX record formatted as JSON"
+shell = "dog MX mx-example.lookup.dog @1.1.1.1 --json"
+stdout = { string = 'some.mail.server.' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing MX record formatted as JSON"
+shell = "dog MX non.existent @1.1.1.1 --json"
+stdout = { string = '[]' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+
+# NS records
+
+[[cmd]]
+name = "Look up an existing NS record formatted as JSON"
+shell = "dog NS lookup.dog @1.1.1.1 --json"
+stdout = { string = 'ns1' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing NS record formatted as JSON"
+shell = "dog NS non.existent @1.1.1.1 --json"
+stdout = { string = '[]' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+
+# SOA records
+
+[[cmd]]
+name = "Look up an existing SOA record formatted as JSON"
+shell = "dog SOA lookup.dog @1.1.1.1 --json"
+stdout = { string = 'ns1' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing SOA record formatted as JSON"
+shell = "dog MX non.existent @1.1.1.1 --json"
+stdout = { string = '[]' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+
+# SRV records
+
+[[cmd]]
+name = "Look up an existing SRV record formatted as JSON"
+shell = "dog SRV srv-example.lookup.dog @1.1.1.1 --json"
+stdout = { string = 'dns.lookup.dog.' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing SRV record formatted as JSON"
+shell = "dog SRV non.existent @1.1.1.1 --json"
+stdout = { string = '[]' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+
+# TXT records
+
+[[cmd]]
+name = "Look up an existing TXT record formatted as JSON"
+shell = "dog TXT txt-example.lookup.dog @1.1.1.1 --json"
+stdout = { string = '"Cache Invalidation and Naming Things"' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing TXT record formatted as JSON"
+shell = "dog TXT non.existent @1.1.1.1 --json"
+stdout = { string = '[]' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
