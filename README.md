@@ -1,15 +1,25 @@
-# dog [![Build status](https://travis-ci.org/ogham/dog.svg)](https://travis-ci.org/ogham/dog)
+<div align="center">
+<h1>dog</h1>
+
+[dog](https://dns.lookup.dog/) is a command-line DNS client.
+
+<a href="https://travis-ci.org/github/ogham/dog">
+    <img src="https://travis-ci.org/ogham/dog.svg?branch=master" alt="Build status" />
+</a>
+
+<a href="https://saythanks.io/to/ogham%40bsago.me">
+    <img src="https://img.shields.io/badge/Say%20Thanks-!-1EAEDB.svg" alt="Say thanks!" />
+</a>
+</div>
+
+![A screenshot of dog making a DNS request](dog-screenshot.png)
+
+---
 
 Dogs _can_ look up!
 
-**dog** is a command-line DNS client.
-It has colourful output, supports the DNS-over-TLS and DNS-over-HTTPS protocols, and can emit JSON.
-
-
-## Screenshots
-
-![A screenshot of dog being used](dog-screenshot.png)
-
+**dog** is a command-line DNS client, like `dig`.
+It has colourful output, understands normal command-line argument syntax, supports the DNS-over-TLS and DNS-over-HTTPS protocols, and can emit JSON.
 
 ## Examples
 
@@ -19,8 +29,9 @@ It has colourful output, supports the DNS-over-TLS and DNS-over-HTTPS protocols,
     dog example.net MX @1.1.1.1 -T           ...using TCP rather than UDP
     dog -q example.net -t MX -n 1.1.1.1 -T   As above, but using explicit arguments
 
+---
 
-## Options
+## Command-line options
 
 ### Query options
 
@@ -52,6 +63,8 @@ It has colourful output, supports the DNS-over-TLS and DNS-over-HTTPS protocols,
     --time                   Print how long the response took to arrive
 
 
+---
+
 ## Installation
 
 Installing dog requires building it from source.
@@ -60,12 +73,25 @@ Installing dog requires building it from source.
 ### Compilation
 
 dog is written in [Rust](https://www.rust-lang.org).
-You will need a Rust toolchain installed in order to compile it.
+You will need rustc version 1.42.0 or higher.
+The recommended way to install Rust for development is from the [official download page](https://www.rust-lang.org/tools/install), using rustup.
+
 To build, download the source code and run:
 
-    cargo build --release
+    $ cargo build
+    $ cargo test
 
-And the binary will be present in `target/release/dog`.
+- The [just](https://github.com/casey/just) command runner can be used to run some helpful development commands, in a manner similar to `make`.
+Run `just --tasks` to get an overview of what’s available.
+
+- If you are compiling a copy for yourself, be sure to run `cargo build --release` or `just build-release` to benefit from release-mode optimisations.
+Copy the resulting binary, which will be in the `target/release` directory, into a folder in your `$PATH`.
+`/usr/local/bin` is usually a good choice.
+
+- To compile and install the manual pages, you will need [pandoc](https://pandoc.org/).
+The `just man` command will compile the Markdown into manual pages, which it will place in the `target/man` directory.
+To use them, copy them into a directory that `man` will read.
+`/usr/local/share/man` is usually a good choice.
 
 
 ### Testing
@@ -75,19 +101,14 @@ If you have a copy installed, you can run:
 
     just xtests
 
-And it will test the compiled binary by making DNS requests over the network, checking that dog returns results and does not crash.
+Specsheet will test the compiled binary by making DNS requests over the network, checking that dog returns results and does not crash.
 
 
-### Minimum supported Rust version
-
-Currently, dog is built and tested against the most recent stable Rust version, with no compatibility guarantees for any older versions.
-
-Once dog is more mature and development has settled down, a minimum supported Rust version will be chosen.
-
+---
 
 ## Documentation
 
-For documentation on how to use dog, see the website: <https://dns.lookup.dog>
+For documentation on how to use dog, see the website: <https://dns.lookup.dog/>
 
 
 ## See also
