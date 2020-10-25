@@ -213,9 +213,9 @@ impl Inputs {
 
     fn load_free_args(&mut self, matches: getopts::Matches) -> Result<(), OptionsError> {
         for a in matches.free {
-            if a.starts_with('@') {
-                trace!("Got nameserver -> {:?}", &a[1..]);
-                self.add_nameserver(&a[1..])?;
+            if let Some(nameserver) = a.strip_prefix('@') {
+                trace!("Got nameserver -> {:?}", nameserver);
+                self.add_nameserver(nameserver)?;
             }
             else if a.chars().all(char::is_uppercase) {
                 if let Some(class) = self.parse_class_name(&a) {
@@ -273,8 +273,8 @@ impl TxidGenerator {
 }
 
 fn parse_dec_or_hex(input: &str) -> Option<u16> {
-    if input.starts_with("0x") {
-        match u16::from_str_radix(&input[2..], 16) {
+    if let Some(hex_str) = input.strip_prefix("0x") {
+        match u16::from_str_radix(hex_str, 16) {
             Ok(num) => {
                 Some(num)
             }

@@ -36,12 +36,11 @@ impl Resolver {
                 for line in reader.lines() {
                     let line = line?;
 
-                    if line.starts_with("nameserver ") {
-                        let line = &line[11..];
-                        let ip: Result<std::net::Ipv4Addr, _> = line.parse();
+                    if let Some(nameserver_str) = line.strip_prefix("nameserver ") {
+                        let ip: Result<std::net::Ipv4Addr, _> = nameserver_str.parse();
 
                         match ip {
-                            Ok(_ip) => nameservers.push(line.into()),
+                            Ok(_ip) => nameservers.push(nameserver_str.into()),
                             Err(e)  => warn!("Failed to parse nameserver line {:?}: {}", line, e),
                         }
                     }
