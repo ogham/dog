@@ -1,7 +1,7 @@
 use crate::strings::ReadLabels;
 use crate::wire::*;
 
-use log::{warn, debug};
+use log::*;
 
 
 /// A **NS** _(name server)_ record, which is used to point domains to name
@@ -24,6 +24,7 @@ impl Wire for NS {
     #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
     fn read(len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let nameserver = c.read_labels()?;
+        trace!("Parsed nameserver -> {:?}", nameserver);
 
         if nameserver.len() + 1 == len as usize {
             debug!("Length {} is correct", nameserver.len() + 1);

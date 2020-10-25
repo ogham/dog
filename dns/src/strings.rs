@@ -2,8 +2,8 @@
 
 use std::io::{self, Write};
 
-use log::debug;
 use byteorder::{ReadBytesExt, WriteBytesExt};
+use log::*;
 
 use crate::wire::*;
 
@@ -75,14 +75,14 @@ fn read_string_recursive(name_buf: &mut Vec<u8>, c: &mut Cursor<&[u8]>, recursio
             let name_two = c.read_u8()?;
             let offset = u16::from_be_bytes([name_one, name_two]);
 
-            debug!("Backtracking to offset {}", offset);
+            trace!("Backtracking to offset {}", offset);
             let new_pos = c.position();
             c.set_position(u64::from(offset));
             recursions.push(offset);
 
             read_string_recursive(name_buf, c, recursions)?;
 
-            debug!("Coming back to {}", new_pos);
+            trace!("Coming back to {}", new_pos);
             c.set_position(new_pos);
             recursions.pop();
             break;

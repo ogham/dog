@@ -4,7 +4,7 @@ pub(crate) use std::io::Cursor;
 pub(crate) use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 use std::io;
-use log::{error, info, debug};
+use log::*;
 
 use crate::record::{Record, OPT};
 use crate::strings::{ReadLabels, WriteLabels};
@@ -58,12 +58,15 @@ impl Response {
     /// Reads bytes off of the given slice, parsing them into a response.
     #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, WireError> {
-        debug!("Parsing bytes -> {:?}", bytes);
-
+        info!("Parsing response");
+        trace!("Bytes -> {:?}", bytes);
         let mut c = Cursor::new(bytes);
+
         let transaction_id = c.read_u16::<BigEndian>()?;
+        trace!("Read txid -> {:?}", transaction_id);
+
         let flags = Flags::from_u16(c.read_u16::<BigEndian>()?);
-        debug!("Read flags: {:#?}", flags);
+        trace!("Read flags -> {:#?}", flags);
 
         let query_count      = c.read_u16::<BigEndian>()?;
         let answer_count     = c.read_u16::<BigEndian>()?;
@@ -110,7 +113,10 @@ impl Query {
     #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
     fn from_bytes(qname: String, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let qtype = c.read_u16::<BigEndian>()?;
+        trace!("Read qtype -> {:?}", qtype);
+
         let qclass = QClass::from_u16(c.read_u16::<BigEndian>()?);
+        trace!("Read qclass -> {:?}", qtype);
 
         Ok(Query { qtype, qclass, qname })
     }
@@ -124,17 +130,23 @@ impl Answer {
     #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
     fn from_bytes(qname: String, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let qtype = c.read_u16::<BigEndian>()?;
+        trace!("Read qtype -> {:?}", qtype);
+
         if qtype == OPT::RR_TYPE {
             let opt = OPT::read(c)?;
             Ok(Answer::Pseudo { qname, opt })
         }
         else {
             let qclass = QClass::from_u16(c.read_u16::<BigEndian>()?);
+            trace!("Read qclass -> {:?}", qtype);
+
             let ttl = c.read_u32::<BigEndian>()?;
+            trace!("Read TTL -> {:?}", ttl);
 
-            let len = c.read_u16::<BigEndian>()?;
-            let record = Record::from_bytes(qtype, len, c)?;
+            let record_length = c.read_u16::<BigEndian>()?;
+            trace!("Read record length -> {:?}", record_length);
 
+            let record = Record::from_bytes(qtype, record_length, c)?;
             Ok(Answer::Standard { qclass, qname, record, ttl })
         }
 
@@ -153,7 +165,7 @@ impl Record {
         macro_rules! try_record {
             ($record:tt) => {
                 if $record::RR_TYPE == qtype {
-                    info!("Deciphering {} record (type {}, len {})", $record::NAME, qtype, len);
+                    info!("Parsing {} record (type {}, len {})", $record::NAME, qtype, len);
                     return Wire::read(len, c).map(Record::$record)
                 }
             }

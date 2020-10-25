@@ -1,5 +1,7 @@
 use std::io;
 
+use log::*;
+
 use crate::wire::*;
 
 
@@ -61,15 +63,25 @@ impl OPT {
     #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
     pub fn read(c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let udp_payload_size = c.read_u16::<BigEndian>()?;  // replaces the class field
-        let higher_bits = c.read_u8()?;                     // replaces the ttl field...
-        let edns0_version = c.read_u8()?;                   // ...as does this...
-        let flags = c.read_u16::<BigEndian>()?;             // ...as does this
+        trace!("Parsed UDP payload size -> {:?}", udp_payload_size);
+
+        let higher_bits = c.read_u8()?;  // replaces the ttl field...
+        trace!("Parsed higher bits -> {:#08b}", higher_bits);
+
+        let edns0_version = c.read_u8()?;  // ...as does this...
+        trace!("Parsed EDNS(0) version -> {:?}", edns0_version);
+
+        let flags = c.read_u16::<BigEndian>()?;  // ...as does this
+        trace!("Parsed flags -> {:#08b}", flags);
 
         let data_length = c.read_u16::<BigEndian>()?;
+        trace!("Parsed data length -> {:?}", data_length);
+
         let mut data = Vec::new();
         for _ in 0 .. data_length {
             data.push(c.read_u8()?);
         }
+        trace!("Parsed data -> {:#x?}", data);
 
         Ok(OPT { udp_payload_size, higher_bits, edns0_version, flags, data })
     }

@@ -1,6 +1,6 @@
-use crate::wire::*;
-
 use log::*;
+
+use crate::wire::*;
 
 
 /// A **TXT** record, which holds arbitrary descriptive text.
@@ -32,6 +32,7 @@ impl Wire for TXT {
         loop {
             let next_len = c.read_u8()?;
             total_len += next_len as usize + 1;
+            trace!("Parsed slice length -> {:?} (total so far {:?})", next_len, total_len);
 
             for _ in 0 .. next_len {
                 buf.push(c.read_u8()?);
@@ -41,7 +42,7 @@ impl Wire for TXT {
                 break;
             }
             else {
-                debug!("Got length 255 so looping");
+                trace!("Got length 255, so looping");
             }
         }
 
@@ -53,6 +54,8 @@ impl Wire for TXT {
         }
 
         let message = String::from_utf8_lossy(&buf).to_string();
+        trace!("Parsed message -> {:?}", message);
+
         Ok(TXT { message })
     }
 }

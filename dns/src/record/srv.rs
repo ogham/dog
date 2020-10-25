@@ -1,7 +1,7 @@
+use log::*;
+
 use crate::strings::ReadLabels;
 use crate::wire::*;
-
-use log::{debug, warn};
 
 
 /// A **SRV** record, which contains an IP address as well as a port number,
@@ -35,9 +35,16 @@ impl Wire for SRV {
     #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
     fn read(len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let priority = c.read_u16::<BigEndian>()?;
-        let weight   = c.read_u16::<BigEndian>()?;
-        let port     = c.read_u16::<BigEndian>()?;
-        let target   = c.read_labels()?;
+        trace!("Parsed priority -> {:?}", priority);
+
+        let weight = c.read_u16::<BigEndian>()?;
+        trace!("Parsed weight -> {:?}", weight);
+
+        let port = c.read_u16::<BigEndian>()?;
+        trace!("Parsed port -> {:?}", port);
+
+        let target = c.read_labels()?;
+        trace!("Parsed target -> {:?}", target);
 
         let got_length = 3 * 2 + target.len() + 1;
         if got_length == len as usize {

@@ -1,3 +1,5 @@
+use log::*;
+
 use crate::strings::ReadLabels;
 use crate::wire::*;
 
@@ -27,6 +29,7 @@ impl Wire for PTR {
     #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
     fn read(_len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let cname = c.read_labels()?;
+        trace!("Parsed cname -> {:?}", cname);
         Ok(PTR { cname })
     }
 }

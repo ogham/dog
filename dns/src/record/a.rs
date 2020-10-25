@@ -1,5 +1,7 @@
 use std::net::Ipv4Addr;
 
+use log::*;
+
 use crate::wire::*;
 
 
@@ -28,9 +30,11 @@ impl Wire for A {
 
         if let [a, b, c, d] = *buf {
             let address = Ipv4Addr::new(a, b, c, d);
+            trace!("Parsed IPv4 address -> {:?}", address);
             Ok(A { address })
         }
         else {
+            warn!("Received non-four length -> {:?}", buf.len());
             Err(WireError::WrongLength { expected: 4, got: buf.len() as u16 })
         }
     }

@@ -1,7 +1,7 @@
+use log::*;
+
 use crate::strings::ReadLabels;
 use crate::wire::*;
-
-use log::{warn, debug};
 
 
 /// A **SOA** _(start of authority)_ record, which contains administrative
@@ -48,13 +48,25 @@ impl Wire for SOA {
     #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
     fn read(len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let mname = c.read_labels()?;
-        let rname = c.read_labels()?;
+        trace!("Parsed mname -> {:?}", mname);
 
-        let serial           = c.read_u32::<BigEndian>()?;
+        let rname = c.read_labels()?;
+        trace!("Parsed rname -> {:?}", rname);
+
+        let serial = c.read_u32::<BigEndian>()?;
+        trace!("Parsed serial -> {:?}", serial);
+
         let refresh_interval = c.read_u32::<BigEndian>()?;
-        let retry_interval   = c.read_u32::<BigEndian>()?;
-        let expire_limit     = c.read_u32::<BigEndian>()?;
-        let minimum_ttl      = c.read_u32::<BigEndian>()?;
+        trace!("Parsed refresh interval -> {:?}", refresh_interval);
+
+        let retry_interval = c.read_u32::<BigEndian>()?;
+        trace!("Parsed retry interval -> {:?}", retry_interval);
+
+        let expire_limit = c.read_u32::<BigEndian>()?;
+        trace!("Parsed expire limit -> {:?}", expire_limit);
+
+        let minimum_ttl = c.read_u32::<BigEndian>()?;
+        trace!("Parsed minimum TTL -> {:?}", minimum_ttl);
 
         let got_length = mname.len() + rname.len() + 4 * 5 + 2;
         if got_length == len as usize {

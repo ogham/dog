@@ -1,7 +1,7 @@
+use log::*;
+
 use crate::strings::ReadLabels;
 use crate::wire::*;
-
-use log::{warn, debug};
 
 
 /// An **MX** _(mail exchange)_ record, which contains the hostnames for mail
@@ -28,7 +28,10 @@ impl Wire for MX {
     #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
     fn read(len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let preference = c.read_u16::<BigEndian>()?;
+        trace!("Parsed preference -> {:?}", preference);
+
         let exchange = c.read_labels()?;
+        trace!("Parsed exchange -> {:?}", exchange);
 
         if 2 + exchange.len() + 1 == len as usize {
             debug!("Length {} is correct", len);

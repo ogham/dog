@@ -1,5 +1,7 @@
 use std::net::Ipv6Addr;
 
+use log::*;
+
 use crate::wire::*;
 
 
@@ -29,9 +31,12 @@ impl Wire for AAAA {
         if let [a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p] = *buf {
             let address = Ipv6Addr::from([a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p]);
             // probably the best two lines of code I have ever written
+
+            trace!("Parsed IPv6 address -> {:?}", address);
             Ok(AAAA { address })
         }
         else {
+            warn!("Received non-sixteen length -> {:?}", buf.len());
             Err(WireError::WrongLength { expected: 16, got: buf.len() as u16 })
         }
     }

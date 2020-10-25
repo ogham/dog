@@ -1,3 +1,5 @@
+use log::*;
+
 use crate::strings::ReadLabels;
 use crate::wire::*;
 
@@ -21,6 +23,7 @@ impl Wire for CNAME {
     #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
     fn read(_len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let domain = c.read_labels()?;
+        trace!("Parsed domain -> {:?}", domain);
         Ok(CNAME { domain })
     }
 }
