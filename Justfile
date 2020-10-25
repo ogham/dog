@@ -71,6 +71,11 @@ export DOG_DEBUG := ""
     command -v cargo-udeps >/dev/null || (echo "cargo-udeps not installed" && exit 1)
     cargo +nightly udeps
 
+# prints versions of the necessary build tools
+@versions:
+    rustc --version
+    cargo --version
+
 
 # renders the documentation
 @doc args="":
