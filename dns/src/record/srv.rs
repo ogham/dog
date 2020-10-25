@@ -43,18 +43,18 @@ impl Wire for SRV {
         let port = c.read_u16::<BigEndian>()?;
         trace!("Parsed port -> {:?}", port);
 
-        let target = c.read_labels()?;
+        let (target, target_len) = c.read_labels()?;
         trace!("Parsed target -> {:?}", target);
 
-        let got_length = 3 * 2 + target.len() + 1;
-        if got_length == len as usize {
-            debug!("Length {} is correct", len);
+        let got_len = 3 * 2 + target_len;
+        if len == got_len {
+            trace!("Length is correct");
+            Ok(SRV { priority, weight, port, target })
         }
         else {
-            warn!("Expected length {} but got {}", len, got_length);
+            warn!("Length is incorrect (record length {:?}, fields plus target length {:?})", len, got_len);
+            Err(WireError::WrongLabelLength { expected: len, got: got_len })
         }
-
-        Ok(SRV { priority, weight, port, target })
     }
 }
 

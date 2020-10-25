@@ -13,14 +13,15 @@ use crate::wire::*;
 pub(crate) trait ReadLabels {
 
     /// Read and expand a compressed domain name.
-    fn read_labels(&mut self) -> Result<String, WireError>;
+    fn read_labels(&mut self) -> Result<(String, u16), WireError>;
 }
 
 impl ReadLabels for Cursor<&[u8]> {
-    fn read_labels(&mut self) -> Result<String, WireError> {
+    fn read_labels(&mut self) -> Result<(String, u16), WireError> {
         let mut name_buf = Vec::new();
-        read_string_recursive(&mut name_buf, self, &mut Vec::new())?;
-        Ok(String::from_utf8_lossy(&*name_buf).to_string())
+        let bytes_read = read_string_recursive(&mut name_buf, self, &mut Vec::new())?;
+        let string = String::from_utf8_lossy(&*name_buf).to_string();
+        Ok((string, bytes_read))
     }
 }
 
@@ -57,10 +58,17 @@ impl<W: Write> WriteLabels for W {
 
 const RECURSION_LIMIT: usize = 8;
 
+/// Reads bytes from the given cursor into the given buffer, using the list of
+/// recursions to track backtracking positions. Returns the count of bytes
+/// that had to be read to produce the string, including the bytes to signify
+/// backtracking, but not including the bytes read _during_ backtracking.
 #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
-fn read_string_recursive(name_buf: &mut Vec<u8>, c: &mut Cursor<&[u8]>, recursions: &mut Vec<u16>) -> Result<(), WireError> {
+fn read_string_recursive(name_buf: &mut Vec<u8>, c: &mut Cursor<&[u8]>, recursions: &mut Vec<u16>) -> Result<u16, WireError> {
+    let mut bytes_read = 0;
+
     loop {
         let byte = c.read_u8()?;
+        bytes_read += 1;
 
         if byte == 0 {
             break;
@@ -73,6 +81,7 @@ fn read_string_recursive(name_buf: &mut Vec<u8>, c: &mut Cursor<&[u8]>, recursio
 
             let name_one = byte - 0b1100_0000;
             let name_two = c.read_u8()?;
+            bytes_read += 1;
             let offset = u16::from_be_bytes([name_one, name_two]);
 
             trace!("Backtracking to offset {}", offset);
@@ -93,6 +102,7 @@ fn read_string_recursive(name_buf: &mut Vec<u8>, c: &mut Cursor<&[u8]>, recursio
         else {
             for _ in 0 .. byte {
                 let c = c.read_u8()?;
+                bytes_read += 1;
                 name_buf.push(c);
             }
 
@@ -100,5 +110,5 @@ fn read_string_recursive(name_buf: &mut Vec<u8>, c: &mut Cursor<&[u8]>, recursio
         }
     }
 
-    Ok(())
+    Ok(bytes_read)
 }

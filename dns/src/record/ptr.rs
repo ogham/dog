@@ -27,10 +27,18 @@ impl Wire for PTR {
     const RR_TYPE: u16 = 12;
 
     #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
-    fn read(_len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
-        let cname = c.read_labels()?;
+    fn read(len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
+        let (cname, cname_len) = c.read_labels()?;
         trace!("Parsed cname -> {:?}", cname);
-        Ok(PTR { cname })
+
+        if len == cname_len {
+            trace!("Length is correct");
+            Ok(PTR { cname })
+        }
+        else {
+            warn!("Length is incorrect (record length {:?}, cname length {:?}", len, cname_len);
+            Err(WireError::WrongLabelLength { expected: len, got: cname_len })
+        }
     }
 }
 

@@ -27,11 +27,11 @@ impl Wire for TXT {
     #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
     fn read(len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let mut buf = Vec::new();
-        let mut total_len = 0_usize;
+        let mut total_len = 0_u16;
 
         loop {
             let next_len = c.read_u8()?;
-            total_len += next_len as usize + 1;
+            total_len += u16::from(next_len) + 1;
             trace!("Parsed slice length -> {:?} (total so far {:?})", next_len, total_len);
 
             for _ in 0 .. next_len {
@@ -46,7 +46,7 @@ impl Wire for TXT {
             }
         }
 
-        if total_len == len as usize {
+        if len == total_len {
             debug!("Length matches expected");
         }
         else {
@@ -56,7 +56,14 @@ impl Wire for TXT {
         let message = String::from_utf8_lossy(&buf).to_string();
         trace!("Parsed message -> {:?}", message);
 
-        Ok(TXT { message })
+        if len == total_len {
+            trace!("Length is correct");
+            Ok(TXT { message })
+        }
+        else {
+            warn!("Length is incorrect (record length {:?}, message length {:?})", len, total_len);
+            Err(WireError::WrongLabelLength { expected: len, got: total_len })
+        }
     }
 }
 

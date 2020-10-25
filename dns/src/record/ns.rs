@@ -23,17 +23,17 @@ impl Wire for NS {
 
     #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
     fn read(len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
-        let nameserver = c.read_labels()?;
+        let (nameserver, nameserver_len) = c.read_labels()?;
         trace!("Parsed nameserver -> {:?}", nameserver);
 
-        if nameserver.len() + 1 == len as usize {
-            debug!("Length {} is correct", nameserver.len() + 1);
+        if len == nameserver_len {
+            trace!("Length is correct");
+            Ok(NS { nameserver })
         }
         else {
-            warn!("Expected length {} but read {} bytes", len, nameserver.len() + 1);
+            warn!("Length is incorrect (record length {:?}, nameserver length {:?}", len, nameserver_len);
+            Err(WireError::WrongLabelLength { expected: len, got: nameserver_len })
         }
-
-        Ok(NS { nameserver })
     }
 }
 

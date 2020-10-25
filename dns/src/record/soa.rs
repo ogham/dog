@@ -47,10 +47,10 @@ impl Wire for SOA {
 
     #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
     fn read(len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
-        let mname = c.read_labels()?;
+        let (mname, mname_len) = c.read_labels()?;
         trace!("Parsed mname -> {:?}", mname);
 
-        let rname = c.read_labels()?;
+        let (rname, rname_len) = c.read_labels()?;
         trace!("Parsed rname -> {:?}", rname);
 
         let serial = c.read_u32::<BigEndian>()?;
@@ -68,18 +68,18 @@ impl Wire for SOA {
         let minimum_ttl = c.read_u32::<BigEndian>()?;
         trace!("Parsed minimum TTL -> {:?}", minimum_ttl);
 
-        let got_length = mname.len() + rname.len() + 4 * 5 + 2;
-        if got_length == len as usize {
-            debug!("Length {} is correct", len);
+        let got_len = 4 * 5 + mname_len + rname_len;
+        if len == got_len {
+            trace!("Length is correct");
+            Ok(SOA {
+                mname, rname, serial, refresh_interval,
+                retry_interval, expire_limit, minimum_ttl,
+            })
         }
         else {
-            warn!("Expected length {} but got {}", len, got_length);
+            warn!("Length is incorrect (record length {:?}, mname plus rname plus fields length {:?})", len, got_len);
+            Err(WireError::WrongLabelLength { expected: len, got: got_len })
         }
-
-        Ok(SOA {
-            mname, rname, serial, refresh_interval,
-            retry_interval, expire_limit, minimum_ttl,
-        })
     }
 }
 

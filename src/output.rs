@@ -179,15 +179,18 @@ fn error_message(error: TransportError) -> String {
 		TransportError::HttpError(e)     => e.to_string(),
 		TransportError::TlsError(e)      => e.to_string(),
 		TransportError::BadRequest       => "Nameserver returned HTTP 400 Bad Request".into(),
-		TransportError::WireError(e)     => {
-			match e {
-				WireError::IO                             => "Malformed packet: insufficient data".into(),
-				WireError::WrongLength { expected, got }  => format!("Malformed packet: expected length {}, got {}", expected, got),
-				WireError::TooMuchRecursion(indices)      => format!("Malformed packet: too much recursion: {:?}", indices),
-				WireError::OutOfBounds(index)             => format!("Malformed packet: out of bounds ({})", index),
-			}
-		}
+		TransportError::WireError(e)     => wire_error_message(e),
 	}
+}
+
+fn wire_error_message(error: WireError) -> String {
+    match error {
+        WireError::IO                                   => "Malformed packet: insufficient data".into(),
+        WireError::WrongRecordLength { expected, got }  => format!("Malformed packet: expected length {}, got {}", expected, got),
+        WireError::WrongLabelLength { expected, got }   => format!("Malformed packet: expected length {}, got {}", expected, got),
+        WireError::TooMuchRecursion(indices)            => format!("Malformed packet: too much recursion: {:?}", indices),
+        WireError::OutOfBounds(index)                   => format!("Malformed packet: out of bounds ({})", index),
+    }
 }
 
 

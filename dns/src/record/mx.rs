@@ -30,17 +30,18 @@ impl Wire for MX {
         let preference = c.read_u16::<BigEndian>()?;
         trace!("Parsed preference -> {:?}", preference);
 
-        let exchange = c.read_labels()?;
+        let (exchange, exchange_len) = c.read_labels()?;
         trace!("Parsed exchange -> {:?}", exchange);
 
-        if 2 + exchange.len() + 1 == len as usize {
-            debug!("Length {} is correct", len);
+        let got_len = 2 + exchange_len;
+        if len == got_len {
+            trace!("Length is correct");
+            Ok(MX { preference, exchange })
         }
         else {
-            warn!("Expected length {} but read {} bytes", len, 2 + exchange.len() + 1);
+            warn!("Length is incorrect (record length {:?}, preference plus exchange length {:?}", len, got_len);
+            Err(WireError::WrongLabelLength { expected: len, got: got_len })
         }
-
-        Ok(MX { preference, exchange })
     }
 }
 

@@ -76,28 +76,28 @@ impl Response {
         let mut queries = Vec::new();
         debug!("Reading {}x query from response", query_count);
         for _ in 0 .. query_count {
-            let qname = c.read_labels()?;
+            let (qname, _) = c.read_labels()?;
             queries.push(Query::from_bytes(qname, &mut c)?);
         }
 
         let mut answers = Vec::new();
         debug!("Reading {}x answer from response", answer_count);
         for _ in 0 .. answer_count {
-            let qname = c.read_labels()?;
+            let (qname, _) = c.read_labels()?;
             answers.push(Answer::from_bytes(qname, &mut c)?);
         }
 
         let mut authorities = Vec::new();
         debug!("Reading {}x authority from response", authority_count);
         for _ in 0 .. authority_count {
-            let qname = c.read_labels()?;
+            let (qname, _) = c.read_labels()?;
             authorities.push(Answer::from_bytes(qname, &mut c)?);
         }
 
         let mut additionals = Vec::new();
         debug!("Reading {}x additional answer from response", additional_count);
         for _ in 0 .. additional_count {
-            let qname = c.read_labels()?;
+            let (qname, _) = c.read_labels()?;
             additionals.push(Answer::from_bytes(qname, &mut c)?);
         }
 
@@ -352,9 +352,53 @@ pub enum WireError {
     IO,
     // (io::Error is not PartialEq so we don’t propagate it)
 
-    /// When this record expected the data to be a certain size, but it was
-    /// a different one.
-    WrongLength {
+    /// When the DNS standard requires records of this type to have a certain
+    /// fixed length, but the response specified a different length.
+    ///
+    /// This error should be returned regardless of the _content_ of the
+    /// record, whatever it is.
+    WrongRecordLength {
+
+        /// The expected size.
+        expected: u16,
+
+        /// The size that was actually received.
+        got: u16,
+    },
+
+    /// When the length of this record as specified in the packet differs from
+    /// the computed length, as determined by reading labels.
+    ///
+    /// There are two ways, in general, to read arbitrary-length data from a
+    /// stream of bytes: length-prefixed (read the length, then read that many
+    /// bytes) or sentinel-terminated (keep reading bytes until you read a
+    /// certain value, usually zero). The DNS protocol uses both: each
+    /// record’s size is specified up-front in the packet, but inside the
+    /// record, there exist arbitrary-length strings that must be read until a
+    /// zero is read, indicating there is no more string.
+    ///
+    /// Consider the case of a packet, with a specified length, containing a
+    /// string of arbitrary length (such as the CNAME or TXT records). A DNS
+    /// client has to deal with this in one of two ways:
+    ///
+    /// 1. Read exactly the specified length of bytes from the record, raising
+    ///    an error if the contents are too short or a string keeps going past
+    ///    the length (assume the length is correct but the contents are wrong).
+    ///
+    /// 2. Read as many bytes from the record as the string requests, raising
+    ///    an error if the number of bytes read at the end differs from the
+    ///    expected length of the record (assume the length is wrong but the
+    ///    contents are correct).
+    ///
+    /// Note that no matter which way is picked, the record will still be
+    /// incorrect — it only impacts the parsing of records that occur after it
+    /// in the packet. Knowing which method should be used requires knowing
+    /// what caused the DNS packet to be erroneous, which we cannot know.
+    ///
+    /// dog picks the second way. If a record ends up reading more or fewer
+    /// bytes than it is ‘supposed’ to, it will raise this error, but _after_
+    /// having read a different number of bytes than the specified length.
+    WrongLabelLength {
 
         /// The expected size.
         expected: u16,

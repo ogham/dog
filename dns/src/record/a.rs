@@ -34,8 +34,8 @@ impl Wire for A {
             Ok(A { address })
         }
         else {
-            warn!("Received non-four length -> {:?}", buf.len());
-            Err(WireError::WrongLength { expected: 4, got: buf.len() as u16 })
+            warn!("Length is incorrect (record length {:?}, but should be four)", len);
+            Err(WireError::WrongRecordLength { expected: 4, got: buf.len() as u16 })
         }
     }
 }
@@ -62,7 +62,7 @@ mod test {
         ];
 
         assert_eq!(A::read(buf.len() as _, &mut Cursor::new(buf)),
-                   Err(WireError::WrongLength { expected: 4, got: 3 }));
+                   Err(WireError::WrongRecordLength { expected: 4, got: 3 }));
     }
 
     #[test]
@@ -73,12 +73,12 @@ mod test {
         ];
 
         assert_eq!(A::read(buf.len() as _, &mut Cursor::new(buf)),
-                   Err(WireError::WrongLength { expected: 4, got: 5 }));
+                   Err(WireError::WrongRecordLength { expected: 4, got: 5 }));
     }
 
     #[test]
     fn empty() {
         assert_eq!(A::read(0, &mut Cursor::new(&[])),
-                   Err(WireError::WrongLength { expected: 4, got: 0 }));
+                   Err(WireError::WrongRecordLength { expected: 4, got: 0 }));
     }
 }

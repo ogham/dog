@@ -36,8 +36,8 @@ impl Wire for AAAA {
             Ok(AAAA { address })
         }
         else {
-            warn!("Received non-sixteen length -> {:?}", buf.len());
-            Err(WireError::WrongLength { expected: 16, got: buf.len() as u16 })
+            warn!("Length is incorrect (record length {:?}, but should be sixteen)", len);
+            Err(WireError::WrongRecordLength { expected: 16, got: buf.len() as u16 })
         }
     }
 }
@@ -67,7 +67,7 @@ mod test {
         ];
 
         assert_eq!(AAAA::read(buf.len() as _, &mut Cursor::new(buf)),
-                   Err(WireError::WrongLength { expected: 16, got: 17 }));
+                   Err(WireError::WrongRecordLength { expected: 16, got: 17 }));
     }
 
     #[test]
@@ -77,12 +77,12 @@ mod test {
         ];
 
         assert_eq!(AAAA::read(buf.len() as _, &mut Cursor::new(buf)),
-                   Err(WireError::WrongLength { expected: 16, got: 5 }));
+                   Err(WireError::WrongRecordLength { expected: 16, got: 5 }));
     }
 
     #[test]
     fn empty() {
         assert_eq!(AAAA::read(0, &mut Cursor::new(&[])),
-                   Err(WireError::WrongLength { expected: 16, got: 0 }));
+                   Err(WireError::WrongRecordLength { expected: 16, got: 0 }));
     }
 }
