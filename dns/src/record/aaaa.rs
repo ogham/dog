@@ -33,7 +33,7 @@ impl Wire for AAAA {
             // probably the best two lines of code I have ever written
 
             trace!("Parsed IPv6 address -> {:?}", address);
-            Ok(AAAA { address })
+            Ok(Self { address })
         }
         else {
             warn!("Length is incorrect (record length {:?}, but should be sixteen)", len);

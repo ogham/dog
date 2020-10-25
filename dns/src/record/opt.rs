@@ -83,7 +83,7 @@ impl OPT {
         }
         trace!("Parsed data -> {:#x?}", data);
 
-        Ok(OPT { udp_payload_size, higher_bits, edns0_version, flags, data })
+        Ok(Self { udp_payload_size, higher_bits, edns0_version, flags, data })
     }
 
     /// Serialises this OPT record into a vector of bytes.

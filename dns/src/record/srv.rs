@@ -49,7 +49,7 @@ impl Wire for SRV {
         let got_len = 3 * 2 + target_len;
         if len == got_len {
             trace!("Length is correct");
-            Ok(SRV { priority, weight, port, target })
+            Ok(Self { priority, weight, port, target })
         }
         else {
             warn!("Length is incorrect (record length {:?}, fields plus target length {:?})", len, got_len);

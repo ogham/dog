@@ -31,7 +31,7 @@ impl Wire for A {
         if let [a, b, c, d] = *buf {
             let address = Ipv4Addr::new(a, b, c, d);
             trace!("Parsed IPv4 address -> {:?}", address);
-            Ok(A { address })
+            Ok(Self { address })
         }
         else {
             warn!("Length is incorrect (record length {:?}, but should be four)", len);

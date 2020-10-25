@@ -60,7 +60,7 @@ impl Wire for CAA {
         if len == got_len {
             // This one’s a little weird, because remaining_len is based on len
             trace!("Length is correct");
-            Ok(CAA { critical, tag, value })
+            Ok(Self { critical, tag, value })
         }
         else {
             warn!("Length is incorrect (record length {:?}, flags plus tag plus data length {:?}", len, got_len);

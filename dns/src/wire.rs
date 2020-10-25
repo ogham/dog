@@ -101,7 +101,7 @@ impl Response {
             additionals.push(Answer::from_bytes(qname, &mut c)?);
         }
 
-        Ok(Response { transaction_id, flags, queries, answers, authorities, additionals })
+        Ok(Self { transaction_id, flags, queries, answers, authorities, additionals })
     }
 }
 
@@ -118,7 +118,7 @@ impl Query {
         let qclass = QClass::from_u16(c.read_u16::<BigEndian>()?);
         trace!("Read qclass -> {:?}", qtype);
 
-        Ok(Query { qtype, qclass, qname })
+        Ok(Self { qtype, qclass, qname })
     }
 }
 
@@ -134,7 +134,7 @@ impl Answer {
 
         if qtype == OPT::RR_TYPE {
             let opt = OPT::read(c)?;
-            Ok(Answer::Pseudo { qname, opt })
+            Ok(Self::Pseudo { qname, opt })
         }
         else {
             let qclass = QClass::from_u16(c.read_u16::<BigEndian>()?);
@@ -147,7 +147,7 @@ impl Answer {
             trace!("Read record length -> {:?}", record_length);
 
             let record = Record::from_bytes(qtype, record_length, c)?;
-            Ok(Answer::Standard { qclass, qname, record, ttl })
+            Ok(Self::Standard { qclass, qname, record, ttl })
         }
 
     }
@@ -159,14 +159,14 @@ impl Record {
     /// Reads at most `len` bytes from the given curser, and parses them into
     /// a record structure depending on the type number, which has already been read.
     #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
-    fn from_bytes(qtype: TypeInt, len: u16, c: &mut Cursor<&[u8]>) -> Result<Record, WireError> {
+    fn from_bytes(qtype: TypeInt, len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         use crate::record::*;
 
         macro_rules! try_record {
             ($record:tt) => {
                 if $record::RR_TYPE == qtype {
                     info!("Parsing {} record (type {}, len {})", $record::NAME, qtype, len);
-                    return Wire::read(len, c).map(Record::$record)
+                    return Wire::read(len, c).map(Self::$record)
                 }
             }
         }
@@ -193,7 +193,7 @@ impl Record {
         }
 
         let type_number = UnknownQtype::from(qtype);
-        Ok(Record::Other { type_number, bytes })
+        Ok(Self::Other { type_number, bytes })
     }
 }
 
@@ -201,19 +201,19 @@ impl Record {
 impl QClass {
     fn from_u16(uu: u16) -> Self {
         match uu {
-            0x0001 => QClass::IN,
-            0x0003 => QClass::CH,
-            0x0004 => QClass::HS,
-                 _ => QClass::Other(uu),
+            0x0001 => Self::IN,
+            0x0003 => Self::CH,
+            0x0004 => Self::HS,
+                 _ => Self::Other(uu),
         }
     }
 
     fn to_u16(self) -> u16 {
         match self {
-            QClass::IN        => 0x0001,
-            QClass::CH        => 0x0003,
-            QClass::HS        => 0x0004,
-            QClass::Other(uu) => uu,
+            Self::IN        => 0x0001,
+            Self::CH        => 0x0003,
+            Self::HS        => 0x0004,
+            Self::Other(uu) => uu,
         }
     }
 }
@@ -276,7 +276,7 @@ impl Flags {
     pub fn from_u16(bits: u16) -> Self {
         let has_bit = |bit| { bits & bit == bit };
 
-        Flags {
+        Self {
             response:               has_bit(0b_1000_0000_0000_0000),
             opcode:                 0,
             authoritative:          has_bit(0b_0000_0100_0000_0000),
@@ -419,6 +419,6 @@ pub enum WireError {
 impl From<io::Error> for WireError {
     fn from(ioe: io::Error) -> Self {
         error!("IO error -> {:?}", ioe);
-        WireError::IO
+        Self::IO
     }
 }

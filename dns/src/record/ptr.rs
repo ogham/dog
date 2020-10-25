@@ -33,7 +33,7 @@ impl Wire for PTR {
 
         if len == cname_len {
             trace!("Length is correct");
-            Ok(PTR { cname })
+            Ok(Self { cname })
         }
         else {
             warn!("Length is incorrect (record length {:?}, cname length {:?}", len, cname_len);

@@ -28,7 +28,7 @@ impl Wire for NS {
 
         if len == nameserver_len {
             trace!("Length is correct");
-            Ok(NS { nameserver })
+            Ok(Self { nameserver })
         }
         else {
             warn!("Length is incorrect (record length {:?}, nameserver length {:?}", len, nameserver_len);

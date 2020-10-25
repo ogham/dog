@@ -58,7 +58,7 @@ impl Wire for TXT {
 
         if len == total_len {
             trace!("Length is correct");
-            Ok(TXT { message })
+            Ok(Self { message })
         }
         else {
             warn!("Length is incorrect (record length {:?}, message length {:?})", len, total_len);

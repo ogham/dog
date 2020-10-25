@@ -71,7 +71,7 @@ impl Wire for SOA {
         let got_len = 4 * 5 + mname_len + rname_len;
         if len == got_len {
             trace!("Length is correct");
-            Ok(SOA {
+            Ok(Self {
                 mname, rname, serial, refresh_interval,
                 retry_interval, expire_limit, minimum_ttl,
             })

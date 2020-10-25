@@ -27,7 +27,7 @@ impl Wire for CNAME {
 
         if len == domain_len {
             trace!("Length is correct");
-            Ok(CNAME { domain })
+            Ok(Self { domain })
         }
         else {
             warn!("Length is incorrect (record length {:?}, domain length {:?})", len, domain_len);

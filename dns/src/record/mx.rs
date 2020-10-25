@@ -36,7 +36,7 @@ impl Wire for MX {
         let got_len = 2 + exchange_len;
         if len == got_len {
             trace!("Length is correct");
-            Ok(MX { preference, exchange })
+            Ok(Self { preference, exchange })
         }
         else {
             warn!("Length is incorrect (record length {:?}, preference plus exchange length {:?}", len, got_len);
