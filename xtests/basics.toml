@@ -5,21 +5,21 @@ shell = "dog dns.google --colour=always"
 stdout = { string = "\u001B[1;32mA\u001B[0m \u001B[1;34mdns.google.\u001B[0m" }
 stderr = { empty = true }
 status = 0
-tags = [ "live", "google" ]
+tags = [ "live", "isp" ]
 
 [[cmd]]
 shell = "dog dns.google"
 stdout = { string = "A dns.google." }
 stderr = { empty = true }
 status = 0
-tags = [ "live", "google" ]
+tags = [ "live", "isp" ]
 
 [[cmd]]
 shell = "dog dns.google --colour=never"
 stdout = { string = "A dns.google." }
 stderr = { empty = true }
 status = 0
-tags = [ "live", "google" ]
+tags = [ "live", "isp" ]
 
 
 # Default record type and transport
@@ -29,21 +29,21 @@ shell = "dog dns.google -U"
 stdout = { string = "A dns.google." }
 stderr = { empty = true }
 status = 0
-tags = [ "live", "google" ]
+tags = [ "live", "isp" ]
 
 [[cmd]]
 shell = "dog A dns.google"
 stdout = { string = "A dns.google." }
 stderr = { empty = true }
 status = 0
-tags = [ "live", "google" ]
+tags = [ "live", "isp" ]
 
 [[cmd]]
 shell = "dog A dns.google --time"
 stdout = { string = "Ran in" }
 stderr = { empty = true }
 status = 0
-tags = [ "live", "google" ]
+tags = [ "live", "isp" ]
 
 
 # Network errors
@@ -53,4 +53,4 @@ shell = "dog A dns.google @non.exist --time"
 stdout = { string = "Ran in" }
 stderr = { string = "Error [network]" }
 status = 1
-tags = [ "live", "google" ]
+tags = [ "live", "isp" ]
