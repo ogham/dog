@@ -32,9 +32,12 @@ mod test {
 
     #[test]
     fn parses() {
-        let buf = &[ 0x05, 0x62, 0x73, 0x61, 0x67, 0x6f, 0x02, 0x6d, 0x65, 0x00, ];
+        let buf = &[
+            0x05, 0x62, 0x73, 0x61, 0x67, 0x6f, 0x02, 0x6d, 0x65,  // domain
+            0x00,  // domain terminator
+        ];
 
-        assert_eq!(CNAME::read(10, &mut Cursor::new(buf)).unwrap(),
+        assert_eq!(CNAME::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
                    CNAME {
                        domain: String::from("bsago.me."),
                    });

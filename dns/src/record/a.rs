@@ -43,25 +43,32 @@ mod test {
 
     #[test]
     fn parses() {
-        let buf = &[ 127, 0, 0, 1 ];
+        let buf = &[
+            0x7F, 0x00, 0x00, 0x01,  // IPv4 address
+        ];
 
-        assert_eq!(A::read(4, &mut Cursor::new(buf)).unwrap(),
+        assert_eq!(A::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
                    A { address: Ipv4Addr::new(127, 0, 0, 1) });
     }
 
     #[test]
     fn too_short() {
-        let buf = &[ 127, 0, 1 ];
+        let buf = &[
+            0x7F, 0x00, 0x00,  // Too short IPv4 address
+        ];
 
-        assert_eq!(A::read(3, &mut Cursor::new(buf)),
+        assert_eq!(A::read(buf.len() as _, &mut Cursor::new(buf)),
                    Err(WireError::WrongLength { expected: 4, got: 3 }));
     }
 
     #[test]
     fn too_long() {
-        let buf = &[ 127, 0, 0, 0, 1 ];
+        let buf = &[
+            0x7F, 0x00, 0x00, 0x00,  // IPv4 address
+            0x01,  // Unexpected extra byte
+        ];
 
-        assert_eq!(A::read(5, &mut Cursor::new(buf)),
+        assert_eq!(A::read(buf.len() as _, &mut Cursor::new(buf)),
                    Err(WireError::WrongLength { expected: 4, got: 5 }));
     }
 

@@ -101,7 +101,13 @@ mod test {
 
     #[test]
     fn parses() {
-        let buf = &[ 0x05, 0xAC, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ];
+        let buf = &[
+            0x05, 0xAC,  // UDP payload size
+            0x00,        // higher bits
+            0x00, 0x00,  // EDNS(0) version
+            0x00, 0x00,  // flags
+            0x00,        // data
+        ];
 
         assert_eq!(OPT::read(&mut Cursor::new(buf)).unwrap(),
                    OPT {

@@ -44,33 +44,34 @@ mod test {
 
     #[test]
     fn parses() {
-        let buf = &[ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 ];
+        let buf = &[
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // IPv6 address
+        ];
 
-        assert_eq!(AAAA::read(16, &mut Cursor::new(buf)).unwrap(),
+        assert_eq!(AAAA::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
                    AAAA { address: Ipv6Addr::new(0,0,0,0,0,0,0,0) });
     }
 
     #[test]
     fn too_long() {
-        let buf = &[9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9];
+        let buf = &[
+            0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09,
+            0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09,  // IPv6 address
+            0x09,  // Unexpected extra byte
+        ];
 
-        assert_eq!(AAAA::read(19, &mut Cursor::new(buf)),
-                   Err(WireError::WrongLength { expected: 16, got: 19 }));
-    }
-
-    #[test]
-    fn too_empty() {
-        let buf = &[];
-
-        assert_eq!(AAAA::read(0, &mut Cursor::new(buf)),
-                   Err(WireError::WrongLength { expected: 16, got: 0 }));
+        assert_eq!(AAAA::read(buf.len() as _, &mut Cursor::new(buf)),
+                   Err(WireError::WrongLength { expected: 16, got: 17 }));
     }
 
     #[test]
     fn too_short() {
-        let buf = &[ 5,5,5,5,5 ];
+        let buf = &[
+            0x05, 0x05, 0x05, 0x05, 0x05,  // Five arbitrary bytes
+        ];
 
-        assert_eq!(AAAA::read(5, &mut Cursor::new(buf)),
+        assert_eq!(AAAA::read(buf.len() as _, &mut Cursor::new(buf)),
                    Err(WireError::WrongLength { expected: 16, got: 5 }));
     }
 

@@ -64,9 +64,11 @@ mod test {
 
     #[test]
     fn parses() {
-        let buf = &[ 0x06, 0x74, 0x78, 0x74, 0x20, 0x6d, 0x65 ];
+        let buf = &[
+            0x06, 0x74, 0x78, 0x74, 0x20, 0x6d, 0x65,  // message
+        ];
 
-        assert_eq!(TXT::read(9, &mut Cursor::new(buf)).unwrap(),
+        assert_eq!(TXT::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
                    TXT {
                        message: String::from("txt me"),
                    });

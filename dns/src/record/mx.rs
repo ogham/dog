@@ -48,10 +48,13 @@ mod test {
 
     #[test]
     fn parses() {
-        let buf = &[ 0x00, 0x0A, 0x05, 0x62, 0x73, 0x61, 0x67, 0x6f, 0x02,
-                     0x6d, 0x65, 0x00 ];
+        let buf = &[
+            0x00, 0x0A,  // preference
+            0x05, 0x62, 0x73, 0x61, 0x67, 0x6f, 0x02, 0x6d, 0x65,  // exchange
+            0x00,  // exchange terminator
+        ];
 
-        assert_eq!(MX::read(12, &mut Cursor::new(buf)).unwrap(),
+        assert_eq!(MX::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
                    MX {
                        preference: 10,
                        exchange: String::from("bsago.me."),

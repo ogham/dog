@@ -38,10 +38,12 @@ mod test {
 
     #[test]
     fn parses() {
-        let buf = &[ 0x03, 0x64, 0x6e, 0x73, 0x06, 0x67,
-                     0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x00 ];
+        let buf = &[
+            0x03, 0x64, 0x6e, 0x73, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65,  // cname
+            0x00,  // cname terminator
+        ];
 
-        assert_eq!(PTR::read(12, &mut Cursor::new(buf)).unwrap(),
+        assert_eq!(PTR::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
                    PTR {
                        cname: String::from("dns.google."),
                    });
