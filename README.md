@@ -73,7 +73,7 @@ Installing dog requires building it from source.
 ### Compilation
 
 dog is written in [Rust](https://www.rust-lang.org).
-You will need rustc version 1.42.0 or higher.
+You will need rustc version [1.45.0](https://blog.rust-lang.org/2020/07/16/Rust-1.45.0.html) or higher.
 The recommended way to install Rust for development is from the [official download page](https://www.rust-lang.org/tools/install), using rustup.
 
 To build, download the source code and run:
