@@ -19,6 +19,7 @@ impl Wire for A {
     const NAME: &'static str = "A";
     const RR_TYPE: u16 = 1;
 
+    #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
     fn read(len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let mut buf = Vec::new();
         for _ in 0 .. len {

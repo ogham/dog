@@ -56,6 +56,7 @@ impl Request {
 impl Response {
 
     /// Reads bytes off of the given slice, parsing them into a response.
+    #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, WireError> {
         debug!("Parsing bytes -> {:?}", bytes);
 
@@ -106,6 +107,7 @@ impl Query {
 
     /// Reads bytes from the given cursor, and parses them into a query with
     /// the given domain name.
+    #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
     fn from_bytes(qname: String, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let qtype = c.read_u16::<BigEndian>()?;
         let qclass = QClass::from_u16(c.read_u16::<BigEndian>()?);
@@ -119,6 +121,7 @@ impl Answer {
 
     /// Reads bytes from the given cursor, and parses them into an answer with
     /// the given domain name.
+    #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
     fn from_bytes(qname: String, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let qtype = c.read_u16::<BigEndian>()?;
         if qtype == OPT::RR_TYPE {
@@ -143,6 +146,7 @@ impl Record {
 
     /// Reads at most `len` bytes from the given curser, and parses them into
     /// a record structure depending on the type number, which has already been read.
+    #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
     fn from_bytes(qtype: TypeInt, len: u16, c: &mut Cursor<&[u8]>) -> Result<Record, WireError> {
         use crate::record::*;
 

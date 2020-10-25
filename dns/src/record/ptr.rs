@@ -24,6 +24,7 @@ impl Wire for PTR {
     const NAME: &'static str = "PTR";
     const RR_TYPE: u16 = 12;
 
+    #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
     fn read(_len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let cname = c.read_labels()?;
         Ok(PTR { cname })

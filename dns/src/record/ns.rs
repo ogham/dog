@@ -21,6 +21,7 @@ impl Wire for NS {
     const NAME: &'static str = "NS";
     const RR_TYPE: u16 = 2;
 
+    #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
     fn read(len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let nameserver = c.read_labels()?;
 

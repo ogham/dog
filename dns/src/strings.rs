@@ -57,6 +57,7 @@ impl<W: Write> WriteLabels for W {
 
 const RECURSION_LIMIT: usize = 8;
 
+#[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
 fn read_string_recursive(name_buf: &mut Vec<u8>, c: &mut Cursor<&[u8]>, recursions: &mut Vec<u16>) -> Result<(), WireError> {
     loop {
         let byte = c.read_u8()?;

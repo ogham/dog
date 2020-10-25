@@ -16,11 +16,16 @@ export DOG_DEBUG := ""
 
 # runs unit tests
 @test:
-    cargo test --all -- --quiet
+    cargo test --workspace -- --quiet
 
 # runs unit tests (in release mode)
 @test-release:
     cargo test --release --all --verbose
+
+# runs mutation tests
+@test-mutation:
+    cargo +nightly test    --package dns --features=dns/with_mutagen -- --quiet
+    cargo +nightly mutagen --package dns --features=dns/with_mutagen
 
 
 # runs extended tests
