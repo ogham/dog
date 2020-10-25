@@ -13,6 +13,7 @@ export DOG_DEBUG := ""
     cargo build --release --verbose
     strip target/release/dog
 
+
 # runs unit tests
 @test:
     cargo test --all -- --quiet
@@ -20,6 +21,7 @@ export DOG_DEBUG := ""
 # runs unit tests (in release mode)
 @test-release:
     cargo test --release --all --verbose
+
 
 # runs extended tests
 @xtests:
@@ -29,9 +31,6 @@ export DOG_DEBUG := ""
 @xtests-release:
     specsheet xtests/*.toml -O cmd.target.dog="${CARGO_TARGET_DIR:-../target}/release/dog"
 
-# renders the documentation
-@doc args="":
-    cargo doc --no-deps --all {{args}}
 
 # runs fuzzing on the dns crate
 @fuzz:
@@ -46,6 +45,7 @@ export DOG_DEBUG := ""
 @fuzz-clean:
 	rm dns/fuzz/fuzz-*.log
 
+
 # lints the code
 @clippy:
     touch dns/src/lib.rs
@@ -55,11 +55,21 @@ export DOG_DEBUG := ""
 @coverage-docker:
     docker run --security-opt seccomp=unconfined -v "${PWD}:/volume" xd009642/tarpaulin cargo tarpaulin --all --out Html
 
-# updates versions, and checks for outdated ones
-@update:
-    cargo update; cargo outdated
-    cd dns/fuzz; cargo update; cargo outdated
+# updates dependency versions, and checks for outdated ones
+@update-deps:
+    cargo update
+    command -v cargo-outdated >/dev/null || (echo "cargo-outdated not installed" && exit 1)
+    cargo outdated
 
+# lists unused dependencies
+@unused-deps:
+    command -v cargo-udeps >/dev/null || (echo "cargo-udeps not installed" && exit 1)
+    cargo +nightly udeps
+
+
+# renders the documentation
+@doc args="":
+    cargo doc --no-deps --all {{args}}
 
 # builds the man pages
 @man:
