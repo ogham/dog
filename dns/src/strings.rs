@@ -75,19 +75,26 @@ fn read_string_recursive(name_buf: &mut Vec<u8>, c: &mut Cursor<&[u8]>, recursio
         }
 
         else if byte >= 0b_1100_0000 {
-            if recursions.len() >= RECURSION_LIMIT {
-                return Err(WireError::TooMuchRecursion(recursions.clone()));
-            }
-
             let name_one = byte - 0b1100_0000;
             let name_two = c.read_u8()?;
             bytes_read += 1;
             let offset = u16::from_be_bytes([name_one, name_two]);
 
+            if recursions.contains(&offset) {
+                warn!("Hit previous offset ({}) decoding string", offset);
+                return Err(WireError::TooMuchRecursion(recursions.clone()));
+            }
+
+            recursions.push(offset);
+
+            if recursions.len() >= RECURSION_LIMIT {
+                warn!("Hit recursion limit ({}) decoding string", RECURSION_LIMIT);
+                return Err(WireError::TooMuchRecursion(recursions.clone()));
+            }
+
             trace!("Backtracking to offset {}", offset);
             let new_pos = c.position();
             c.set_position(u64::from(offset));
-            recursions.push(offset);
 
             read_string_recursive(name_buf, c, recursions)?;
 
@@ -111,4 +118,80 @@ fn read_string_recursive(name_buf: &mut Vec<u8>, c: &mut Cursor<&[u8]>, recursio
     }
 
     Ok(bytes_read)
+}
+
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    // The buffers used in these tests contain nothing but the labels we’re
+    // decoding. In DNS packets found in the wild, the cursor will be able to
+    // reach all the bytes of the packet, so the Answer section can reference
+    // strings in the Query section.
+
+    #[test]
+    fn nothing() {
+        let buf: &[u8] = &[
+            0x00,  // end reading
+        ];
+
+        assert_eq!(Cursor::new(buf).read_labels(),
+                   Ok(("".into(), 1)));
+    }
+
+    #[test]
+    fn one_label() {
+        let buf: &[u8] = &[
+            0x03,  // label of length 3
+            b'o', b'n', b'e',  // label
+            0x00,  // end reading
+        ];
+
+        assert_eq!(Cursor::new(buf).read_labels(),
+                   Ok(("one.".into(), 5)));
+    }
+
+    #[test]
+    fn immediate_recursion() {
+        let buf: &[u8] = &[
+            0xc0, 0x00,  // skip to position 0
+        ];
+
+        assert_eq!(Cursor::new(buf).read_labels(),
+                   Err(WireError::TooMuchRecursion(vec![ 0 ])));
+    }
+
+    #[test]
+    fn mutual_recursion() {
+        let buf: &[u8] = &[
+            0xc0, 0x02,  // skip to position 2
+            0xc0, 0x00,  // skip to position 0
+        ];
+
+        let mut cursor = Cursor::new(buf);
+
+        assert_eq!(cursor.read_labels(),
+                   Err(WireError::TooMuchRecursion(vec![ 2, 0 ])));
+    }
+
+    #[test]
+    fn too_much_recursion() {
+        let buf: &[u8] = &[
+            0xc0, 0x02,  // skip to position 2
+            0xc0, 0x04,  // skip to position 4
+            0xc0, 0x06,  // skip to position 6
+            0xc0, 0x08,  // skip to position 8
+            0xc0, 0x0A,  // skip to position 10
+            0xc0, 0x0C,  // skip to position 12
+            0xc0, 0x0E,  // skip to position 14
+            0xc0, 0x10,  // skip to position 16
+            0x00,        // no label
+        ];
+
+        let mut cursor = Cursor::new(buf);
+
+        assert_eq!(cursor.read_labels(),
+                   Err(WireError::TooMuchRecursion(vec![ 2, 4, 6, 8, 10, 12, 14, 16 ])));
+    }
 }
