@@ -112,13 +112,13 @@ mod test {
     use super::*;
 
     #[test]
-    fn parses() {
+    fn parses_no_data() {
         let buf = &[
             0x05, 0xAC,  // UDP payload size
             0x00,        // higher bits
             0x00, 0x00,  // EDNS(0) version
             0x00, 0x00,  // flags
-            0x00,        // data
+            0x00,        // data length (followed by no data)
         ];
 
         assert_eq!(OPT::read(&mut Cursor::new(buf)).unwrap(),
@@ -132,8 +132,39 @@ mod test {
     }
 
     #[test]
-    fn empty() {
+    fn parses_with_data() {
+        let buf = &[
+            0x05, 0xAC,  // UDP payload size
+            0x00,        // higher bits
+            0x00, 0x00,  // EDNS(0) version
+            0x00, 0x00,  // flags
+            0x04,        // data length
+            0x01, 0x02, 0x03, 0x04,  // data
+        ];
+
+        assert_eq!(OPT::read(&mut Cursor::new(buf)).unwrap(),
+                   OPT {
+                       udp_payload_size: 1452,
+                       higher_bits: 0,
+                       edns0_version: 0,
+                       flags: 0,
+                       data: vec![1, 2, 3, 4],
+                   });
+    }
+
+    #[test]
+    fn record_empty() {
         assert_eq!(OPT::read(&mut Cursor::new(&[])),
+                   Err(WireError::IO));
+    }
+
+    #[test]
+    fn buffer_ends_abruptly() {
+        let buf = &[
+            0x05,  // half a UDP payload size
+        ];
+
+        assert_eq!(OPT::read(&mut Cursor::new(buf)),
                    Err(WireError::IO));
     }
 }

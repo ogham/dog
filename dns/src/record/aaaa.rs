@@ -59,7 +59,7 @@ mod test {
     }
 
     #[test]
-    fn too_long() {
+    fn record_too_long() {
         let buf = &[
             0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09,
             0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09,  // IPv6 address
@@ -71,7 +71,7 @@ mod test {
     }
 
     #[test]
-    fn too_short() {
+    fn record_too_short() {
         let buf = &[
             0x05, 0x05, 0x05, 0x05, 0x05,  // Five arbitrary bytes
         ];
@@ -81,8 +81,18 @@ mod test {
     }
 
     #[test]
-    fn empty() {
+    fn record_empty() {
         assert_eq!(AAAA::read(0, &mut Cursor::new(&[])),
                    Err(WireError::WrongRecordLength { expected: 16, got: 0 }));
+    }
+
+    #[test]
+    fn buffer_ends_abruptly() {
+        let buf = &[
+            0x05, 0x05, 0x05, 0x05, 0x05,  // Five arbitrary bytes
+        ];
+
+        assert_eq!(AAAA::read(16, &mut Cursor::new(buf)),
+                   Err(WireError::IO));
     }
 }

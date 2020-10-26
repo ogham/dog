@@ -115,8 +115,18 @@ mod test {
     }
 
     #[test]
-    fn empty() {
+    fn record_empty() {
         assert_eq!(SOA::read(0, &mut Cursor::new(&[])),
+                   Err(WireError::IO));
+    }
+
+    #[test]
+    fn buffer_ends_abruptly() {
+        let buf = &[
+            0x05, 0x62,  // the start of an mname
+        ];
+
+        assert_eq!(SOA::read(23, &mut Cursor::new(buf)),
                    Err(WireError::IO));
     }
 }

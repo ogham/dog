@@ -8,7 +8,7 @@ use crate::wire::*;
 ///
 /// # References
 ///
-/// - [RFC 6844](https://tools.ietf.org/html/rfc6844) — DNS Certification Authority Authorization Resource Record (January 2013s
+/// - [RFC 6844](https://tools.ietf.org/html/rfc6844) — DNS Certification Authority Authorization Resource Record (January 2013)
 #[derive(PartialEq, Debug, Clone)]
 pub struct CAA {
 
@@ -74,9 +74,9 @@ mod test {
     use super::*;
 
     #[test]
-    fn parses() {
+    fn parses_non_critical() {
         let buf = &[
-            0x00,  // flags
+            0x00,  // flags (all unset)
             0x09,  // tag length
             0x69, 0x73, 0x73, 0x75, 0x65, 0x77, 0x69, 0x6c, 0x64,  // tag
             0x65, 0x6e, 0x74, 0x72, 0x75, 0x73, 0x74, 0x2e, 0x6e, 0x65, 0x74,  // value
@@ -91,8 +91,35 @@ mod test {
     }
 
     #[test]
-    fn empty() {
+    fn parses_critical() {
+        let buf = &[
+            0x80,  // flags (critical bit set)
+            0x09,  // tag length
+            0x69, 0x73, 0x73, 0x75, 0x65, 0x77, 0x69, 0x6c, 0x64,  // tag
+            0x65, 0x6e, 0x74, 0x72, 0x75, 0x73, 0x74, 0x2e, 0x6e, 0x65, 0x74,  // value
+        ];
+
+        assert_eq!(CAA::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
+                   CAA {
+                       critical: true,
+                       tag: String::from("issuewild"),
+                       value: String::from("entrust.net"),
+                   });
+    }
+
+    #[test]
+    fn record_empty() {
         assert_eq!(CAA::read(0, &mut Cursor::new(&[])),
+                   Err(WireError::IO));
+    }
+
+    #[test]
+    fn buffer_ends_abruptly() {
+        let buf = &[
+            0x00,  // flags
+        ];
+
+        assert_eq!(CAA::read(23, &mut Cursor::new(buf)),
                    Err(WireError::IO));
     }
 }

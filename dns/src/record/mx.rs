@@ -66,8 +66,18 @@ mod test {
     }
 
     #[test]
-    fn empty() {
+    fn record_empty() {
         assert_eq!(MX::read(0, &mut Cursor::new(&[])),
+                   Err(WireError::IO));
+    }
+
+    #[test]
+    fn buffer_ends_abruptly() {
+        let buf = &[
+            0x00, 0x0A,  // half a preference
+        ];
+
+        assert_eq!(MX::read(23, &mut Cursor::new(buf)),
                    Err(WireError::IO));
     }
 }

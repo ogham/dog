@@ -57,8 +57,18 @@ mod test {
     }
 
     #[test]
-    fn empty() {
+    fn record_empty() {
         assert_eq!(NS::read(0, &mut Cursor::new(&[])),
+                   Err(WireError::IO));
+    }
+
+    #[test]
+    fn buffer_ends_abruptly() {
+        let buf = &[
+            0x01,  // the first byte of a string
+        ];
+
+        assert_eq!(NS::read(23, &mut Cursor::new(buf)),
                    Err(WireError::IO));
     }
 }

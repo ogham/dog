@@ -55,8 +55,18 @@ mod test {
     }
 
     #[test]
-    fn empty() {
+    fn record_empty() {
         assert_eq!(CNAME::read(0, &mut Cursor::new(&[])),
+                   Err(WireError::IO));
+    }
+
+    #[test]
+    fn buffer_ends_abruptly() {
+        let buf = &[
+            0x05, 0x62, 0x73,  // the stard of a string
+        ];
+
+        assert_eq!(CNAME::read(23, &mut Cursor::new(buf)),
                    Err(WireError::IO));
     }
 }

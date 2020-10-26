@@ -61,8 +61,18 @@ mod test {
     }
 
     #[test]
-    fn empty() {
+    fn record_empty() {
         assert_eq!(PTR::read(0, &mut Cursor::new(&[])),
+                   Err(WireError::IO));
+    }
+
+    #[test]
+    fn buffer_ends_abruptly() {
+        let buf = &[
+            0x03, 0x64,  // the start of a cname
+        ];
+
+        assert_eq!(PTR::read(23, &mut Cursor::new(buf)),
                    Err(WireError::IO));
     }
 }

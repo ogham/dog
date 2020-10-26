@@ -56,7 +56,7 @@ mod test {
     }
 
     #[test]
-    fn too_short() {
+    fn record_too_short() {
         let buf = &[
             0x7F, 0x00, 0x00,  // Too short IPv4 address
         ];
@@ -66,7 +66,7 @@ mod test {
     }
 
     #[test]
-    fn too_long() {
+    fn record_too_long() {
         let buf = &[
             0x7F, 0x00, 0x00, 0x00,  // IPv4 address
             0x01,  // Unexpected extra byte
@@ -77,8 +77,18 @@ mod test {
     }
 
     #[test]
-    fn empty() {
+    fn record_empty() {
         assert_eq!(A::read(0, &mut Cursor::new(&[])),
                    Err(WireError::WrongRecordLength { expected: 4, got: 0 }));
+    }
+
+    #[test]
+    fn buffer_ends_abruptly() {
+        let buf = &[
+            0x7F, 0x00,  // Half an IPv4 address
+        ];
+
+        assert_eq!(A::read(4, &mut Cursor::new(buf)),
+                   Err(WireError::IO));
     }
 }
