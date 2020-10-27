@@ -93,11 +93,8 @@ impl RequestGenerator {
                                 additional = Some(dns::Request::additional_record());
                             }
 
-                            let queries = vec![
-                                dns::Query { qname: domain.clone(), qtype, qclass },
-                            ];
-
-                            let request = dns::Request { transaction_id, flags, queries, additional };
+                            let query = dns::Query { qname: domain.clone(), qtype, qclass };
+                            let request = dns::Request { transaction_id, flags, query, additional };
 
                             let transport = transport_type.make_transport(nameserver.clone());
                             requests.push((request, transport));

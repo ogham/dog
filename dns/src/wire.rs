@@ -20,16 +20,14 @@ impl Request {
         bytes.write_u16::<BigEndian>(self.transaction_id)?;
         bytes.write_u16::<BigEndian>(self.flags.to_u16())?;
 
-        bytes.write_u16::<BigEndian>(self.queries.len() as u16)?;
-        bytes.write_u16::<BigEndian>(0)?;  // usually answers
-        bytes.write_u16::<BigEndian>(0)?;  // usually authority RRs
-        bytes.write_u16::<BigEndian>(if self.additional.is_some() { 1 } else { 0 })?;  // additional RRs
+        bytes.write_u16::<BigEndian>(1)?;  // query count
+        bytes.write_u16::<BigEndian>(0)?;  // answer count
+        bytes.write_u16::<BigEndian>(0)?;  // authority RR count
+        bytes.write_u16::<BigEndian>(if self.additional.is_some() { 1 } else { 0 })?;  // additional RR count
 
-        for query in &self.queries {
-            bytes.write_labels(&query.qname)?;
-            bytes.write_u16::<BigEndian>(query.qtype)?;
-            bytes.write_u16::<BigEndian>(query.qclass.to_u16())?;
-        }
+        bytes.write_labels(&self.query.qname)?;
+        bytes.write_u16::<BigEndian>(self.query.qtype)?;
+        bytes.write_u16::<BigEndian>(self.query.qclass.to_u16())?;
 
         if let Some(opt) = &self.additional {
             bytes.write_u8(0)?;  // usually a name

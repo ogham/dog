@@ -17,8 +17,10 @@ pub struct Request {
     /// The flags that accompany every DNS packet.
     pub flags: Flags,
 
-    /// The queries that this request is making.
-    pub queries: Vec<Query>,
+    /// The query that this request is making. Only one query is allowed per
+    /// request, as traditionally, DNS servers only respond to the first query
+    /// in a packet.
+    pub query: Query,
 
     /// An additional record that may be sent as part of the query.
     pub additional: Option<OPT>,

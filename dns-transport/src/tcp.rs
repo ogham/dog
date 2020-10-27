@@ -24,7 +24,7 @@ use super::{Transport, Error};
 /// let request = Request {
 ///     transaction_id: 0xABCD,
 ///     flags: Flags::query(),
-///     queries: vec![ query ],
+///     query: query,
 ///     additional: None,
 /// };
 ///
