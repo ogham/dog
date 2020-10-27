@@ -37,7 +37,7 @@ impl Wire for AAAA {
         }
         else {
             warn!("Length is incorrect (record length {:?}, but should be sixteen)", len);
-            Err(WireError::WrongRecordLength { expected: 16, got: buf.len() as u16 })
+            Err(WireError::WrongRecordLength { expected: 16, got: len })
         }
     }
 }
