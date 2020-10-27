@@ -100,7 +100,6 @@ fn read_string_recursive(name_buf: &mut Vec<u8>, c: &mut Cursor<&[u8]>, recursio
 
             trace!("Coming back to {}", new_pos);
             c.set_position(new_pos);
-            recursions.pop();
             break;
         }
 
@@ -150,6 +149,48 @@ mod test {
 
         assert_eq!(Cursor::new(buf).read_labels(),
                    Ok(("one.".into(), 5)));
+    }
+
+    #[test]
+    fn two_labels() {
+        let buf: &[u8] = &[
+            0x03,  // label of length 3
+            b'o', b'n', b'e',  // label
+            0x03,  // label of length 3
+            b't', b'w', b'o',  // label
+            0x00,  // end reading
+        ];
+
+        assert_eq!(Cursor::new(buf).read_labels(),
+                   Ok(("one.two.".into(), 9)));
+    }
+
+    #[test]
+    fn label_followed_by_backtrack() {
+        let buf: &[u8] = &[
+            0x03,  // label of length 3
+            b'o', b'n', b'e',  // label
+            0xc0, 0x06,  // skip to position 6 (the next byte)
+
+            0x03,  // label of length 3
+            b't', b'w', b'o',  // label
+            0x00,  // end reading
+        ];
+
+        assert_eq!(Cursor::new(buf).read_labels(),
+                   Ok(("one.two.".into(), 6)));
+    }
+
+    #[test]
+    fn extremely_long_label() {
+        let mut buf: Vec<u8> = vec![
+            0xbf,  // label of length 191
+        ];
+
+        buf.extend(&[0x65; 191]);  // the rest of the label
+        buf.push(0x00);  // end reading
+
+        assert_eq!(Cursor::new(&*buf).read_labels().unwrap().1, 193);
     }
 
     #[test]

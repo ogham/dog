@@ -254,6 +254,11 @@ impl Flags {
         Self::from_u16(0b_0000_0001_0000_0000)
     }
 
+    /// The set of flags that represents a successful response.
+    pub fn standard_response() -> Self {
+        Self::from_u16(0b_1000_0001_1000_0000)
+    }
+
     /// Converts the flags into a two-byte number.
     pub fn to_u16(self) -> u16 {                 // 0123 4567 89AB CDEF
         let mut                          bits  = 0b_0000_0000_0000_0000;
@@ -420,5 +425,129 @@ impl From<io::Error> for WireError {
     fn from(ioe: io::Error) -> Self {
         error!("IO error -> {:?}", ioe);
         Self::IO
+    }
+}
+
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::record::{Record, A, SOA, OPT, UnknownQtype};
+    use std::net::Ipv4Addr;
+
+    #[test]
+    fn complete_response() {
+
+        // This is an artifical amalgam of DNS, not a real-world response!
+        let buf = &[
+            0xce, 0xac,  // transaction ID
+            0x81, 0x80,  // flags (standard query, response, no error)
+            0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x02,  // counts (1, 1, 1, 2)
+
+            // query:
+            0x05, 0x62, 0x73, 0x61, 0x67, 0x6f, 0x02, 0x6d, 0x65, 0x00,  // name
+            0x00, 0x01,  // type A
+            0x00, 0x01,  // class IN
+
+            // answer:
+            0xc0, 0x0c,  // name (backreference)
+            0x00, 0x01,  // type A
+            0x00, 0x01,  // class IN
+            0x00, 0x00, 0x03, 0x77,  // TTL
+            0x00, 0x04,  // data length 4
+            0x8a, 0x44, 0x75, 0x5e,  // IP address
+
+            // authoritative:
+            0x00,  // name
+            0x00, 0x06,  // type SOA
+            0x00, 0x01,  // class IN
+            0xFF, 0xFF, 0xFF, 0xFF,  // TTL (maximum possible!)
+            0x00, 0x1B,  // data length
+            0x01, 0x61, 0x00,  // primary name server ("a")
+            0x02, 0x6d, 0x78, 0x00,  // mailbox ("mx")
+            0x78, 0x68, 0x52, 0x2c,  // serial number
+            0x00, 0x00, 0x07, 0x08,  // refresh interval
+            0x00, 0x00, 0x03, 0x84,  // retry interval
+            0x00, 0x09, 0x3a, 0x80,  // expire limit
+            0x00, 0x01, 0x51, 0x80,  // minimum TTL
+
+            // additional 1:
+            0x00,  // name
+            0x00, 0x99,  // unknown type
+            0x00, 0x99,  // unknown class
+            0x12, 0x34, 0x56, 0x78,  // TTL
+            0x00, 0x04,  // data length 4
+            0x12, 0x34, 0x56, 0x78,  // data
+
+            // additional 2:
+            0x00,  // name
+            0x00, 0x29,  // type OPT
+            0x02, 0x00,  // UDP payload size
+            0x00,  // higher bits
+            0x00,  // EDNS(0) version
+            0x00, 0x00,  // more flags
+            0x00, 0x00,  // no data
+        ];
+
+        let response = Response {
+            transaction_id: 0xceac,
+            flags: Flags::standard_response(),
+            queries: vec![
+                Query {
+                    qname: "bsago.me.".into(),
+                    qclass: QClass::IN,
+                    qtype: qtype!(A),
+                },
+            ],
+            answers: vec![
+                Answer::Standard {
+                    qname: "bsago.me.".into(),
+                    qclass: QClass::IN,
+                    ttl: 887,
+                    record: Record::A(A {
+                        address: Ipv4Addr::new(138, 68, 117, 94),
+                    }),
+                }
+            ],
+            authorities: vec![
+                Answer::Standard {
+                    qname: "".into(),
+                    qclass: QClass::IN,
+                    ttl: 4294967295,
+                    record: Record::SOA(SOA {
+                        mname: "a.".into(),
+                        rname: "mx.".into(),
+                        serial: 2020102700,
+                        refresh_interval: 1800,
+                        retry_interval: 900,
+                        expire_limit: 604800,
+                        minimum_ttl: 86400,
+                    }),
+                }
+            ],
+            additionals: vec![
+                Answer::Standard {
+                    qname: "".into(),
+                    qclass: QClass::Other(153),
+                    ttl: 305419896,
+                    record: Record::Other {
+                        type_number: UnknownQtype::UnheardOf(153),
+                        bytes: vec![ 0x12, 0x34, 0x56, 0x78 ],
+                    },
+                },
+                Answer::Pseudo {
+                    qname: "".into(),
+                    opt: OPT {
+                        udp_payload_size: 512,
+                        higher_bits: 0,
+                        edns0_version: 0,
+                        flags: 0,
+                        data: vec![],
+                    },
+                },
+            ],
+        };
+
+        assert_eq!(Response::from_bytes(buf), Ok(response));
     }
 }
