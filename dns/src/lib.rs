@@ -16,6 +16,10 @@
 #![allow(clippy::struct_excessive_bools)]
 #![allow(clippy::wildcard_imports)]
 
+#![deny(clippy::cast_possible_truncation)]
+#![deny(clippy::cast_lossless)]
+#![deny(clippy::cast_possible_wrap)]
+#![deny(clippy::cast_sign_loss)]
 #![deny(unsafe_code)]
 
 
