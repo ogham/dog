@@ -1,6 +1,6 @@
 use log::*;
 
-use crate::strings::ReadLabels;
+use crate::strings::{Labels, ReadLabels};
 use crate::wire::*;
 
 
@@ -13,7 +13,7 @@ use crate::wire::*;
 pub struct CNAME {
 
     /// The domain name that this CNAME record is responding with.
-    pub domain: String,
+    pub domain: Labels,
 }
 
 impl Wire for CNAME {
@@ -50,7 +50,7 @@ mod test {
 
         assert_eq!(CNAME::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
                    CNAME {
-                       domain: String::from("bsago.me."),
+                       domain: Labels::encode("bsago.me").unwrap(),
                    });
     }
 

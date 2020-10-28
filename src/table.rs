@@ -58,12 +58,14 @@ impl Table {
         match answer {
             Answer::Standard { record, qname, ttl, .. } => {
                 let qtype = self.coloured_record_type(&record);
+                let qname = qname.to_string();
                 let summary = self.text_format.record_payload_summary(&record);
                 let ttl = Some(self.text_format.format_duration(ttl));
                 self.rows.push(Row { qtype, qname, ttl, summary, section });
             }
             Answer::Pseudo { qname, opt } => {
                 let qtype = self.colours.opt.paint("OPT");
+                let qname = qname.to_string();
                 let summary = self.text_format.pseudo_record_payload_summary(&opt);
                 self.rows.push(Row { qtype, qname, ttl: None, summary, section });
             }

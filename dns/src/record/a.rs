@@ -35,7 +35,7 @@ impl Wire for A {
         }
         else {
             warn!("Length is incorrect (record length {:?}, but should be four)", len);
-            Err(WireError::WrongRecordLength { expected: 4, got: buf.len() as u16 })
+            Err(WireError::WrongRecordLength { expected: 4, got: len })
         }
     }
 }

@@ -3,7 +3,7 @@ use std::fmt;
 
 use log::*;
 
-use dns::{QClass, find_qtype_number, qtype};
+use dns::{QClass, Labels, find_qtype_number, qtype};
 use dns::record::{A, find_other_qtype_number};
 
 use crate::connect::TransportType;
@@ -154,7 +154,10 @@ impl Inputs {
 
     fn load_named_args(&mut self, matches: &getopts::Matches) -> Result<(), OptionsError> {
         for domain in matches.opt_strs("query") {
-            self.domains.push(domain);
+            match Labels::encode(&domain) {
+                Ok(d)   => self.domains.push(d),
+                Err(e)  => return Err(OptionsError::InvalidDomain(e.into())),
+            }
         }
 
         for qtype in matches.opt_strs("type") {
@@ -229,7 +232,10 @@ impl Inputs {
             }
             else {
                 trace!("Got domain -> {:?}", &a);
-                self.domains.push(a);
+                match Labels::encode(&a) {
+                    Ok(d)   => self.domains.push(d),
+                    Err(e)  => return Err(OptionsError::InvalidDomain(e.into())),
+                }
             }
         }
 
@@ -411,6 +417,7 @@ pub enum HelpReason {
 #[derive(PartialEq, Debug)]
 pub enum OptionsError {
     TooManyProtocols,
+    InvalidDomain(String),
     InvalidEDNS(String),
     InvalidQueryType(String),
     InvalidQueryClass(String),
@@ -423,6 +430,7 @@ impl fmt::Display for OptionsError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::TooManyProtocols       => write!(f, "Too many protocols"),
+            Self::InvalidDomain(domain)  => write!(f, "Invalid domain {:?}", domain),
             Self::InvalidEDNS(edns)      => write!(f, "Invalid EDNS setting {:?}", edns),
             Self::InvalidQueryType(qt)   => write!(f, "Invalid query type {:?}", qt),
             Self::InvalidQueryClass(qc)  => write!(f, "Invalid query class {:?}", qc),
@@ -512,7 +520,7 @@ mod test {
     fn just_domain() {
         let options = Options::getopts(&[ "lookup.dog" ]).unwrap();
         assert_eq!(options.requests.inputs, Inputs {
-            domains:    vec![ String::from("lookup.dog") ],
+            domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
             .. Inputs::fallbacks()
         });
     }
@@ -521,7 +529,7 @@ mod test {
     fn just_named_domain() {
         let options = Options::getopts(&[ "-q", "lookup.dog" ]).unwrap();
         assert_eq!(options.requests.inputs, Inputs {
-            domains:    vec![ String::from("lookup.dog") ],
+            domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
             .. Inputs::fallbacks()
         });
     }
@@ -530,7 +538,7 @@ mod test {
     fn domain_and_type() {
         let options = Options::getopts(&[ "lookup.dog", "SOA" ]).unwrap();
         assert_eq!(options.requests.inputs, Inputs {
-            domains:    vec![ String::from("lookup.dog") ],
+            domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
             types:      vec![ qtype!(SOA) ],
             .. Inputs::fallbacks()
         });
@@ -540,7 +548,7 @@ mod test {
     fn domain_and_nameserver() {
         let options = Options::getopts(&[ "lookup.dog", "@1.1.1.1" ]).unwrap();
         assert_eq!(options.requests.inputs, Inputs {
-            domains:    vec![ String::from("lookup.dog") ],
+            domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
             resolvers:  vec![ Resolver::Specified("1.1.1.1".into()) ],
             .. Inputs::fallbacks()
         });
@@ -550,7 +558,7 @@ mod test {
     fn domain_and_class() {
         let options = Options::getopts(&[ "lookup.dog", "CH" ]).unwrap();
         assert_eq!(options.requests.inputs, Inputs {
-            domains:    vec![ String::from("lookup.dog") ],
+            domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
             classes:    vec![ QClass::CH ],
             .. Inputs::fallbacks()
         });
@@ -560,7 +568,7 @@ mod test {
     fn all_free() {
         let options = Options::getopts(&[ "lookup.dog", "CH", "NS", "@1.1.1.1" ]).unwrap();
         assert_eq!(options.requests.inputs, Inputs {
-            domains:    vec![ String::from("lookup.dog") ],
+            domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
             classes:    vec![ QClass::CH ],
             types:      vec![ qtype!(NS) ],
             resolvers:  vec![ Resolver::Specified("1.1.1.1".into()) ],
@@ -572,7 +580,7 @@ mod test {
     fn all_parameters() {
         let options = Options::getopts(&[ "-q", "lookup.dog", "--class", "CH", "--type", "SOA", "--nameserver", "1.1.1.1" ]).unwrap();
         assert_eq!(options.requests.inputs, Inputs {
-            domains:    vec![ String::from("lookup.dog") ],
+            domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
             classes:    vec![ QClass::CH ],
             types:      vec![ qtype!(SOA) ],
             resolvers:  vec![ Resolver::Specified("1.1.1.1".into()) ],
@@ -584,7 +592,7 @@ mod test {
     fn two_types() {
         let options = Options::getopts(&[ "-q", "lookup.dog", "--type", "SRV", "--type", "AAAA" ]).unwrap();
         assert_eq!(options.requests.inputs, Inputs {
-            domains:    vec![ String::from("lookup.dog") ],
+            domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
             types:      vec![ qtype!(SRV), qtype!(AAAA) ],
             .. Inputs::fallbacks()
         });
@@ -594,7 +602,7 @@ mod test {
     fn two_classes() {
         let options = Options::getopts(&[ "-q", "lookup.dog", "--class", "IN", "--class", "CH" ]).unwrap();
         assert_eq!(options.requests.inputs, Inputs {
-            domains:    vec![ String::from("lookup.dog") ],
+            domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
             classes:    vec![ QClass::IN, QClass::CH ],
             .. Inputs::fallbacks()
         });
@@ -604,7 +612,7 @@ mod test {
     fn all_mixed_1() {
         let options = Options::getopts(&[ "lookup.dog", "--class", "CH", "SOA", "--nameserver", "1.1.1.1" ]).unwrap();
         assert_eq!(options.requests.inputs, Inputs {
-            domains:    vec![ String::from("lookup.dog") ],
+            domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
             classes:    vec![ QClass::CH ],
             types:      vec![ qtype!(SOA) ],
             resolvers:  vec![ Resolver::Specified("1.1.1.1".into()) ],
@@ -616,7 +624,7 @@ mod test {
     fn all_mixed_2() {
         let options = Options::getopts(&[ "CH", "SOA", "MX", "IN", "-q", "lookup.dog", "--class", "HS" ]).unwrap();
         assert_eq!(options.requests.inputs, Inputs {
-            domains:    vec![ String::from("lookup.dog") ],
+            domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
             classes:    vec![ QClass::HS, QClass::CH, QClass::IN ],
             types:      vec![ qtype!(SOA), qtype!(MX) ],
             .. Inputs::fallbacks()
@@ -627,7 +635,7 @@ mod test {
     fn all_mixed_3() {
         let options = Options::getopts(&[ "lookup.dog", "--nameserver", "1.1.1.1", "--nameserver", "1.0.0.1" ]).unwrap();
         assert_eq!(options.requests.inputs, Inputs {
-            domains:    vec![ String::from("lookup.dog") ],
+            domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
             resolvers:  vec![ Resolver::Specified("1.1.1.1".into()),
                               Resolver::Specified("1.0.0.1".into()), ],
             .. Inputs::fallbacks()
@@ -638,7 +646,7 @@ mod test {
     fn explicit_numerics() {
         let options = Options::getopts(&[ "11", "--class", "22", "--type", "33" ]).unwrap();
         assert_eq!(options.requests.inputs, Inputs {
-            domains:    vec![ String::from("11") ],
+            domains:    vec![ Labels::encode("11").unwrap() ],
             classes:    vec![ QClass::Other(22) ],
             types:      vec![ 33 ],
             .. Inputs::fallbacks()

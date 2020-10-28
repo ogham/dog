@@ -1,7 +1,7 @@
-use crate::strings::ReadLabels;
-use crate::wire::*;
-
 use log::*;
+
+use crate::strings::{Labels, ReadLabels};
+use crate::wire::*;
 
 
 /// A **NS** _(name server)_ record, which is used to point domains to name
@@ -14,7 +14,7 @@ use log::*;
 pub struct NS {
 
     /// The address of a nameserver that provides this DNS response.
-    pub nameserver: String,
+    pub nameserver: Labels,
 }
 
 impl Wire for NS {
@@ -52,7 +52,7 @@ mod test {
 
         assert_eq!(NS::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
                    NS {
-                       nameserver: String::from("a.gtld-servers.net."),
+                       nameserver: Labels::encode("a.gtld-servers.net").unwrap(),
                    });
     }
 

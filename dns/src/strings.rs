@@ -1,5 +1,7 @@
 //! Reading strings from the DNS wire protocol.
 
+use std::convert::TryFrom;
+use std::fmt;
 use std::io::{self, Write};
 
 use byteorder::{ReadBytesExt, WriteBytesExt};
@@ -8,20 +10,72 @@ use log::*;
 use crate::wire::*;
 
 
+/// Domain names in the DNS protocol are encoded as **Labels**, which are
+/// segments of ASCII characters prefixed by their length. When written out,
+/// each segment is followed by a dot.
+///
+/// The maximum length of a segment is 255 characters.
+#[derive(PartialEq, Debug, Clone)]
+pub struct Labels {
+    segments: Vec<(u8, String)>,
+}
+
+impl Labels {
+
+    /// Creates a new empty set of labels, which represent the root of the DNS
+    /// as a domain with no name.
+    pub fn root() -> Self {
+        Self { segments: Vec::new() }
+    }
+
+    /// Encodes the given input string as labels. If any segment is too long,
+    /// returns that segment as an error.
+    pub fn encode<'a>(input: &'a str) -> Result<Self, &'a str> {
+        let mut segments = Vec::new();
+
+        for label in input.split('.') {
+            if label.is_empty() {
+                continue;
+            }
+
+            match u8::try_from(label.len()) {
+                Ok(length) => {
+                    segments.push((length, label.to_owned()));
+                }
+                Err(e) => {
+                    warn!("Could not encode label {:?}: {}", label, e);
+                    return Err(label);
+                }
+            }
+        }
+
+        Ok(Self { segments })
+    }
+}
+
+impl fmt::Display for Labels {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for (_, segment) in &self.segments {
+            write!(f, "{}.", segment)?;
+        }
+
+        Ok(())
+    }
+}
+
 /// An extension for `Cursor` that enables reading compressed domain names
 /// from DNS packets.
 pub(crate) trait ReadLabels {
 
     /// Read and expand a compressed domain name.
-    fn read_labels(&mut self) -> Result<(String, u16), WireError>;
+    fn read_labels(&mut self) -> Result<(Labels, u16), WireError>;
 }
 
 impl ReadLabels for Cursor<&[u8]> {
-    fn read_labels(&mut self) -> Result<(String, u16), WireError> {
-        let mut name_buf = Vec::new();
-        let bytes_read = read_string_recursive(&mut name_buf, self, &mut Vec::new())?;
-        let string = String::from_utf8_lossy(&*name_buf).to_string();
-        Ok((string, bytes_read))
+    fn read_labels(&mut self) -> Result<(Labels, u16), WireError> {
+        let mut labels = Labels { segments: Vec::new() };
+        let bytes_read = read_string_recursive(&mut labels, self, &mut Vec::new())?;
+        Ok((labels, bytes_read))
     }
 }
 
@@ -37,13 +91,13 @@ pub(crate) trait WriteLabels {
     ///
     /// So “dns.lookup.dog” would be encoded as:
     /// “3, dns, 6, lookup, 3, dog, 0”.
-    fn write_labels(&mut self, input: &str) -> io::Result<()>;
+    fn write_labels(&mut self, input: &Labels) -> io::Result<()>;
 }
 
 impl<W: Write> WriteLabels for W {
-    fn write_labels(&mut self, input: &str) -> io::Result<()> {
-        for label in input.split('.') {
-            self.write_u8(label.len() as u8)?;
+    fn write_labels(&mut self, input: &Labels) -> io::Result<()> {
+        for (length, label) in &input.segments {
+            self.write_u8(*length)?;
 
             for b in label.as_bytes() {
                 self.write_u8(*b)?;
@@ -63,7 +117,7 @@ const RECURSION_LIMIT: usize = 8;
 /// that had to be read to produce the string, including the bytes to signify
 /// backtracking, but not including the bytes read _during_ backtracking.
 #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
-fn read_string_recursive(name_buf: &mut Vec<u8>, c: &mut Cursor<&[u8]>, recursions: &mut Vec<u16>) -> Result<u16, WireError> {
+fn read_string_recursive(labels: &mut Labels, c: &mut Cursor<&[u8]>, recursions: &mut Vec<u16>) -> Result<u16, WireError> {
     let mut bytes_read = 0;
 
     loop {
@@ -96,7 +150,7 @@ fn read_string_recursive(name_buf: &mut Vec<u8>, c: &mut Cursor<&[u8]>, recursio
             let new_pos = c.position();
             c.set_position(u64::from(offset));
 
-            read_string_recursive(name_buf, c, recursions)?;
+            read_string_recursive(labels, c, recursions)?;
 
             trace!("Coming back to {}", new_pos);
             c.set_position(new_pos);
@@ -106,13 +160,16 @@ fn read_string_recursive(name_buf: &mut Vec<u8>, c: &mut Cursor<&[u8]>, recursio
         // Otherwise, treat the byte as the length of a label, and read that
         // many characters.
         else {
+            let mut name_buf = Vec::new();
+
             for _ in 0 .. byte {
                 let c = c.read_u8()?;
                 bytes_read += 1;
                 name_buf.push(c);
             }
 
-            name_buf.push(b'.');
+            let string = String::from_utf8_lossy(&*name_buf).to_string();
+            labels.segments.push((byte, string));
         }
     }
 
@@ -136,7 +193,7 @@ mod test {
         ];
 
         assert_eq!(Cursor::new(buf).read_labels(),
-                   Ok(("".into(), 1)));
+                   Ok((Labels::root(), 1)));
     }
 
     #[test]
@@ -148,7 +205,7 @@ mod test {
         ];
 
         assert_eq!(Cursor::new(buf).read_labels(),
-                   Ok(("one.".into(), 5)));
+                   Ok((Labels::encode("one.").unwrap(), 5)));
     }
 
     #[test]
@@ -162,7 +219,7 @@ mod test {
         ];
 
         assert_eq!(Cursor::new(buf).read_labels(),
-                   Ok(("one.two.".into(), 9)));
+                   Ok((Labels::encode("one.two.").unwrap(), 9)));
     }
 
     #[test]
@@ -178,7 +235,7 @@ mod test {
         ];
 
         assert_eq!(Cursor::new(buf).read_labels(),
-                   Ok(("one.two.".into(), 6)));
+                   Ok((Labels::encode("one.two.").unwrap(), 6)));
     }
 
     #[test]

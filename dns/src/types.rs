@@ -4,6 +4,7 @@
 //! having at least one record in its answer fields.
 
 use crate::record::{Record, OPT};
+use crate::strings::Labels;
 
 
 /// A request that gets sent out over a transport.
@@ -17,8 +18,10 @@ pub struct Request {
     /// The flags that accompany every DNS packet.
     pub flags: Flags,
 
-    /// The queries that this request is making.
-    pub queries: Vec<Query>,
+    /// The query that this request is making. Only one query is allowed per
+    /// request, as traditionally, DNS servers only respond to the first query
+    /// in a packet.
+    pub query: Query,
 
     /// An additional record that may be sent as part of the query.
     pub additional: Option<OPT>,
@@ -54,7 +57,7 @@ pub struct Response {
 pub struct Query {
 
     /// The domain name being queried, in human-readable dotted notation.
-    pub qname: String,
+    pub qname: Labels,
 
     /// The class number.
     pub qclass: QClass,
@@ -72,7 +75,7 @@ pub enum Answer {
     Standard {
 
         /// The domain name being answered for.
-        qname: String,
+        qname: Labels,
 
         /// This answer’s class.
         qclass: QClass,
@@ -89,7 +92,7 @@ pub enum Answer {
     Pseudo {
 
         /// The domain name being answered for.
-        qname: String,
+        qname: Labels,
 
         /// The OPT record contained in this answer.
         opt: OPT,

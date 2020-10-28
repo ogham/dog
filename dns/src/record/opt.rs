@@ -1,3 +1,4 @@
+use std::convert::TryFrom;
 use std::io;
 
 use log::*;
@@ -97,7 +98,12 @@ impl OPT {
         bytes.write_u8(self.higher_bits)?;
         bytes.write_u8(self.edns0_version)?;
         bytes.write_u16::<BigEndian>(self.flags)?;
-        bytes.write_u16::<BigEndian>(self.data.len() as u16)?;
+
+        // We should not be sending any data at all in the request, really,
+        // so sending too much data is downright nonsensical
+        let data_len = u16::try_from(self.data.len()).expect("Sending too much data");
+        bytes.write_u16::<BigEndian>(data_len)?;
+
         for b in &self.data {
             bytes.write_u8(*b)?;
         }

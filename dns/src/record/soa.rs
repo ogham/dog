@@ -1,6 +1,6 @@
 use log::*;
 
-use crate::strings::ReadLabels;
+use crate::strings::{Labels, ReadLabels};
 use crate::wire::*;
 
 
@@ -15,10 +15,10 @@ use crate::wire::*;
 pub struct SOA {
 
     /// The primary master name for this server.
-    pub mname: String,
+    pub mname: Labels,
 
     /// The e-mail address of the administrator responsible for this DNS zone.
-    pub rname: String,
+    pub rname: Labels,
 
     /// A serial number for this DNS zone.
     pub serial: u32,
@@ -104,8 +104,8 @@ mod test {
 
         assert_eq!(SOA::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
                    SOA {
-                       mname: String::from("bsago.me."),
-                       rname: String::from("bsago.me."),
+                       mname: Labels::encode("bsago.me").unwrap(),
+                       rname: Labels::encode("bsago.me").unwrap(),
                        serial: 1564274434,
                        refresh_interval: 86400,
                        retry_interval: 7200,
