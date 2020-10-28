@@ -7,7 +7,7 @@ use std::io;
 use log::*;
 
 use crate::record::{Record, OPT};
-use crate::strings::{ReadLabels, WriteLabels};
+use crate::strings::{Labels, ReadLabels, WriteLabels};
 use crate::types::*;
 
 
@@ -109,7 +109,7 @@ impl Query {
     /// Reads bytes from the given cursor, and parses them into a query with
     /// the given domain name.
     #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
-    fn from_bytes(qname: String, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
+    fn from_bytes(qname: Labels, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let qtype = c.read_u16::<BigEndian>()?;
         trace!("Read qtype -> {:?}", qtype);
 
@@ -126,7 +126,7 @@ impl Answer {
     /// Reads bytes from the given cursor, and parses them into an answer with
     /// the given domain name.
     #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
-    fn from_bytes(qname: String, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
+    fn from_bytes(qname: Labels, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let qtype = c.read_u16::<BigEndian>()?;
         trace!("Read qtype -> {:?}", qtype);
 
@@ -492,14 +492,14 @@ mod test {
             flags: Flags::standard_response(),
             queries: vec![
                 Query {
-                    qname: "bsago.me.".into(),
+                    qname: Labels::encode("bsago.me").unwrap(),
                     qclass: QClass::IN,
                     qtype: qtype!(A),
                 },
             ],
             answers: vec![
                 Answer::Standard {
-                    qname: "bsago.me.".into(),
+                    qname: Labels::encode("bsago.me").unwrap(),
                     qclass: QClass::IN,
                     ttl: 887,
                     record: Record::A(A {
@@ -509,12 +509,12 @@ mod test {
             ],
             authorities: vec![
                 Answer::Standard {
-                    qname: "".into(),
+                    qname: Labels::root(),
                     qclass: QClass::IN,
                     ttl: 4294967295,
                     record: Record::SOA(SOA {
-                        mname: "a.".into(),
-                        rname: "mx.".into(),
+                        mname: Labels::encode("a").unwrap(),
+                        rname: Labels::encode("mx").unwrap(),
                         serial: 2020102700,
                         refresh_interval: 1800,
                         retry_interval: 900,
@@ -525,7 +525,7 @@ mod test {
             ],
             additionals: vec![
                 Answer::Standard {
-                    qname: "".into(),
+                    qname: Labels::root(),
                     qclass: QClass::Other(153),
                     ttl: 305419896,
                     record: Record::Other {
@@ -534,7 +534,7 @@ mod test {
                     },
                 },
                 Answer::Pseudo {
-                    qname: "".into(),
+                    qname: Labels::root(),
                     opt: OPT {
                         udp_payload_size: 512,
                         higher_bits: 0,

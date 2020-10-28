@@ -27,6 +27,7 @@ mod types;
 pub use self::types::*;
 
 mod strings;
+pub use self::strings::Labels;
 
 mod wire;
 pub use self::wire::{Wire, WireError, find_qtype_number};

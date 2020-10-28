@@ -1,6 +1,6 @@
 use log::*;
 
-use crate::strings::ReadLabels;
+use crate::strings::{Labels, ReadLabels};
 use crate::wire::*;
 
 
@@ -19,7 +19,7 @@ use crate::wire::*;
 pub struct PTR {
 
     /// The CNAME contained in the record.
-    pub cname: String,
+    pub cname: Labels,
 }
 
 impl Wire for PTR {
@@ -56,7 +56,7 @@ mod test {
 
         assert_eq!(PTR::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
                    PTR {
-                       cname: String::from("dns.google."),
+                       cname: Labels::encode("dns.google").unwrap(),
                    });
     }
 

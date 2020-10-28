@@ -1,6 +1,6 @@
 use log::*;
 
-use crate::strings::ReadLabels;
+use crate::strings::{Labels, ReadLabels};
 use crate::wire::*;
 
 
@@ -25,7 +25,7 @@ pub struct SRV {
     pub port: u16,
 
     /// The hostname of the machine the service is running on.
-    pub target: String,
+    pub target: Labels,
 }
 
 impl Wire for SRV {
@@ -80,7 +80,7 @@ mod test {
                        priority: 1,
                        weight: 1,
                        port: 37500,
-                       target: String::from("ata.local.node.dc1.consul."),
+                       target: Labels::encode("ata.local.node.dc1.consul").unwrap(),
                    });
     }
 

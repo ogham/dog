@@ -1,6 +1,6 @@
 use std::net::Ipv4Addr;
 
-use dns::{Response, Query, Answer, Flags, QClass, qtype};
+use dns::{Response, Query, Answer, Labels, Flags, QClass, qtype};
 use dns::record::{Record, A, CNAME, OPT};
 
 
@@ -56,14 +56,14 @@ fn parse_response_standard() {
         },
         queries: vec![
             Query {
-                qname: "dns.lookup.dog.".into(),
+                qname: Labels::encode("dns.lookup.dog").unwrap(),
                 qclass: QClass::IN,
                 qtype: qtype!(A),
             },
         ],
         answers: vec![
             Answer::Standard {
-                qname: "dns.lookup.dog.".into(),
+                qname: Labels::encode("dns.lookup.dog").unwrap(),
                 qclass: QClass::IN,
                 ttl: 933,
                 record: Record::A(A {
@@ -74,7 +74,7 @@ fn parse_response_standard() {
         authorities: vec![],
         additionals: vec![
             Answer::Pseudo {
-                qname: "".into(),
+                qname: Labels::root(),
                 opt: OPT {
                     udp_payload_size: 512,
                     higher_bits: 0,
@@ -129,18 +129,18 @@ fn parse_response_with_mixed_string() {
         },
         queries: vec![
             Query {
-                qname: "cname-example.lookup.dog.".into(),
+                qname: Labels::encode("cname-example.lookup.dog").unwrap(),
                 qclass: QClass::IN,
                 qtype: qtype!(CNAME),
             },
         ],
         answers: vec![
             Answer::Standard {
-                qname: "cname-example.lookup.dog.".into(),
+                qname: Labels::encode("cname-example.lookup.dog").unwrap(),
                 qclass: QClass::IN,
                 ttl: 873,
                 record: Record::CNAME(CNAME {
-                    domain: "dns.lookup.dog.".into(),
+                    domain: Labels::encode("dns.lookup.dog").unwrap(),
                 }),
             }
         ],

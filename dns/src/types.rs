@@ -4,6 +4,7 @@
 //! having at least one record in its answer fields.
 
 use crate::record::{Record, OPT};
+use crate::strings::Labels;
 
 
 /// A request that gets sent out over a transport.
@@ -56,7 +57,7 @@ pub struct Response {
 pub struct Query {
 
     /// The domain name being queried, in human-readable dotted notation.
-    pub qname: String,
+    pub qname: Labels,
 
     /// The class number.
     pub qclass: QClass,
@@ -74,7 +75,7 @@ pub enum Answer {
     Standard {
 
         /// The domain name being answered for.
-        qname: String,
+        qname: Labels,
 
         /// This answer’s class.
         qclass: QClass,
@@ -91,7 +92,7 @@ pub enum Answer {
     Pseudo {
 
         /// The domain name being answered for.
-        qname: String,
+        qname: Labels,
 
         /// The OPT record contained in this answer.
         opt: OPT,

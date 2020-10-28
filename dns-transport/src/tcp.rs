@@ -13,10 +13,10 @@ use super::{Transport, Error};
 ///
 /// ```no_run
 /// use dns_transport::{Transport, TcpTransport};
-/// use dns::{Request, Flags, Query, QClass, qtype, record::MX};
+/// use dns::{Request, Flags, Query, Labels, QClass, qtype, record::MX};
 ///
 /// let query = Query {
-///     qname: String::from("dns.lookup.dog"),
+///     qname: Labels::encode("dns.lookup.dog").unwrap(),
 ///     qclass: QClass::IN,
 ///     qtype: qtype!(MX),
 /// };

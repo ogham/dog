@@ -1,6 +1,6 @@
 use log::*;
 
-use crate::strings::ReadLabels;
+use crate::strings::{Labels, ReadLabels};
 use crate::wire::*;
 
 
@@ -18,7 +18,7 @@ pub struct MX {
     pub preference: u16,
 
     /// The domain name of the mail exchange server.
-    pub exchange: String,
+    pub exchange: Labels,
 }
 
 impl Wire for MX {
@@ -61,7 +61,7 @@ mod test {
         assert_eq!(MX::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
                    MX {
                        preference: 10,
-                       exchange: String::from("bsago.me."),
+                       exchange: Labels::encode("bsago.me").unwrap(),
                    });
     }
 

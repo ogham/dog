@@ -14,10 +14,10 @@ use super::{Transport, Error};
 ///
 /// ```no_run
 /// use dns_transport::{Transport, TlsTransport};
-/// use dns::{Request, Flags, Query, QClass, qtype, record::SRV};
+/// use dns::{Request, Flags, Query, Labels, QClass, qtype, record::SRV};
 ///
 /// let query = Query {
-///     qname: String::from("dns.lookup.dog"),
+///     qname: Labels::encode("dns.lookup.dog").unwrap(),
 ///     qclass: QClass::IN,
 ///     qtype: qtype!(SRV),
 /// };

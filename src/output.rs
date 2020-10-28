@@ -212,20 +212,22 @@ impl TextFormat {
                 }
             }
             Record::CNAME(ref cname) => {
-                format!("{:?}", cname.domain)
+                format!("{:?}", cname.domain.to_string())
             }
             Record::MX(ref mx) => {
-                format!("{} {:?}", mx.preference, mx.exchange)
+                format!("{} {:?}", mx.preference, mx.exchange.to_string())
             }
             Record::NS(ref ns) => {
-                format!("{:?}", ns.nameserver)
+                format!("{:?}", ns.nameserver.to_string())
             }
             Record::PTR(ref ptr) => {
-                format!("{:?}", ptr.cname)
+                format!("{:?}", ptr.cname.to_string())
             }
             Record::SOA(ref soa) => {
                 format!("{:?} {:?} {} {} {} {} {}",
-                    soa.mname, soa.rname, soa.serial,
+                    soa.mname.to_string(),
+                    soa.rname.to_string(),
+                    soa.serial,
                     self.format_duration(soa.refresh_interval),
                     self.format_duration(soa.retry_interval),
                     self.format_duration(soa.expire_limit),
@@ -233,7 +235,7 @@ impl TextFormat {
                 )
             }
             Record::SRV(ref srv) => {
-                format!("{} {} {:?}:{}", srv.priority, srv.weight, srv.target, srv.port)
+                format!("{} {} {:?}:{}", srv.priority, srv.weight, srv.target.to_string(), srv.port)
             }
             Record::TXT(ref txt) => {
                 format!("{:?}", txt.message)
@@ -276,7 +278,7 @@ impl OutputFormat {
     fn json_queries(self, queries: &[Query]) -> JsonValue {
         let queries = queries.iter().map(|q| {
             json!({
-                "name": q.qname,
+                "name": q.qname.to_string(),
                 "class": format!("{:?}", q.qclass),
                 "type": q.qtype,
             })
@@ -291,14 +293,14 @@ impl OutputFormat {
                 Answer::Standard { qname, qclass, ttl, record } => {
                     let mut object = self.json_record(record);
                     let omut = object.as_object_mut().unwrap();
-                    omut.insert("name".into(), qname.as_str().into());
+                    omut.insert("name".into(), qname.to_string().into());
                     omut.insert("class".into(), format!("{:?}", qclass).into());
                     omut.insert("ttl".into(), (*ttl).into());
                     json!(object)
                 }
                 Answer::Pseudo { qname, opt } => {
                     let object = json!({
-                        "name": qname,
+                        "name": qname.to_string(),
                         "type": "OPT",
                         "version": opt.edns0_version,
                         "data": opt.data,
@@ -318,11 +320,11 @@ impl OutputFormat {
             Record::AAAA(rec)   => json!({ "type": "AAAA",  "address": rec.address.to_string() }),
             Record::CAA(rec)    => json!({ "type": "CAA",   "critical": rec.critical, "tag": rec.tag, "value": rec.value }),
             Record::CNAME(rec)  => json!({ "type": "CNAME", "domain": rec.domain.to_string() }),
-            Record::MX(rec)     => json!({ "type": "MX",    "preference": rec.preference, "exchange": rec.exchange }),
-            Record::NS(rec)     => json!({ "type": "NS",    "nameserver": rec.nameserver }),
-            Record::PTR(rec)    => json!({ "type": "PTR",   "cname": rec.cname }),
-            Record::SOA(rec)    => json!({ "type": "SOA",   "mname": rec.mname }),
-            Record::SRV(rec)    => json!({ "type": "SRV",   "priority": rec.priority, "weight": rec.weight, "port": rec.port, "target": rec.target, }),
+            Record::MX(rec)     => json!({ "type": "MX",    "preference": rec.preference, "exchange": rec.exchange.to_string() }),
+            Record::NS(rec)     => json!({ "type": "NS",    "nameserver": rec.nameserver.to_string() }),
+            Record::PTR(rec)    => json!({ "type": "PTR",   "cname": rec.cname.to_string() }),
+            Record::SOA(rec)    => json!({ "type": "SOA",   "mname": rec.mname.to_string() }),
+            Record::SRV(rec)    => json!({ "type": "SRV",   "priority": rec.priority, "weight": rec.weight, "port": rec.port, "target": rec.target.to_string() }),
             Record::TXT(rec)    => json!({ "type": "TXT",   "message": rec.message }),
             Record::Other { type_number, bytes } => {
                 let type_name = match type_number {
