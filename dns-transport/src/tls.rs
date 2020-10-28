@@ -1,3 +1,5 @@
+use std::convert::TryFrom;
+
 use async_trait::async_trait;
 use log::*;
 use native_tls::TlsConnector;
@@ -66,7 +68,7 @@ impl Transport for TlsTransport {
 
         // As with TCP, we need to prepend the message with its length.
         let mut bytes = request.to_bytes().expect("failed to serialise request");
-        let len_bytes = (bytes.len() as u16).to_be_bytes();
+        let len_bytes = u16::try_from(bytes.len()).expect("request too long").to_be_bytes();
         bytes.insert(0, len_bytes[0]);
         bytes.insert(1, len_bytes[1]);
 
