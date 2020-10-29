@@ -442,10 +442,20 @@ fn error_message(error: TransportError) -> String {
 /// wrong with the packet we received.
 fn wire_error_message(error: WireError) -> String {
     match error {
-        WireError::IO                                   => "Malformed packet: insufficient data".into(),
-        WireError::WrongRecordLength { expected, got }  |
-        WireError::WrongLabelLength { expected, got }   => format!("Malformed packet: expected length {}, got {}", expected, got),
-        WireError::TooMuchRecursion(indices)            => format!("Malformed packet: too much recursion: {:?}", indices),
-        WireError::OutOfBounds(index)                   => format!("Malformed packet: out of bounds ({})", index),
+        WireError::IO => {
+            "Malformed packet: insufficient data".into()
+        }
+        WireError::WrongRecordLength { stated_length, mandated_length } => {
+            format!("Malformed packet: record length should be {}, got {}", mandated_length, stated_length )
+        }
+        WireError::WrongLabelLength { stated_length, length_after_labels } => {
+            format!("Malformed packet: length {} was specified, but read {} bytes", stated_length, length_after_labels)
+        }
+        WireError::TooMuchRecursion(indices) => {
+            format!("Malformed packet: too much recursion: {:?}", indices)
+        }
+        WireError::OutOfBounds(index) => {
+            format!("Malformed packet: out of bounds ({})", index)
+        }
     }
 }

@@ -25,7 +25,7 @@ impl Wire for TXT {
     const RR_TYPE: u16 = 16;
 
     #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
-    fn read(len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
+    fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let mut buf = Vec::new();
         let mut total_len = 0_u16;
 
@@ -49,13 +49,13 @@ impl Wire for TXT {
         let message = String::from_utf8_lossy(&buf).to_string();
         trace!("Parsed message -> {:?}", message);
 
-        if len == total_len {
+        if stated_length == total_len {
             trace!("Length is correct");
             Ok(Self { message })
         }
         else {
-            warn!("Length is incorrect (record length {:?}, message length {:?})", len, total_len);
-            Err(WireError::WrongLabelLength { expected: len, got: total_len })
+            warn!("Length is incorrect (stated length {:?}, message length {:?})", stated_length, total_len);
+            Err(WireError::WrongLabelLength { stated_length, length_after_labels: total_len })
         }
     }
 }
@@ -177,7 +177,7 @@ mod test {
         ];
 
         assert_eq!(TXT::read(123, &mut Cursor::new(buf)),
-                   Err(WireError::WrongLabelLength { expected: 123, got: 7 }));
+                   Err(WireError::WrongLabelLength { stated_length: 123, length_after_labels: 7 }));
     }
 
     #[test]

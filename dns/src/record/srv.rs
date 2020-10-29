@@ -33,7 +33,7 @@ impl Wire for SRV {
     const RR_TYPE: u16 = 33;
 
     #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
-    fn read(len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
+    fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let priority = c.read_u16::<BigEndian>()?;
         trace!("Parsed priority -> {:?}", priority);
 
@@ -43,17 +43,17 @@ impl Wire for SRV {
         let port = c.read_u16::<BigEndian>()?;
         trace!("Parsed port -> {:?}", port);
 
-        let (target, target_len) = c.read_labels()?;
+        let (target, target_length) = c.read_labels()?;
         trace!("Parsed target -> {:?}", target);
 
-        let got_len = 3 * 2 + target_len;
-        if len == got_len {
+        let length_after_labels = 3 * 2 + target_length;
+        if stated_length == length_after_labels {
             trace!("Length is correct");
             Ok(Self { priority, weight, port, target })
         }
         else {
-            warn!("Length is incorrect (record length {:?}, fields plus target length {:?})", len, got_len);
-            Err(WireError::WrongLabelLength { expected: len, got: got_len })
+            warn!("Length is incorrect (stated length {:?}, fields plus target length {:?})", stated_length, length_after_labels);
+            Err(WireError::WrongLabelLength { stated_length, length_after_labels })
         }
     }
 }
@@ -95,7 +95,7 @@ mod test {
         ];
 
         assert_eq!(SRV::read(16, &mut Cursor::new(buf)),
-                   Err(WireError::WrongLabelLength { expected: 16, got: 11 }));
+                   Err(WireError::WrongLabelLength { stated_length: 16, length_after_labels: 11 }));
     }
 
     #[test]

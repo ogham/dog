@@ -27,7 +27,7 @@ impl Wire for CAA {
     const RR_TYPE: u16 = 257;
 
     #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
-    fn read(len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
+    fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let flags = c.read_u8()?;
         trace!("Parsed flags -> {:#08b}", flags);
 
@@ -46,7 +46,7 @@ impl Wire for CAA {
         let tag = String::from_utf8_lossy(&tag_buf).to_string();
         trace!("Parsed tag -> {:?}", tag);
 
-        let remaining_length = len.saturating_sub(u16::from(tag_length)).saturating_sub(2);
+        let remaining_length = stated_length.saturating_sub(u16::from(tag_length)).saturating_sub(2);
         trace!("Remaining length -> {:?}", remaining_length);
 
         let mut value_buf = Vec::new();
@@ -57,15 +57,15 @@ impl Wire for CAA {
         let value = String::from_utf8_lossy(&value_buf).to_string();
         trace!("Parsed value -> {:?}", value);
 
-        let got_len = 1 + 1 + u16::from(tag_length) + remaining_length;
-        if len == got_len {
+        let got_length = 1 + 1 + u16::from(tag_length) + remaining_length;
+        if stated_length == got_length {
             // This one’s a little weird, because remaining_len is based on len
             trace!("Length is correct");
             Ok(Self { critical, tag, value })
         }
         else {
-            warn!("Length is incorrect (record length {:?}, flags plus tag plus data length {:?}", len, got_len);
-            Err(WireError::WrongLabelLength { expected: len, got: got_len })
+            warn!("Length is incorrect (stated length {:?}, flags plus tag plus data length {:?}", stated_length, got_length);
+            Err(WireError::WrongLabelLength { stated_length, length_after_labels: got_length })
         }
     }
 }

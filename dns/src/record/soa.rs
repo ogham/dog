@@ -47,11 +47,11 @@ impl Wire for SOA {
 
     #[allow(clippy::similar_names)]
     #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
-    fn read(len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
-        let (mname, mname_len) = c.read_labels()?;
+    fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
+        let (mname, mname_length) = c.read_labels()?;
         trace!("Parsed mname -> {:?}", mname);
 
-        let (rname, rname_len) = c.read_labels()?;
+        let (rname, rname_length) = c.read_labels()?;
         trace!("Parsed rname -> {:?}", rname);
 
         let serial = c.read_u32::<BigEndian>()?;
@@ -69,8 +69,8 @@ impl Wire for SOA {
         let minimum_ttl = c.read_u32::<BigEndian>()?;
         trace!("Parsed minimum TTL -> {:?}", minimum_ttl);
 
-        let got_len = 4 * 5 + mname_len + rname_len;
-        if len == got_len {
+        let length_after_labels = 4 * 5 + mname_length + rname_length;
+        if stated_length == length_after_labels {
             trace!("Length is correct");
             Ok(Self {
                 mname, rname, serial, refresh_interval,
@@ -78,8 +78,8 @@ impl Wire for SOA {
             })
         }
         else {
-            warn!("Length is incorrect (record length {:?}, mname plus rname plus fields length {:?})", len, got_len);
-            Err(WireError::WrongLabelLength { expected: len, got: got_len })
+            warn!("Length is incorrect (stated length {:?}, mname plus rname plus fields length {:?})", stated_length, length_after_labels);
+            Err(WireError::WrongLabelLength { stated_length, length_after_labels })
         }
     }
 }
@@ -130,7 +130,7 @@ mod test {
         ];
 
         assert_eq!(SOA::read(89, &mut Cursor::new(buf)),
-                   Err(WireError::WrongLabelLength { expected: 89, got: 30 }));
+                   Err(WireError::WrongLabelLength { stated_length: 89, length_after_labels: 30 }));
     }
 
     #[test]

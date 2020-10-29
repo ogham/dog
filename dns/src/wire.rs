@@ -379,11 +379,11 @@ pub enum WireError {
     /// record, whatever it is.
     WrongRecordLength {
 
-        /// The expected size.
-        expected: u16,
+        /// The length of the record’s data, as specified in the packet.
+        stated_length: u16,
 
-        /// The size that was actually received.
-        got: u16,
+        /// The length of the record that the DNS specification mandates.
+        mandated_length: u16,
     },
 
     /// When the length of this record as specified in the packet differs from
@@ -420,11 +420,12 @@ pub enum WireError {
     /// having read a different number of bytes than the specified length.
     WrongLabelLength {
 
-        /// The expected size.
-        expected: u16,
+        /// The length of the record’s data, as specified in the packet.
+        stated_length: u16,
 
-        /// The size that was actually received.
-        got: u16,
+        /// The computed length of the record’s data, based on the number of
+        /// bytes consumed by reading labels from the packet.
+        length_after_labels: u16,
     },
 
     /// When the data contained a string containing a cycle of pointers.

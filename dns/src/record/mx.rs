@@ -26,21 +26,21 @@ impl Wire for MX {
     const RR_TYPE: u16 = 15;
 
     #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
-    fn read(len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
+    fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let preference = c.read_u16::<BigEndian>()?;
         trace!("Parsed preference -> {:?}", preference);
 
-        let (exchange, exchange_len) = c.read_labels()?;
+        let (exchange, exchange_length) = c.read_labels()?;
         trace!("Parsed exchange -> {:?}", exchange);
 
-        let got_len = 2 + exchange_len;
-        if len == got_len {
+        let length_after_labels = 2 + exchange_length;
+        if stated_length == length_after_labels {
             trace!("Length is correct");
             Ok(Self { preference, exchange })
         }
         else {
-            warn!("Length is incorrect (record length {:?}, preference plus exchange length {:?}", len, got_len);
-            Err(WireError::WrongLabelLength { expected: len, got: got_len })
+            warn!("Length is incorrect (stated length {:?}, preference plus exchange length {:?}", stated_length, length_after_labels);
+            Err(WireError::WrongLabelLength { stated_length, length_after_labels })
         }
     }
 }
@@ -74,7 +74,7 @@ mod test {
         ];
 
         assert_eq!(MX::read(6, &mut Cursor::new(buf)),
-                   Err(WireError::WrongLabelLength { expected: 6, got: 7 }));
+                   Err(WireError::WrongLabelLength { stated_length: 6, length_after_labels: 7 }));
     }
 
     #[test]

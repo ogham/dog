@@ -22,9 +22,9 @@ impl Wire for AAAA {
     const RR_TYPE: u16 = 28;
 
     #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
-    fn read(len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
+    fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let mut buf = Vec::new();
-        for _ in 0 .. len {
+        for _ in 0 .. stated_length {
             buf.push(c.read_u8()?);
         }
 
@@ -36,8 +36,8 @@ impl Wire for AAAA {
             Ok(Self { address })
         }
         else {
-            warn!("Length is incorrect (record length {:?}, but should be sixteen)", len);
-            Err(WireError::WrongRecordLength { expected: 16, got: len })
+            warn!("Length is incorrect (stated length {:?}, but should be sixteen)", stated_length);
+            Err(WireError::WrongRecordLength { stated_length, mandated_length: 16 })
         }
     }
 }
@@ -67,7 +67,7 @@ mod test {
         ];
 
         assert_eq!(AAAA::read(buf.len() as _, &mut Cursor::new(buf)),
-                   Err(WireError::WrongRecordLength { expected: 16, got: 17 }));
+                   Err(WireError::WrongRecordLength { stated_length: 17, mandated_length: 16 }));
     }
 
     #[test]
@@ -77,13 +77,13 @@ mod test {
         ];
 
         assert_eq!(AAAA::read(buf.len() as _, &mut Cursor::new(buf)),
-                   Err(WireError::WrongRecordLength { expected: 16, got: 5 }));
+                   Err(WireError::WrongRecordLength { stated_length: 5, mandated_length: 16 }));
     }
 
     #[test]
     fn record_empty() {
         assert_eq!(AAAA::read(0, &mut Cursor::new(&[])),
-                   Err(WireError::WrongRecordLength { expected: 16, got: 0 }));
+                   Err(WireError::WrongRecordLength { stated_length: 0, mandated_length: 16 }));
     }
 
     #[test]
