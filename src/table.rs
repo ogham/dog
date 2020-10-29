@@ -74,10 +74,7 @@ impl Table {
 
     /// Prints the formatted table to stdout.
     pub fn print(self, duration: Option<Duration>) {
-        if self.rows.is_empty() {
-            println!("No results");
-        }
-        else {
+        if ! self.rows.is_empty() {
             let qtype_len = self.max_qtype_len();
             let qname_len = self.max_qname_len();
             let ttl_len   = self.max_ttl_len();
