@@ -13,3 +13,11 @@ jobs:
   fast_finish: true
   allow_failures:
     - rust: nightly
+
+  include:
+    - name: 'Rust: lint with Clippy'
+      rust: stable
+      install:
+        - rustup component add clippy
+      script:
+        - cargo clippy
