@@ -9,7 +9,7 @@ use crate::wire::*;
 /// # References
 ///
 /// - [RFC 6844](https://tools.ietf.org/html/rfc6844) — DNS Certification Authority Authorization Resource Record (January 2013)
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug)]
 pub struct CAA {
 
     /// Whether this record is marked as “critical” or not.

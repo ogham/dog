@@ -10,7 +10,7 @@ use crate::wire::*;
 /// # References
 ///
 /// - [RFC 1035 §3.3.s](https://tools.ietf.org/html/rfc1035) — Domain Names, Implementation and Specification (November 1987)
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug)]
 pub struct MX {
 
     /// The preference that clients should give to this MX record amongst all

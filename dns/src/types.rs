@@ -8,7 +8,7 @@ use crate::strings::Labels;
 
 
 /// A request that gets sent out over a transport.
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug)]
 pub struct Request {
 
     /// The transaction ID of this request. This is used to make sure
@@ -29,7 +29,7 @@ pub struct Request {
 
 
 /// A response obtained from a DNS server.
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug)]
 pub struct Response {
 
     /// The transaction ID, which should match the ID of the request.
@@ -53,7 +53,7 @@ pub struct Response {
 
 
 /// A DNS query section.
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug)]
 pub struct Query {
 
     /// The domain name being queried, in human-readable dotted notation.
@@ -68,7 +68,7 @@ pub struct Query {
 
 
 /// A DNS answer section.
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug)]
 pub enum Answer {
 
     /// This is a standard answer with every field.

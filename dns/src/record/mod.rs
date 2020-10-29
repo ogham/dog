@@ -40,7 +40,7 @@ pub use self::others::{UnknownQtype, find_other_qtype_number};
 
 
 /// A record that’s been parsed from a byte buffer.
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug)]
 pub enum Record {
 
     /// An **A** record.

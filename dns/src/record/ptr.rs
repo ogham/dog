@@ -15,7 +15,7 @@ use crate::wire::*;
 /// # References
 ///
 /// - [RFC 1035 §3.3.14](https://tools.ietf.org/html/rfc1035) — Domain Names, Implementation and Specification (November 1987)
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug)]
 pub struct PTR {
 
     /// The CNAME contained in the record.
