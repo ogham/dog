@@ -1,22 +1,26 @@
 [[cmd]]
+name = "Running dog with ‘--wibble’ warns about the invalid argument"
 shell = "dog --wibble"
 stdout = { empty = true }
 stderr = { string = "wibble" }
 status = 3
 
 [[cmd]]
+name = "Running dog with ‘XYZZY’ warns about the invalid record type"
 shell = "dog XYZZY dns.google"
 stdout = { empty = true }
 stderr = { string = "XYZZY" }
 status = 3
 
 [[cmd]]
+name = "Running dog with ‘OPT’ warns that OPT requests are sent by default"
 shell = "dog OPT dns.google"
 stdout = { empty = true }
 stderr = { string = "OPT request is sent by default" }
 status = 3
 
 [[cmd]]
+name = "Running dog with a domain longer than 255 bytes warns about it being too long"
 name = "A domain label long than 255 bytes gets rejected"
 shell = "dog 12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"
 stdout = { empty = true }
