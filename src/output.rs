@@ -71,6 +71,11 @@ impl UseColours {
 
 
 impl OutputFormat {
+
+    /// Prints the entirety of the output, formatted according to the
+    /// settings. If the duration has been measured, it should also be
+    /// printed. Returns `false` if there were no results to print, and `true`
+    /// otherwise.
     pub fn print(self, responses: Vec<Response>, duration: Option<Duration>) -> bool {
         match self {
             Self::Short(tf) => {
@@ -98,10 +103,10 @@ impl OutputFormat {
 
                 for response in responses {
                     let json = json!({
-                        "queries": self.json_queries(&response.queries),
-                        "answers": self.json_answers(&response.answers),
-                        "authorities": self.json_answers(&response.authorities),
-                        "additionals": self.json_answers(&response.additionals),
+                        "queries": json_queries(&response.queries),
+                        "answers": json_answers(&response.answers),
+                        "authorities": json_answers(&response.authorities),
+                        "additionals": json_answers(&response.additionals),
                     });
 
                     rs.push(json);
@@ -144,6 +149,8 @@ impl OutputFormat {
         true
     }
 
+    /// Print an error that’s ocurred while sending or receiving DNS packets
+    /// to standard error.
     pub fn print_error(self, error: TransportError) {
     	match self {
     		Self::Short(..) | Self::Text(..) => {
@@ -163,38 +170,11 @@ impl OutputFormat {
     }
 }
 
-fn erroneous_phase(error: &TransportError) -> &'static str {
-	match error {
-		TransportError::NetworkError(_)  => "network",
-		TransportError::HttpError(_)     => "http",
-		TransportError::TlsError(_)      => "tls",
-		TransportError::BadRequest       => "http-status",
-		TransportError::WireError(_)     => "protocol",
-	}
-}
-
-fn error_message(error: TransportError) -> String {
-	match error {
-		TransportError::NetworkError(e)  => e.to_string(),
-		TransportError::HttpError(e)     => e.to_string(),
-		TransportError::TlsError(e)      => e.to_string(),
-		TransportError::BadRequest       => "Nameserver returned HTTP 400 Bad Request".into(),
-		TransportError::WireError(e)     => wire_error_message(e),
-	}
-}
-
-fn wire_error_message(error: WireError) -> String {
-    match error {
-        WireError::IO                                   => "Malformed packet: insufficient data".into(),
-        WireError::WrongRecordLength { expected, got }  => format!("Malformed packet: expected length {}, got {}", expected, got),
-        WireError::WrongLabelLength { expected, got }   => format!("Malformed packet: expected length {}, got {}", expected, got),
-        WireError::TooMuchRecursion(indices)            => format!("Malformed packet: too much recursion: {:?}", indices),
-        WireError::OutOfBounds(index)                   => format!("Malformed packet: out of bounds ({})", index),
-    }
-}
-
-
 impl TextFormat {
+
+    /// Formats a summary of a record in a received DNS response. Each record
+    /// type contains wildly different data, so the format of the summary
+    /// depends on what record it’s for.
     pub fn record_payload_summary(self, record: &Record) -> String {
         match *record {
             Record::A(ref a) => {
@@ -246,6 +226,8 @@ impl TextFormat {
         }
     }
 
+    /// Formats a summary of an OPT pseudo-record. Pseudo-records have a different
+    /// structure than standard ones.
     pub fn pseudo_record_payload_summary(self, opt: &OPT) -> String {
         format!("{} {} {} {} {:?}",
             opt.udp_payload_size,
@@ -255,88 +237,172 @@ impl TextFormat {
             opt.data)
     }
 
+    /// Formats a duration depending on whether it should be displayed as
+    /// seconds, or as computed units.
     pub fn format_duration(self, seconds: u32) -> String {
-        if ! self.format_durations {
-            format!("{}", seconds)
-        }
-        else if seconds < 60 {
-            format!("{}s", seconds)
-        }
-        else if seconds < 60 * 60 {
-            format!("{}m{:02}s", seconds / 60, seconds % 60)
-        }
-        else if seconds < 60 * 60 * 24{
-            format!("{}h{:02}m{:02}s", seconds / 3600, (seconds % 3600) / 60, seconds % 60)
+        if self.format_durations {
+            format_duration_hms(seconds)
         }
         else {
-            format!("{}d{}h{:02}m{:02}s", seconds / 86400, (seconds % 86400) / 3600, (seconds % 3600) / 60, seconds % 60)
+            format!("{}", seconds)
         }
     }
 }
 
-impl OutputFormat {
-    fn json_queries(self, queries: &[Query]) -> JsonValue {
-        let queries = queries.iter().map(|q| {
+/// Formats a duration as days, hours, minutes, and seconds, skipping leading
+/// zero units.
+fn format_duration_hms(seconds: u32) -> String {
+    if seconds < 60 {
+        format!("{}s", seconds)
+    }
+    else if seconds < 60 * 60 {
+        format!("{}m{:02}s",
+            seconds / 60,
+            seconds % 60)
+    }
+    else if seconds < 60 * 60 * 24 {
+        format!("{}h{:02}m{:02}s",
+            seconds / 3600,
+            (seconds % 3600) / 60,
+            seconds % 60)
+    }
+    else {
+        format!("{}d{}h{:02}m{:02}s",
+            seconds / 86400,
+            (seconds % 86400) / 3600,
+            (seconds % 3600) / 60,
+            seconds % 60)
+    }
+}
+
+/// Serialises multiple DNS queries as a JSON value.
+fn json_queries(queries: &[Query]) -> JsonValue {
+    let queries = queries.iter().map(|q| {
+        json!({
+            "name": q.qname.to_string(),
+            "class": format!("{:?}", q.qclass),
+            "type": q.qtype,
+        })
+    }).collect::<Vec<_>>();
+
+    json!(queries)
+}
+
+/// Serialises multiple received DNS answers as a JSON value.
+fn json_answers(answers: &[Answer]) -> JsonValue {
+    let answers = answers.iter().map(|a| {
+        match a {
+            Answer::Standard { qname, qclass, ttl, record } => {
+                let mut object = json_record(record);
+                let omut = object.as_object_mut().unwrap();
+                omut.insert("name".into(), qname.to_string().into());
+                omut.insert("class".into(), format!("{:?}", qclass).into());
+                omut.insert("ttl".into(), (*ttl).into());
+                json!(object)
+            }
+            Answer::Pseudo { qname, opt } => {
+                let object = json!({
+                    "name": qname.to_string(),
+                    "type": "OPT",
+                    "version": opt.edns0_version,
+                    "data": opt.data,
+                });
+
+                object
+            }
+        }
+    }).collect::<Vec<_>>();
+
+    json!(answers)
+}
+
+/// Serialises a received DNS record as a JSON value.
+fn json_record(record: &Record) -> JsonValue {
+    match record {
+        Record::A(rec) => {
             json!({
-                "name": q.qname.to_string(),
-                "class": format!("{:?}", q.qclass),
-                "type": q.qtype,
+                "type": "A",
+                "address": rec.address.to_string(),
             })
-        }).collect::<Vec<_>>();
+        }
+        Record::AAAA(rec) => {
+            json!({
+                "type": "AAAA",
+                "address": rec.address.to_string(),
+            })
+        }
+        Record::CAA(rec) => {
+            json!({
+                "type": "CAA",
+                "critical": rec.critical,
+                "tag": rec.tag,
+                "value": rec.value,
+            })
+        }
+        Record::CNAME(rec) => {
+            json!({
+                "type": "CNAME",
+                "domain": rec.domain.to_string(),
+            })
+        }
+        Record::MX(rec) => {
+            json!({
+                "type": "MX",
+                "preference": rec.preference,
+                "exchange": rec.exchange.to_string(),
+            })
+        }
+        Record::NS(rec) => {
+            json!({
+                "type": "NS",
+                "nameserver": rec.nameserver.to_string(),
+            })
+        }
+        Record::PTR(rec) => {
+            json!({
+                "type": "PTR",
+                "cname": rec.cname.to_string(),
+            })
+        }
+        Record::SOA(rec) => {
+            json!({
+                "type": "SOA",
+                "mname": rec.mname.to_string(),
+            })
+        }
+        Record::SRV(rec) => {
+            json!({
+                "type": "SRV",
+                "priority": rec.priority,
+                "weight": rec.weight,
+                "port": rec.port,
+                "target": rec.target.to_string(),
+            })
+        }
+        Record::TXT(rec) => {
+            json!({
+                "type": "TXT",
+                "message": rec.message,
+            })
+        }
+        Record::Other { type_number, bytes } => {
+            let type_name = match type_number {
+                UnknownQtype::HeardOf(name) => json!(name),
+                UnknownQtype::UnheardOf(num) => json!(num),
+            };
 
-        json!(queries)
-    }
-
-    fn json_answers(self, answers: &[Answer]) -> JsonValue {
-        let answers = answers.iter().map(|a| {
-            match a {
-                Answer::Standard { qname, qclass, ttl, record } => {
-                    let mut object = self.json_record(record);
-                    let omut = object.as_object_mut().unwrap();
-                    omut.insert("name".into(), qname.to_string().into());
-                    omut.insert("class".into(), format!("{:?}", qclass).into());
-                    omut.insert("ttl".into(), (*ttl).into());
-                    json!(object)
-                }
-                Answer::Pseudo { qname, opt } => {
-                    let object = json!({
-                        "name": qname.to_string(),
-                        "type": "OPT",
-                        "version": opt.edns0_version,
-                        "data": opt.data,
-                    });
-
-                    object
-                }
-            }
-        }).collect::<Vec<_>>();
-
-        json!(answers)
-    }
-
-    fn json_record(self, record: &Record) -> JsonValue {
-        match record {
-            Record::A(rec)      => json!({ "type": "A",     "address": rec.address.to_string() }),
-            Record::AAAA(rec)   => json!({ "type": "AAAA",  "address": rec.address.to_string() }),
-            Record::CAA(rec)    => json!({ "type": "CAA",   "critical": rec.critical, "tag": rec.tag, "value": rec.value }),
-            Record::CNAME(rec)  => json!({ "type": "CNAME", "domain": rec.domain.to_string() }),
-            Record::MX(rec)     => json!({ "type": "MX",    "preference": rec.preference, "exchange": rec.exchange.to_string() }),
-            Record::NS(rec)     => json!({ "type": "NS",    "nameserver": rec.nameserver.to_string() }),
-            Record::PTR(rec)    => json!({ "type": "PTR",   "cname": rec.cname.to_string() }),
-            Record::SOA(rec)    => json!({ "type": "SOA",   "mname": rec.mname.to_string() }),
-            Record::SRV(rec)    => json!({ "type": "SRV",   "priority": rec.priority, "weight": rec.weight, "port": rec.port, "target": rec.target.to_string() }),
-            Record::TXT(rec)    => json!({ "type": "TXT",   "message": rec.message }),
-            Record::Other { type_number, bytes } => {
-                let type_name = match type_number {
-                    UnknownQtype::HeardOf(name) => json!(name),
-                    UnknownQtype::UnheardOf(num) => json!(num),
-                };
-                json!({ "unknown": true, "type": type_name, "bytes": bytes })
-            }
+            json!({
+                "unknown": true,
+                "type": type_name,
+                "bytes": bytes,
+            })
         }
     }
 }
 
+/// Prints a message describing the “error code” field of a DNS packet. This
+/// happens when the packet was received correctly, but the server indicated
+/// an error.
 pub fn print_error_code(rcode: ErrorCode) {
     match rcode {
         ErrorCode::FormatError     => println!("Status: Format Error"),
@@ -346,5 +412,40 @@ pub fn print_error_code(rcode: ErrorCode) {
         ErrorCode::QueryRefused    => println!("Status: Query Refused"),
         ErrorCode::BadVersion      => println!("Status: Bad Version"),
         ErrorCode::Other(num)      => println!("Status: Other Failure ({})", num),
+    }
+}
+
+/// Returns the “phase” of operation where an error occurred. This gets shown
+/// to the user so they can debug what went wrong.
+fn erroneous_phase(error: &TransportError) -> &'static str {
+	match error {
+		TransportError::NetworkError(_)  => "network",
+		TransportError::HttpError(_)     => "http",
+		TransportError::TlsError(_)      => "tls",
+		TransportError::BadRequest       => "http-status",
+		TransportError::WireError(_)     => "protocol",
+	}
+}
+
+/// Formats an error into its human-readable message.
+fn error_message(error: TransportError) -> String {
+	match error {
+		TransportError::NetworkError(e)  => e.to_string(),
+		TransportError::HttpError(e)     => e.to_string(),
+		TransportError::TlsError(e)      => e.to_string(),
+		TransportError::BadRequest       => "Nameserver returned HTTP 400 Bad Request".into(),
+		TransportError::WireError(e)     => wire_error_message(e),
+	}
+}
+
+/// Formats a wire error into its human-readable message, describing what was
+/// wrong with the packet we received.
+fn wire_error_message(error: WireError) -> String {
+    match error {
+        WireError::IO                                   => "Malformed packet: insufficient data".into(),
+        WireError::WrongRecordLength { expected, got }  |
+        WireError::WrongLabelLength { expected, got }   => format!("Malformed packet: expected length {}, got {}", expected, got),
+        WireError::TooMuchRecursion(indices)            => format!("Malformed packet: too much recursion: {:?}", indices),
+        WireError::OutOfBounds(index)                   => format!("Malformed packet: out of bounds ({})", index),
     }
 }

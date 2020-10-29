@@ -209,8 +209,8 @@ impl Inputs {
             .or_else(|| input.parse().ok().map(QClass::Other));
 
         match qclass {
-            Some(class)  => Ok(self.classes.push(class)),
-            None         => Err(OptionsError::InvalidQueryClass(input.into())),
+            Some(c)  => Ok(self.classes.push(c)),
+            None     => Err(OptionsError::InvalidQueryClass(input.into())),
         }
     }
 

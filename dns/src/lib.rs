@@ -10,6 +10,7 @@
 #![warn(unused)]
 
 #![warn(clippy::all, clippy::pedantic)]
+#![allow(clippy::find_map)]
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::must_use_candidate)]

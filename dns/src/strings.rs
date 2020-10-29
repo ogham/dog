@@ -30,7 +30,7 @@ impl Labels {
 
     /// Encodes the given input string as labels. If any segment is too long,
     /// returns that segment as an error.
-    pub fn encode<'a>(input: &'a str) -> Result<Self, &'a str> {
+    pub fn encode(input: &str) -> Result<Self, &str> {
         let mut segments = Vec::new();
 
         for label in input.split('.') {
