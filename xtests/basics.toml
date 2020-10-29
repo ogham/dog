@@ -1,6 +1,7 @@
 # Colour output
 
 [[cmd]]
+name = "Running dog with ‘--colour=always’ produces colourful output"
 shell = "dog dns.google --colour=always"
 stdout = { string = "\u001B[1;32mA\u001B[0m \u001B[1;34mdns.google.\u001B[0m" }
 stderr = { empty = true }
@@ -8,6 +9,7 @@ status = 0
 tags = [ "live", "isp" ]
 
 [[cmd]]
+name = "Running dog produces an A record by default"
 shell = "dog dns.google"
 stdout = { string = "A dns.google." }
 stderr = { empty = true }
@@ -15,6 +17,7 @@ status = 0
 tags = [ "live", "isp" ]
 
 [[cmd]]
+name = "Running dog with ‘--colour=never’ produces plain output"
 shell = "dog dns.google --colour=never"
 stdout = { string = "A dns.google." }
 stderr = { empty = true }
@@ -25,6 +28,7 @@ tags = [ "live", "isp" ]
 # Default record type and transport
 
 [[cmd]]
+name = "Running dog with ‘-U’ produces no errors"
 shell = "dog dns.google -U"
 stdout = { string = "A dns.google." }
 stderr = { empty = true }
@@ -32,6 +36,7 @@ status = 0
 tags = [ "live", "isp" ]
 
 [[cmd]]
+name = "Running dog with ‘A’ produces no errors"
 shell = "dog A dns.google"
 stdout = { string = "A dns.google." }
 stderr = { empty = true }
@@ -39,6 +44,7 @@ status = 0
 tags = [ "live", "isp" ]
 
 [[cmd]]
+name = "Running dog with ‘--time’ outputs a duration"
 shell = "dog A dns.google --time"
 stdout = { string = "Ran in" }
 stderr = { empty = true }
@@ -49,6 +55,7 @@ tags = [ "live", "isp" ]
 # Network errors
 
 [[cmd]]
+name = "Using a DNS server that does not exist on the network"
 shell = "dog A dns.google @non.exist --time"
 stdout = { string = "Ran in" }
 stderr = { string = "Error [network]" }
