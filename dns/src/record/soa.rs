@@ -116,6 +116,24 @@ mod test {
     }
 
     #[test]
+    fn incorrect_record_length() {
+        let buf = &[
+            0x03, 0x65, 0x66, 0x67,  // mname
+            0x00,  // mname terminator
+            0x03, 0x65, 0x66, 0x67,  // rname
+            0x00,  // rname terminator
+            0x5d, 0x3c, 0xef, 0x02,  // Serial
+            0x00, 0x01, 0x51, 0x80,  // Refresh interval
+            0x00, 0x00, 0x1c, 0x20,  // Retry interval
+            0x00, 0x09, 0x3a, 0x80,  // Expire limit
+            0x00, 0x00, 0x01, 0x2c,  // Minimum TTL
+        ];
+
+        assert_eq!(SOA::read(89, &mut Cursor::new(buf)),
+                   Err(WireError::WrongLabelLength { expected: 89, got: 30 }));
+    }
+
+    #[test]
     fn record_empty() {
         assert_eq!(SOA::read(0, &mut Cursor::new(&[])),
                    Err(WireError::IO));

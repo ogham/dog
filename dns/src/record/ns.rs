@@ -57,6 +57,17 @@ mod test {
     }
 
     #[test]
+    fn incorrect_record_length() {
+        let buf = &[
+            0x03, 0x65, 0x66, 0x67,  // nameserver
+            0x00,  // nameserver terminator
+        ];
+
+        assert_eq!(NS::read(66, &mut Cursor::new(buf)),
+                   Err(WireError::WrongLabelLength { expected: 66, got: 5 }));
+    }
+
+    #[test]
     fn record_empty() {
         assert_eq!(NS::read(0, &mut Cursor::new(&[])),
                    Err(WireError::IO));

@@ -31,7 +31,8 @@ impl Wire for CAA {
         let flags = c.read_u8()?;
         trace!("Parsed flags -> {:#08b}", flags);
 
-        let critical = flags & 0b_1000_0000 == 0b_1000_0000;
+        let has_bit = |bit| { flags & bit == bit };
+        let critical = has_bit(0b_1000_0000);
         trace!("Parsed critical flag -> {:?}", critical);
 
         let tag_length = c.read_u8()?;
@@ -69,6 +70,7 @@ impl Wire for CAA {
     }
 }
 
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -104,6 +106,23 @@ mod test {
                        critical: true,
                        tag: String::from("issuewild"),
                        value: String::from("entrust.net"),
+                   });
+    }
+
+    #[test]
+    fn ignores_other_flags() {
+        let buf = &[
+            0x7F,  // flags (all except critical bit set)
+            0x01,  // tag length
+            0x65,  // tag
+            0x45,  // value
+        ];
+
+        assert_eq!(CAA::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
+                   CAA {
+                       critical: false,
+                       tag: String::from("e"),
+                       value: String::from("E"),
                    });
     }
 

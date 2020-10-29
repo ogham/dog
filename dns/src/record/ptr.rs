@@ -61,6 +61,17 @@ mod test {
     }
 
     #[test]
+    fn incorrect_record_length() {
+        let buf = &[
+            0x03, 0x65, 0x66, 0x67,  // cname
+            0x00,  // cname terminator
+        ];
+
+        assert_eq!(PTR::read(6, &mut Cursor::new(buf)),
+                   Err(WireError::WrongLabelLength { expected: 6, got: 5 }));
+    }
+
+    #[test]
     fn record_empty() {
         assert_eq!(PTR::read(0, &mut Cursor::new(&[])),
                    Err(WireError::IO));

@@ -85,6 +85,20 @@ mod test {
     }
 
     #[test]
+    fn incorrect_record_length() {
+        let buf = &[
+            0x00, 0x01,  // priority
+            0x00, 0x01,  // weight
+            0x92, 0x7c,  // port
+            0x03, 0x61, 0x74, 0x61,  // target
+            0x00,  // target terminator
+        ];
+
+        assert_eq!(SRV::read(16, &mut Cursor::new(buf)),
+                   Err(WireError::WrongLabelLength { expected: 16, got: 11 }));
+    }
+
+    #[test]
     fn record_empty() {
         assert_eq!(SRV::read(0, &mut Cursor::new(&[])),
                    Err(WireError::IO));

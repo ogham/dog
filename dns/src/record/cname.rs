@@ -55,6 +55,17 @@ mod test {
     }
 
     #[test]
+    fn incorrect_record_length() {
+        let buf = &[
+            0x03, 0x65, 0x66, 0x67,  // domain
+            0x00,  // domain terminator
+        ];
+
+        assert_eq!(CNAME::read(6, &mut Cursor::new(buf)),
+                   Err(WireError::WrongLabelLength { expected: 6, got: 5 }));
+    }
+
+    #[test]
     fn record_empty() {
         assert_eq!(CNAME::read(0, &mut Cursor::new(&[])),
                    Err(WireError::IO));
