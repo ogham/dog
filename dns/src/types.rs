@@ -131,8 +131,8 @@ pub struct Flags {
     /// Whether this packet is a response packet.
     pub response: bool,
 
-    /// Number representing the operation being performed.
-    pub opcode: u8,
+    /// The operation being performed.
+    pub opcode: Opcode,
 
     /// In a response, whether the server is providing authoritative DNS responses.
     pub authoritative: bool,
@@ -156,6 +156,19 @@ pub struct Flags {
 
     /// In a response, a code indicating an error if one occurred.
     pub error_code: Option<ErrorCode>,
+}
+
+/// A number representing the operation being performed.
+#[derive(PartialEq, Debug, Copy, Clone)]
+pub enum Opcode {
+
+    /// This request is a standard query, or this response is answering a
+    /// standard query.
+    Query,
+
+    /// Any other opcode. This can be from 1 to 15, as the opcode field is
+    /// four bits wide, and 0 is taken.
+    Other(u8),
 }
 
 

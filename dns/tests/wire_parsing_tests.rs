@@ -1,6 +1,6 @@
 use std::net::Ipv4Addr;
 
-use dns::{Response, Query, Answer, Labels, Flags, QClass, qtype};
+use dns::{Response, Query, Answer, Labels, Flags, Opcode, QClass, qtype};
 use dns::record::{Record, A, CNAME, OPT};
 
 
@@ -45,7 +45,7 @@ fn parse_response_standard() {
         transaction_id: 0x0dcd,
         flags: Flags {
             response: true,
-            opcode: 0,
+            opcode: Opcode::Query,
             authoritative: false,
             truncated: false,
             recursion_desired: true,
@@ -118,7 +118,7 @@ fn parse_response_with_mixed_string() {
         transaction_id: 0x069f,
         flags: Flags {
             response: true,
-            opcode: 0,
+            opcode: Opcode::Query,
             authoritative: false,
             truncated: false,
             recursion_desired: true,

@@ -262,7 +262,8 @@ impl Flags {
         let mut                          bits  = 0b_0000_0000_0000_0000;
         if self.response               { bits += 0b_1000_0000_0000_0000; }
         match self.opcode {
-                                _ =>   { bits += 0b_0000_0000_0000_0000; }
+            Opcode::Query     =>       { bits += 0b_0000_0000_0000_0000; }
+            Opcode::Other(_)  =>       { unimplemented!(); }
         }
         if self.authoritative          { bits += 0b_0000_0100_0000_0000; }
         if self.truncated              { bits += 0b_0000_0010_0000_0000; }
@@ -281,7 +282,7 @@ impl Flags {
 
         Self {
             response:               has_bit(0b_1000_0000_0000_0000),
-            opcode:                 0,
+            opcode:                 Opcode::from_bits((bits.to_be_bytes()[0] & 0b_0111_1000) >> 3),
             authoritative:          has_bit(0b_0000_0100_0000_0000),
             truncated:              has_bit(0b_0000_0010_0000_0000),
             recursion_desired:      has_bit(0b_0000_0001_0000_0000),
@@ -289,6 +290,22 @@ impl Flags {
             authentic_data:         has_bit(0b_0000_0000_0010_0000),
             checking_disabled:      has_bit(0b_0000_0000_0001_0000),
             error_code:             ErrorCode::from_bits(bits & 0b_1111),
+        }
+    }
+}
+
+
+impl Opcode {
+
+    /// Extracts the opcode from this four-bit number, which should have been
+    /// extracted from the packet and shifted to be in the range 0–15.
+    fn from_bits(bits: u8) -> Self {
+        if bits == 0 {
+            Self::Query
+        }
+        else {
+            assert!(bits <= 15, "bits {:#08b} out of range", bits);
+            Self::Other(bits)
         }
     }
 }
