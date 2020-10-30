@@ -1,8 +1,6 @@
+#![cfg_attr(not(feature="https"), allow(unused))]
+
 use async_trait::async_trait;
-use hyper_tls::HttpsConnector;
-use hyper::Body;
-use hyper::body::HttpBody as _;
-use hyper::Client;
 use log::*;
 
 use dns::{Request, Response};
@@ -48,9 +46,13 @@ impl HttpsTransport {
 
 #[async_trait]
 impl Transport for HttpsTransport {
+
+    #[cfg(feature="https")]
     async fn send(&self, request: &Request) -> Result<Response, Error> {
-        let https = HttpsConnector::new();
-        let client = Client::builder().build::<_, hyper::Body>(https);
+        use hyper::body::HttpBody as _;
+
+        let https = hyper_tls::HttpsConnector::new();
+        let client = hyper::Client::builder().build::<_, hyper::Body>(https);
 
         let bytes = request.to_bytes().expect("failed to serialise request");
         info!("Sending {} bytes of data to {:?}", bytes.len(), self.url);
@@ -60,7 +62,7 @@ impl Transport for HttpsTransport {
             .uri(&self.url)
             .header("Content-Type", "application/dns-message")
             .header("Accept",       "application/dns-message")
-            .body(Body::from(bytes))
+            .body(hyper::Body::from(bytes))
             .expect("Failed to build request");  // we control the request, so this should never fail
 
         let mut response = client.request(request).await?;
@@ -81,5 +83,10 @@ impl Transport for HttpsTransport {
         let response = Response::from_bytes(&buf)?;
 
         Ok(response)
+    }
+
+    #[cfg(not(feature="https"))]
+    async fn send(&self, _request: &Request) -> Result<Response, Error> {
+        unimplemented!("HTTPS feature disabled")
     }
 }

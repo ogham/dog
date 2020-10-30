@@ -70,9 +70,11 @@ pub enum Error {
     NetworkError(tokio::io::Error),
 
     /// There was a problem making an HTTPS request.
+    #[cfg(feature="https")]
     HttpError(hyper::Error),
 
     /// There was a problem making a TLS request.
+    #[cfg(feature="tls")]
     TlsError(native_tls::Error),
 
     /// The data in the response did not parse correctly from the DNS wire

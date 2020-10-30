@@ -430,7 +430,9 @@ pub fn print_error_code(rcode: ErrorCode) {
 fn erroneous_phase(error: &TransportError) -> &'static str {
 	match error {
 		TransportError::NetworkError(_)  => "network",
-		TransportError::HttpError(_)     => "http",
+        #[cfg(feature="https")]
+        TransportError::HttpError(_)     => "http",
+        #[cfg(feature="tls")]
 		TransportError::TlsError(_)      => "tls",
 		TransportError::BadRequest       => "http-status",
 		TransportError::WireError(_)     => "protocol",
@@ -441,7 +443,9 @@ fn erroneous_phase(error: &TransportError) -> &'static str {
 fn error_message(error: TransportError) -> String {
 	match error {
 		TransportError::NetworkError(e)  => e.to_string(),
+        #[cfg(feature="https")]
 		TransportError::HttpError(e)     => e.to_string(),
+        #[cfg(feature="tls")]
 		TransportError::TlsError(e)      => e.to_string(),
 		TransportError::BadRequest       => "Nameserver returned HTTP 400 Bad Request".into(),
 		TransportError::WireError(e)     => wire_error_message(e),

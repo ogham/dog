@@ -6,7 +6,7 @@ shell = "dog --https @https://expired.badssl.com/ lookup.dog"
 stdout = { empty = true }
 stderr = { string = "Error [http]: error trying to connect: The certificate was not trusted." }
 status = 1
-tags = [ 'live', 'badssl' ]
+tags = [ 'live', 'badssl', 'https' ]
 
 [[cmd]]
 name = "Using a DNS-over-HTTPS server with the wrong host in the certificate"
@@ -14,7 +14,7 @@ shell = "dog --https @https://wrong.host.badssl.com/ lookup.dog"
 stdout = { empty = true }
 stderr = { string = "Error [http]: error trying to connect: The certificate was not trusted." }
 status = 1
-tags = [ 'live', 'badssl' ]
+tags = [ 'live', 'badssl', 'https' ]
 
 [[cmd]]
 name = "Using a DNS-over-HTTPS server with a self-signed certificate"
@@ -22,7 +22,7 @@ shell = "dog --https @https://self-signed.badssl.com/ lookup.dog"
 stdout = { empty = true }
 stderr = { string = "Error [http]: error trying to connect: The certificate was not trusted." }
 status = 1
-tags = [ 'live', 'badssl' ]
+tags = [ 'live', 'badssl', 'https' ]
 
 [[cmd]]
 name = "Using a DNS-over-HTTPS server with an untrusted root certificate"
@@ -30,7 +30,7 @@ shell = "dog --https @https://untrusted-root.badssl.com/ lookup.dog"
 stdout = { empty = true }
 stderr = { string = "Error [http]: error trying to connect: The certificate was not trusted." }
 status = 1
-tags = [ 'live', 'badssl' ]
+tags = [ 'live', 'badssl', 'https' ]
 
 [[cmd]]
 name = "Using a DNS-over-HTTPS server with a revoked certificate"
@@ -38,7 +38,7 @@ shell = "dog --https @https://revoked.badssl.com/ lookup.dog"
 stdout = { empty = true }
 stderr = { string = "Error [http]: error trying to connect: The certificate was not trusted." }
 status = 1
-tags = [ 'live', 'badssl' ]
+tags = [ 'live', 'badssl', 'https' ]
 
 [[cmd]]
 name = "Using a DNS-over-HTTPS server with a known bad certificate"
@@ -46,7 +46,7 @@ shell = "dog --https @https://superfish.badssl.com/ lookup.dog"
 stdout = { empty = true }
 stderr = { string = "Error [http]: error trying to connect: The certificate was not trusted." }
 status = 1
-tags = [ 'live', 'badssl' ]
+tags = [ 'live', 'badssl', 'https' ]
 
 
 # Handshake failures
@@ -57,7 +57,7 @@ shell = "dog --https @https://null.badssl.com/ lookup.dog"
 stdout = { empty = true }
 stderr = { string = "Error [http]: error trying to connect: handshake failure" }
 status = 1
-tags = [ 'live', 'badssl' ]
+tags = [ 'live', 'badssl', 'https' ]
 
 [[cmd]]
 name = "Using a DNS-over-HTTPS server that accepts the rc4-md5 cipher"
@@ -65,4 +65,4 @@ shell = "dog --https @https://rc4-md5.badssl.com/ lookup.dog"
 stdout = { empty = true }
 stderr = { string = "Error [http]: error trying to connect: handshake failure" }
 status = 1
-tags = [ 'live', 'badssl' ]
+tags = [ 'live', 'badssl', 'https' ]

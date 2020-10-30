@@ -1,5 +1,6 @@
 all: build test xtests
 all-release: build-release test-release xtests-release
+all-quick: build-quick test-quick xtests-quick
 
 export DOG_DEBUG := ""
 
@@ -13,6 +14,10 @@ export DOG_DEBUG := ""
     cargo build --release --verbose
     strip target/release/dog
 
+# compiles the dog binary (without some features)
+@build-quick:
+    cargo build --no-default-features
+
 
 # runs unit tests
 @test:
@@ -21,6 +26,10 @@ export DOG_DEBUG := ""
 # runs unit tests (in release mode)
 @test-release:
     cargo test --release --all --verbose
+
+# runs unit tests (without some features)
+@test-quick:
+    cargo test --workspace --no-default-features -- --quiet
 
 # runs mutation tests
 @test-mutation:
@@ -35,6 +44,10 @@ export DOG_DEBUG := ""
 # runs extended tests (in release mode)
 @xtests-release:
     specsheet xtests/*.toml -O cmd.target.dog="${CARGO_TARGET_DIR:-../target}/release/dog"
+
+# runs extended tests (omitting certain feature tests)
+@xtests-quick:
+    specsheet xtests/*.toml -O cmd.target.dog="${CARGO_TARGET_DIR:-../target}/debug/dog" --skip-tags=udp,tls,https,json
 
 
 # runs fuzzing on the dns crate

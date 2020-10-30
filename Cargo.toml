@@ -50,3 +50,8 @@ regex = { version = "1.3", default_features = false, features = ["std"] }
 
 [dev-dependencies]
 pretty_assertions = "0.6"
+
+[features]
+default = ["tls", "https"]
+tls = ["dns-transport/tls"]
+https = ["dns-transport/https"]

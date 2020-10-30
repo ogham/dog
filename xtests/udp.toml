@@ -6,7 +6,7 @@ shell = "dog a-example.lookup.dog @1.1.1.1 --short"
 stdout = { string = '10.20.30.40' }
 stderr = { empty = true }
 status = 0
-tags = [ "live", "cloudflare" ]
+tags = [ "live", "cloudflare", "udp", "a" ]
 
 [[cmd]]
 name = "Look up a missing A record using UDP"
@@ -14,7 +14,7 @@ shell = "dog non.existent @1.1.1.1 --short"
 stdout = { empty = true }
 stderr = { string = "No results" }
 status = 2
-tags = [ "live", "cloudflare" ]
+tags = [ "live", "cloudflare", "udp", "a" ]
 
 
 # AAAA records
@@ -25,7 +25,7 @@ shell = "dog AAAA aaaa-example.lookup.dog @1.1.1.1 --short"
 stdout = { string = '::1' }
 stderr = { empty = true }
 status = 0
-tags = [ "live", "cloudflare" ]
+tags = [ "live", "cloudflare", "udp", "aaaa" ]
 
 [[cmd]]
 name = "Look up a missing AAAA record using UDP"
@@ -33,7 +33,7 @@ shell = "dog AAAA non.existent @1.1.1.1 --short"
 stdout = { empty = true }
 stderr = { string = "No results" }
 status = 2
-tags = [ "live", "cloudflare" ]
+tags = [ "live", "cloudflare", "udp", "aaaa" ]
 
 
 # CAA records
@@ -44,7 +44,7 @@ shell = "dog CAA caa-example.lookup.dog @1.1.1.1 --short"
 stdout = { string = '"issue" "some.certificate.authority" (non-critical)' }
 stderr = { empty = true }
 status = 0
-tags = [ "live", "cloudflare" ]
+tags = [ "live", "cloudflare", "udp", "caa" ]
 
 [[cmd]]
 name = "Look up a missing CAA record using UDP"
@@ -52,7 +52,7 @@ shell = "dog CAA non.existent @1.1.1.1 --short"
 stdout = { empty = true }
 stderr = { string = "No results" }
 status = 2
-tags = [ "live", "cloudflare" ]
+tags = [ "live", "cloudflare", "udp", "caa" ]
 
 
 # CNAME records
@@ -63,7 +63,7 @@ shell = "dog CNAME cname-example.lookup.dog @1.1.1.1 --short"
 stdout = { string = '"dns.lookup.dog."' }
 stderr = { empty = true }
 status = 0
-tags = [ "live", "cloudflare" ]
+tags = [ "live", "cloudflare", "udp", "cname" ]
 
 [[cmd]]
 name = "Look up a missing CNAME record using UDP"
@@ -71,7 +71,7 @@ shell = "dog CNAME non.existent @1.1.1.1 --short"
 stdout = { empty = true }
 stderr = { string = "No results" }
 status = 2
-tags = [ "live", "cloudflare" ]
+tags = [ "live", "cloudflare", "udp", "cname" ]
 
 
 # CNAME records
@@ -82,7 +82,7 @@ shell = "dog HINFO hinfo-example.lookup.dog @1.1.1.1 --short"
 stdout = { string = '"some-kinda-cpu"' }
 stderr = { empty = true }
 status = 0
-tags = [ "live", "cloudflare" ]
+tags = [ "live", "cloudflare", "udp", "hinfo" ]
 
 [[cmd]]
 name = "Look up a missing HINFO record using UDP"
@@ -90,7 +90,7 @@ shell = "dog HINFO non.existent @1.1.1.1 --short"
 stdout = { empty = true }
 stderr = { string = "No results" }
 status = 2
-tags = [ "live", "cloudflare" ]
+tags = [ "live", "cloudflare", "udp", "hinfo" ]
 
 
 # MX records
@@ -101,7 +101,7 @@ shell = "dog MX mx-example.lookup.dog @1.1.1.1 --short"
 stdout = { string = '10 "some.mail.server."' }
 stderr = { empty = true }
 status = 0
-tags = [ "live", "cloudflare" ]
+tags = [ "live", "cloudflare", "udp", "mx" ]
 
 [[cmd]]
 name = "Look up a missing MX record using UDP"
@@ -109,7 +109,7 @@ shell = "dog MX non.existent @1.1.1.1 --short"
 stdout = { empty = true }
 stderr = { string = "No results" }
 status = 2
-tags = [ "live", "cloudflare" ]
+tags = [ "live", "cloudflare", "udp", "mx" ]
 
 
 # NS records
@@ -120,7 +120,7 @@ shell = "dog NS lookup.dog @1.1.1.1 --short"
 stdout = { string = 'ns1' }
 stderr = { empty = true }
 status = 0
-tags = [ "live", "cloudflare" ]
+tags = [ "live", "cloudflare", "udp", "ns" ]
 
 [[cmd]]
 name = "Look up a missing NS record using UDP"
@@ -128,7 +128,7 @@ shell = "dog NS non.existent @1.1.1.1 --short"
 stdout = { empty = true }
 stderr = { string = "No results" }
 status = 2
-tags = [ "live", "cloudflare" ]
+tags = [ "live", "cloudflare", "udp", "ns" ]
 
 
 # SOA records
@@ -139,7 +139,7 @@ shell = "dog SOA lookup.dog @1.1.1.1 --short"
 stdout = { string = 'ns1' }
 stderr = { empty = true }
 status = 0
-tags = [ "live", "cloudflare" ]
+tags = [ "live", "cloudflare", "udp", "soa" ]
 
 [[cmd]]
 name = "Look up a missing SOA record using UDP"
@@ -147,7 +147,7 @@ shell = "dog MX non.existent @1.1.1.1 --short"
 stdout = { empty = true }
 stderr = { string = "No results" }
 status = 2
-tags = [ "live", "cloudflare" ]
+tags = [ "live", "cloudflare", "udp", "soa" ]
 
 
 # SRV records
@@ -158,7 +158,7 @@ shell = "dog SRV srv-example.lookup.dog @1.1.1.1 --short"
 stdout = { string = '20 "dns.lookup.dog.":5000' }
 stderr = { empty = true }
 status = 0
-tags = [ "live", "cloudflare" ]
+tags = [ "live", "cloudflare", "udp", "srv" ]
 
 [[cmd]]
 name = "Look up a missing SRV record using UDP"
@@ -166,7 +166,7 @@ shell = "dog SRV non.existent @1.1.1.1 --short"
 stdout = { empty = true }
 stderr = { string = "No results" }
 status = 2
-tags = [ "live", "cloudflare" ]
+tags = [ "live", "cloudflare", "udp", "srv" ]
 
 
 # TXT records
@@ -177,7 +177,7 @@ shell = "dog TXT txt-example.lookup.dog @1.1.1.1 --short"
 stdout = { string = '"Cache Invalidation and Naming Things"' }
 stderr = { empty = true }
 status = 0
-tags = [ "live", "cloudflare" ]
+tags = [ "live", "cloudflare", "udp", "txt" ]
 
 [[cmd]]
 name = "Look up a missing TXT record using UDP"
@@ -185,4 +185,4 @@ shell = "dog TXT non.existent @1.1.1.1 --short"
 stdout = { empty = true }
 stderr = { string = "No results" }
 status = 2
-tags = [ "live", "cloudflare" ]
+tags = [ "live", "cloudflare", "udp", "txt" ]

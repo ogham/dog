@@ -1,8 +1,9 @@
+#![cfg_attr(not(feature="tls"), allow(unused))]
+
 use std::convert::TryFrom;
 
 use async_trait::async_trait;
 use log::*;
-use native_tls::TlsConnector;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 
@@ -50,8 +51,10 @@ impl TlsTransport {
 
 #[async_trait]
 impl Transport for TlsTransport {
+
+    #[cfg(feature="tls")]
     async fn send(&self, request: &Request) -> Result<Response, Error> {
-        let connector = TlsConnector::new()?;
+        let connector = native_tls::TlsConnector::new()?;
         let connector = tokio_tls::TlsConnector::from(connector);
 
         info!("Opening TLS socket");
@@ -86,6 +89,11 @@ impl Transport for TlsTransport {
         let response = Response::from_bytes(&buf[2..len])?;
 
         Ok(response)
+    }
+
+    #[cfg(not(feature="tls"))]
+    async fn send(&self, _request: &Request) -> Result<Response, Error> {
+        unimplemented!("TLS feature disabled")
     }
 }
 
