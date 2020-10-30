@@ -180,6 +180,7 @@ fn read_string_recursive(labels: &mut Labels, c: &mut Cursor<&[u8]>, recursions:
 #[cfg(test)]
 mod test {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     // The buffers used in these tests contain nothing but the labels we’re
     // decoding. In DNS packets found in the wild, the cursor will be able to

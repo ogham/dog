@@ -172,6 +172,7 @@ dependencies = [
  "byteorder",
  "log",
  "mutagen",
+ "pretty_assertions",
 ]
 
 [[package]]

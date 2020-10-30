@@ -74,6 +74,7 @@ impl Wire for CAA {
 #[cfg(test)]
 mod test {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn parses_non_critical() {

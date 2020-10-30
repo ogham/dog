@@ -452,6 +452,7 @@ mod test {
     use super::*;
     use crate::record::{Record, A, SOA, OPT, UnknownQtype};
     use std::net::Ipv4Addr;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn complete_response() {
