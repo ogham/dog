@@ -118,6 +118,7 @@ impl Table {
             Record::AAAA(_)   => self.colours.aaaa.paint("AAAA"),
             Record::CAA(_)    => self.colours.caa.paint("CAA"),
             Record::CNAME(_)  => self.colours.cname.paint("CNAME"),
+            Record::HINFO(_)  => self.colours.hinfo.paint("HINFO"),
             Record::MX(_)     => self.colours.mx.paint("MX"),
             Record::NS(_)     => self.colours.ns.paint("NS"),
             Record::PTR(_)    => self.colours.ptr.paint("PTR"),

@@ -74,6 +74,25 @@ status = 2
 tags = [ "live", "cloudflare" ]
 
 
+# CNAME records
+
+[[cmd]]
+name = "Look up an existing HINFO record using TLS"
+shell = "dog HINFO hinfo-example.lookup.dog @1.1.1.1 --short --tls"
+stdout = { string = '"some-kinda-os"' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing HINFO record using TLS"
+shell = "dog HINFO non.existent @1.1.1.1 --short --tls"
+stdout = { empty = true }
+stderr = { string = "No results" }
+status = 2
+tags = [ "live", "cloudflare" ]
+
+
 # MX records
 
 [[cmd]]

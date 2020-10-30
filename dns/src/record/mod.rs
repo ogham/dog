@@ -13,6 +13,9 @@ pub use self::caa::CAA;
 mod cname;
 pub use self::cname::CNAME;
 
+mod hinfo;
+pub use self::hinfo::HINFO;
+
 mod mx;
 pub use self::mx::MX;
 
@@ -54,6 +57,9 @@ pub enum Record {
 
     /// A **CNAME** record.
     CNAME(CNAME),
+
+    /// A **HINFO** record.
+    HINFO(HINFO),
 
     /// A **MX** record.
     MX(MX),

@@ -74,6 +74,25 @@ status = 2
 tags = [ "live", "cloudflare" ]
 
 
+# HINFO records
+
+[[cmd]]
+name = "Look up an existing HINFO record using HTTPS"
+shell = "dog HINFO hinfo-example.lookup.dog @https://cloudflare-dns.com/dns-query --short --https"
+stdout = { string = '"some-kinda-os"' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing HINFO record using HTTPS"
+shell = "dog HINFO non.existent @https://cloudflare-dns.com/dns-query --short --https"
+stdout = { empty = true }
+stderr = { string = "No results" }
+status = 2
+tags = [ "live", "cloudflare" ]
+
+
 # MX records
 
 [[cmd]]

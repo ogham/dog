@@ -194,6 +194,9 @@ impl TextFormat {
             Record::CNAME(ref cname) => {
                 format!("{:?}", cname.domain.to_string())
             }
+            Record::HINFO(ref hinfo) => {
+                format!("{:?} {:?}", hinfo.cpu, hinfo.os)
+            }
             Record::MX(ref mx) => {
                 format!("{} {:?}", mx.preference, mx.exchange.to_string())
             }
@@ -343,6 +346,13 @@ fn json_record(record: &Record) -> JsonValue {
             json!({
                 "type": "CNAME",
                 "domain": rec.domain.to_string(),
+            })
+        }
+        Record::HINFO(rec) => {
+            json!({
+                "type": "HINFO",
+                "cpu": rec.cpu,
+                "os": rec.os,
             })
         }
         Record::MX(rec) => {

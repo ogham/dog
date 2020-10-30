@@ -74,6 +74,25 @@ status = 2
 tags = [ "live", "cloudflare" ]
 
 
+# HINFO records
+
+[[cmd]]
+name = "Look up an existing HINFO record using TCP"
+shell = "dog HINFO hinfo-example.lookup.dog @1.1.1.1 --short --tcp"
+stdout = { string = '"some-kinda-cpu"' }
+stderr = { empty = true }
+status = 0
+tags = [ "live", "cloudflare" ]
+
+[[cmd]]
+name = "Look up a missing HINFO record using TCP"
+shell = "dog HINFO non.existent @1.1.1.1 --short --tcp"
+stdout = { empty = true }
+stderr = { string = "No results" }
+status = 2
+tags = [ "live", "cloudflare" ]
+
+
 # MX records
 
 [[cmd]]
