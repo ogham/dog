@@ -26,6 +26,7 @@ pub struct Colours {
     pub sshfp: Style,
     pub soa: Style,
     pub srv: Style,
+    pub tlsa: Style,
     pub txt: Style,
     pub unknown: Style,
 }
@@ -55,6 +56,7 @@ impl Colours {
             sshfp: Cyan.normal(),
             soa: Purple.normal(),
             srv: Cyan.normal(),
+            tlsa: Yellow.normal(),
             txt: Yellow.normal(),
             unknown: White.on(Red),
         }

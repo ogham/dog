@@ -126,6 +126,7 @@ impl Table {
             Record::SSHFP(_)  => self.colours.sshfp.paint("SSHFP"),
             Record::SOA(_)    => self.colours.soa.paint("SOA"),
             Record::SRV(_)    => self.colours.srv.paint("SRV"),
+            Record::TLSA(_)   => self.colours.tlsa.paint("TLSA"),
             Record::TXT(_)    => self.colours.txt.paint("TXT"),
 
             Record::Other { ref type_number, .. } => self.colours.unknown.paint(type_number.to_string()),

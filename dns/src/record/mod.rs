@@ -40,6 +40,9 @@ pub use self::soa::SOA;
 mod srv;
 pub use self::srv::SRV;
 
+mod tlsa;
+pub use self::tlsa::TLSA;
+
 mod txt;
 pub use self::txt::TXT;
 
@@ -89,6 +92,9 @@ pub enum Record {
 
     /// A **SRV** record.
     SRV(SRV),
+
+    /// A **TLSA** record.
+    TLSA(TLSA),
 
     /// A **TXT** record.
     TXT(TXT),

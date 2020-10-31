@@ -237,6 +237,14 @@ impl TextFormat {
             Record::SRV(ref srv) => {
                 format!("{} {} {:?}:{}", srv.priority, srv.weight, srv.target.to_string(), srv.port)
             }
+            Record::TLSA(ref tlsa) => {
+                format!("{} {} {} {:?}",
+                    tlsa.certificate_usage,
+                    tlsa.selector,
+                    tlsa.matching_type,
+                    tlsa.hex_certificate_data().to_string(),
+                )
+            }
             Record::TXT(ref txt) => {
                 format!("{:?}", txt.message)
             }
@@ -427,6 +435,15 @@ fn json_record(record: &Record) -> JsonValue {
                 "weight": rec.weight,
                 "port": rec.port,
                 "target": rec.target.to_string(),
+            })
+        }
+        Record::TLSA(rec) => {
+            json!({
+                "type": "TLSA",
+                "certificate_usage": rec.certificate_usage,
+                "selector": rec.selector,
+                "matching_type": rec.matching_type,
+                "certificate_data": rec.hex_certificate_data().to_string(),
             })
         }
         Record::TXT(rec) => {

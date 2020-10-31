@@ -184,6 +184,7 @@ impl Record {
         try_record!(SSHFP);
         try_record!(SOA);
         try_record!(SRV);
+        try_record!(TLSA);
         try_record!(TXT);
 
         // Otherwise, collect the bytes into a vector and return an unknown
@@ -245,6 +246,7 @@ pub fn find_qtype_number(record_type: &str) -> Option<TypeInt> {
     try_record!(SSHFP);
     try_record!(SOA);
     try_record!(SRV);
+    try_record!(TLSA);
     try_record!(TXT);
 
     None
