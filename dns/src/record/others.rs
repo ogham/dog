@@ -56,7 +56,6 @@ static TYPES: &[(&str, u16)] = &[
     ("IXFR",      251),
     ("KEY",        25),
     ("KX",         36),
-    ("LOC",        29),
     ("NAPTR",      35),
     ("NSEC",       47),
     ("NSEC3",      50),

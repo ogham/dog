@@ -197,6 +197,16 @@ impl TextFormat {
             Record::HINFO(ref hinfo) => {
                 format!("{:?} {:?}", hinfo.cpu, hinfo.os)
             }
+            Record::LOC(ref loc) => {
+                format!("{} ({}, {}) ({}, {}, {})",
+                    loc.size,
+                    loc.horizontal_precision,
+                    loc.vertical_precision,
+                    loc.latitude,
+                    loc.longitude,
+                    loc.altitude,
+                )
+            }
             Record::MX(ref mx) => {
                 format!("{} {:?}", mx.preference, mx.exchange.to_string())
             }
@@ -360,6 +370,21 @@ fn json_record(record: &Record) -> JsonValue {
                 "type": "HINFO",
                 "cpu": rec.cpu,
                 "os": rec.os,
+            })
+        }
+        Record::LOC(rec) => {
+            json!({
+                "type": "LOC",
+                "size": rec.size.to_string(),
+                "precision": {
+                    "horizontal": rec.horizontal_precision,
+                    "vertical": rec.vertical_precision,
+                },
+                "point": {
+                    "latitude": rec.latitude,
+                    "longitude": rec.longitude,
+                    "altitude": rec.altitude,
+                },
             })
         }
         Record::MX(rec) => {

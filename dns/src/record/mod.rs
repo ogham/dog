@@ -16,6 +16,9 @@ pub use self::cname::CNAME;
 mod hinfo;
 pub use self::hinfo::HINFO;
 
+mod loc;
+pub use self::loc::LOC;
+
 mod mx;
 pub use self::mx::MX;
 
@@ -63,6 +66,9 @@ pub enum Record {
 
     /// A **HINFO** record.
     HINFO(HINFO),
+
+    /// A **LOC** record.
+    LOC(LOC),
 
     /// A **MX** record.
     MX(MX),
