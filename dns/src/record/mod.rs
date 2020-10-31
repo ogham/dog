@@ -28,6 +28,9 @@ pub use self::opt::OPT;
 mod ptr;
 pub use self::ptr::PTR;
 
+mod sshfp;
+pub use self::sshfp::SSHFP;
+
 mod soa;
 pub use self::soa::SOA;
 
@@ -71,6 +74,9 @@ pub enum Record {
 
     /// A **PTR** record.
     PTR(PTR),
+
+    /// A **SSHFP** record.
+    SSHFP(SSHFP),
 
     /// A **SOA** record.
     SOA(SOA),

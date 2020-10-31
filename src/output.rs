@@ -206,6 +206,13 @@ impl TextFormat {
             Record::PTR(ref ptr) => {
                 format!("{:?}", ptr.cname.to_string())
             }
+            Record::SSHFP(ref sshfp) => {
+                format!("{} {} {}",
+                    sshfp.algorithm,
+                    sshfp.fingerprint_type,
+                    sshfp.hex_fingerprint(),
+                )
+            }
             Record::SOA(ref soa) => {
                 format!("{:?} {:?} {} {} {} {} {}",
                     soa.mname.to_string(),
@@ -372,6 +379,14 @@ fn json_record(record: &Record) -> JsonValue {
             json!({
                 "type": "PTR",
                 "cname": rec.cname.to_string(),
+            })
+        }
+        Record::SSHFP(rec) => {
+            json!({
+                "type": "SSHFP",
+                "algorithm": rec.algorithm,
+                "fingerprint_type": rec.fingerprint_type,
+                "fingerprint": rec.hex_fingerprint(),
             })
         }
         Record::SOA(rec) => {

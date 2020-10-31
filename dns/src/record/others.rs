@@ -66,7 +66,6 @@ static TYPES: &[(&str, u16)] = &[
     ("RP",         17),
     ("SIG",        24),
     ("SMIMEA",     53),
-    ("SSHFP",      44),
     ("TA",      32768),
     ("TKEY",      249),
     ("TLSA",       52),

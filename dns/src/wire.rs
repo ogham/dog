@@ -180,6 +180,7 @@ impl Record {
         try_record!(NS);
         // OPT is handled separately
         try_record!(PTR);
+        try_record!(SSHFP);
         try_record!(SOA);
         try_record!(SRV);
         try_record!(TXT);
@@ -239,6 +240,7 @@ pub fn find_qtype_number(record_type: &str) -> Option<TypeInt> {
     try_record!(NS);
     // OPT is elsewhere
     try_record!(PTR);
+    try_record!(SSHFP);
     try_record!(SOA);
     try_record!(SRV);
     try_record!(TXT);

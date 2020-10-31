@@ -122,6 +122,7 @@ impl Table {
             Record::MX(_)     => self.colours.mx.paint("MX"),
             Record::NS(_)     => self.colours.ns.paint("NS"),
             Record::PTR(_)    => self.colours.ptr.paint("PTR"),
+            Record::SSHFP(_)  => self.colours.sshfp.paint("SSHFP"),
             Record::SOA(_)    => self.colours.soa.paint("SOA"),
             Record::SRV(_)    => self.colours.srv.paint("SRV"),
             Record::TXT(_)    => self.colours.txt.paint("TXT"),
