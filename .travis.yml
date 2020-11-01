@@ -25,7 +25,10 @@ jobs:
     - name: 'Rust: mutation testing'
       rust: nightly
       install:
-        - cargo install cargo-mutagen
+        - git clone https://github.com/llogiq/mutagen.git
+        - cd mutagen/mutagen-runner
+        - cargo install --path .
+        - cd ../..
       script:
         - cargo test    --package dns --features=dns/with_mutagen -- --quiet
         - cargo mutagen --package dns --features=dns/with_mutagen
