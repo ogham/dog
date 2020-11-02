@@ -178,6 +178,7 @@ impl Record {
         try_record!(HINFO);
         try_record!(LOC);
         try_record!(MX);
+        try_record!(NAPTR);
         try_record!(NS);
         // OPT is handled separately
         try_record!(PTR);
@@ -240,6 +241,7 @@ pub fn find_qtype_number(record_type: &str) -> Option<TypeInt> {
     try_record!(HINFO);
     try_record!(LOC);
     try_record!(MX);
+    try_record!(NAPTR);
     try_record!(NS);
     // OPT is elsewhere
     try_record!(PTR);

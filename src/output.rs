@@ -210,6 +210,16 @@ impl TextFormat {
             Record::MX(ref mx) => {
                 format!("{} {:?}", mx.preference, mx.exchange.to_string())
             }
+            Record::NAPTR(ref naptr) => {
+                format!("{} {} {} {:?} /{}/ {:?}",
+                    naptr.order,
+                    naptr.preference,
+                    naptr.flags,
+                    naptr.service,
+                    naptr.regex,
+                    naptr.replacement.to_string(),
+                )
+            }
             Record::NS(ref ns) => {
                 format!("{:?}", ns.nameserver.to_string())
             }
@@ -400,6 +410,16 @@ fn json_record(record: &Record) -> JsonValue {
                 "type": "MX",
                 "preference": rec.preference,
                 "exchange": rec.exchange.to_string(),
+            })
+        }
+        Record::NAPTR(rec) => {
+            json!({
+                "type": "NAPTR",
+                "order": rec.order,
+                "flags": rec.flags,
+                "service": rec.service,
+                "regex": rec.service,
+                "replacement": rec.replacement.to_string(),
             })
         }
         Record::NS(rec) => {

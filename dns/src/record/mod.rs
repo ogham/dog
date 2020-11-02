@@ -22,6 +22,9 @@ pub use self::loc::LOC;
 mod mx;
 pub use self::mx::MX;
 
+mod naptr;
+pub use self::naptr::NAPTR;
+
 mod ns;
 pub use self::ns::NS;
 
@@ -75,6 +78,9 @@ pub enum Record {
 
     /// A **MX** record.
     MX(MX),
+
+    /// A **NAPTR** record.
+    NAPTR(NAPTR),
 
     /// A **NS** record.
     NS(NS),

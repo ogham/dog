@@ -121,6 +121,7 @@ impl Table {
             Record::HINFO(_)  => self.colours.hinfo.paint("HINFO"),
             Record::LOC(_)    => self.colours.loc.paint("LOC"),
             Record::MX(_)     => self.colours.mx.paint("MX"),
+            Record::NAPTR(_)  => self.colours.ns.paint("NAPTR"),
             Record::NS(_)     => self.colours.ns.paint("NS"),
             Record::PTR(_)    => self.colours.ptr.paint("PTR"),
             Record::SSHFP(_)  => self.colours.sshfp.paint("SSHFP"),
