@@ -528,5 +528,8 @@ fn wire_error_message(error: WireError) -> String {
         WireError::OutOfBounds(index) => {
             format!("Malformed packet: out of bounds ({})", index)
         }
+        WireError::WrongVersion { stated_version, maximum_supported_version } => {
+            format!("Malformed packet: record specifies version {}, expected up to {}", stated_version, maximum_supported_version)
+        }
     }
 }

@@ -52,15 +52,18 @@ impl Wire for LOC {
 
     #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
-        if stated_length != 16 {
-            return Err(WireError::WrongRecordLength { stated_length, mandated_length: 16 });
-        }
-
         let version = c.read_u8()?;
         trace!("Parsed version -> {:?}", version);
 
         if version != 0 {
-            warn!("LOC version is not 0");
+            return Err(WireError::WrongVersion {
+                stated_version: version,
+                maximum_supported_version: 0,
+            });
+        }
+
+        if stated_length != 16 {
+            return Err(WireError::WrongRecordLength { stated_length, mandated_length: 16 });
         }
 
         let size_bits = c.read_u8()?;
@@ -97,6 +100,7 @@ impl fmt::Display for Size {
         write!(f, "{}e{}", self.base, self.power_of_ten)
     }
 }
+
 
 #[cfg(test)]
 mod test {
@@ -137,9 +141,37 @@ mod test {
     }
 
     #[test]
+    fn record_too_long() {
+        let buf = &[
+            0x00,  // version
+            0x32,  // size,
+            0x00,  // horizontal precision
+            0x00,  // vertical precision
+            0x8b, 0x0d, 0x2c, 0x8c,  // latitude
+            0x7f, 0xf8, 0xfc, 0xa5,  // longitude
+            0x00, 0x98, 0x96, 0x80,  // altitude
+            0x12, 0x34, 0x56,  // some other stuff
+        ];
+
+        assert_eq!(LOC::read(buf.len() as _, &mut Cursor::new(buf)),
+                   Err(WireError::WrongRecordLength { stated_length: 19, mandated_length: 16 }));
+    }
+
+    #[test]
+    fn more_recent_version() {
+        let buf = &[
+            0x80,  // version
+            0x12, 0x34, 0x56,  // some data in an unknown format
+        ];
+
+        assert_eq!(LOC::read(buf.len() as _, &mut Cursor::new(buf)),
+                   Err(WireError::WrongVersion { stated_version: 128, maximum_supported_version: 0 }));
+    }
+
+    #[test]
     fn record_empty() {
         assert_eq!(LOC::read(0, &mut Cursor::new(&[])),
-                   Err(WireError::WrongRecordLength { stated_length: 0, mandated_length: 16 }));
+                   Err(WireError::IO));
     }
 
     #[test]

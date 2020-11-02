@@ -443,6 +443,18 @@ pub enum WireError {
     /// When the data contained a string with a pointer to an index outside of
     /// the packet. Contains the invalid index.
     OutOfBounds(u16),
+
+    /// When a record in the packet contained a version field that specifies
+    /// the format of its remaining fields, but this version is too recent to
+    /// be supported, so we cannot parse it.
+    WrongVersion {
+
+        /// The version of the record layout, as specified in the packet
+        stated_version: u8,
+
+        /// The maximum version that this version of dog supports.
+        maximum_supported_version: u8,
+    }
 }
 
 impl From<io::Error> for WireError {
