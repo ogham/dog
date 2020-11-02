@@ -45,7 +45,8 @@ impl Wire for TLSA {
         trace!("Parsed matching type -> {:?}", matching_type);
 
         if stated_length <= 3 {
-            panic!("Length too short");
+            let mandated_length = MandatedLength::AtLeast(4);
+            return Err(WireError::WrongRecordLength { stated_length, mandated_length });
         }
 
         let certificate_data_length = stated_length - 1 - 1 - 1;
@@ -89,6 +90,24 @@ mod test {
                        matching_type: 1,
                        certificate_data: vec![ 0x05, 0x95, 0x98 ],
                    });
+    }
+
+    #[test]
+    fn record_too_short() {
+        let buf = &[
+            0x03,  // certificate usage
+            0x01,  // selector
+            0x01,  // matching type
+        ];
+
+        assert_eq!(TLSA::read(buf.len() as _, &mut Cursor::new(buf)),
+                   Err(WireError::WrongRecordLength { stated_length: 3, mandated_length: MandatedLength::AtLeast(4) }));
+    }
+
+    #[test]
+    fn record_empty() {
+        assert_eq!(TLSA::read(0, &mut Cursor::new(&[])),
+                   Err(WireError::IO));
     }
 
     #[test]

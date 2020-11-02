@@ -38,7 +38,8 @@ impl Wire for SSHFP {
         trace!("Parsed fingerprint type -> {:?}", fingerprint_type);
 
         if stated_length <= 2 {
-            panic!("Length too short");
+            let mandated_length = MandatedLength::AtLeast(3);
+            return Err(WireError::WrongRecordLength { stated_length, mandated_length });
         }
 
         let fingerprint_length = stated_length - 1 - 1;
@@ -83,6 +84,23 @@ mod test {
     }
 
     #[test]
+    fn record_too_short() {
+        let buf = &[
+            0x01,  // algorithm
+            0x01,  // fingerprint type
+        ];
+
+        assert_eq!(SSHFP::read(buf.len() as _, &mut Cursor::new(buf)),
+                   Err(WireError::WrongRecordLength { stated_length: 2, mandated_length: MandatedLength::AtLeast(3) }));
+    }
+
+    #[test]
+    fn record_empty() {
+        assert_eq!(SSHFP::read(0, &mut Cursor::new(&[])),
+                   Err(WireError::IO));
+    }
+
+    #[test]
     fn buffer_ends_abruptly() {
         let buf = &[
             0x01,  // algorithm
@@ -103,5 +121,4 @@ mod test {
         assert_eq!(sshfp.hex_fingerprint(),
                    String::from("f348cdc9"));
     }
-
 }
