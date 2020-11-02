@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 
-use dns::{Response, Query, Answer, ErrorCode, WireError};
+use dns::{Response, Query, Answer, ErrorCode, WireError, MandatedLength};
 use dns::record::{Record, OPT, UnknownQtype};
 use dns_transport::Error as TransportError;
 use serde_json::{json, Value as JsonValue};
@@ -516,8 +516,11 @@ fn wire_error_message(error: WireError) -> String {
         WireError::IO => {
             "Malformed packet: insufficient data".into()
         }
-        WireError::WrongRecordLength { stated_length, mandated_length } => {
-            format!("Malformed packet: record length should be {}, got {}", mandated_length, stated_length )
+        WireError::WrongRecordLength { stated_length, mandated_length: MandatedLength::Exactly(len) } => {
+            format!("Malformed packet: record length should be {}, got {}", len, stated_length )
+        }
+        WireError::WrongRecordLength { stated_length, mandated_length: MandatedLength::AtLeast(len) } => {
+            format!("Malformed packet: record length should be at least {}, got {}", len, stated_length )
         }
         WireError::WrongLabelLength { stated_length, length_after_labels } => {
             format!("Malformed packet: length {} was specified, but read {} bytes", stated_length, length_after_labels)

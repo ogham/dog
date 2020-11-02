@@ -37,7 +37,9 @@ impl Wire for AAAA {
         }
         else {
             warn!("Length is incorrect (stated length {:?}, but should be sixteen)", stated_length);
-            Err(WireError::WrongRecordLength { stated_length, mandated_length: 16 })
+
+            let mandated_length = MandatedLength::Exactly(16);
+            Err(WireError::WrongRecordLength { stated_length, mandated_length })
         }
     }
 }
@@ -68,7 +70,7 @@ mod test {
         ];
 
         assert_eq!(AAAA::read(buf.len() as _, &mut Cursor::new(buf)),
-                   Err(WireError::WrongRecordLength { stated_length: 17, mandated_length: 16 }));
+                   Err(WireError::WrongRecordLength { stated_length: 17, mandated_length: MandatedLength::Exactly(16) }));
     }
 
     #[test]
@@ -78,13 +80,13 @@ mod test {
         ];
 
         assert_eq!(AAAA::read(buf.len() as _, &mut Cursor::new(buf)),
-                   Err(WireError::WrongRecordLength { stated_length: 5, mandated_length: 16 }));
+                   Err(WireError::WrongRecordLength { stated_length: 5, mandated_length: MandatedLength::Exactly(16) }));
     }
 
     #[test]
     fn record_empty() {
         assert_eq!(AAAA::read(0, &mut Cursor::new(&[])),
-                   Err(WireError::WrongRecordLength { stated_length: 0, mandated_length: 16 }));
+                   Err(WireError::WrongRecordLength { stated_length: 0, mandated_length: MandatedLength::Exactly(16) }));
     }
 
     #[test]

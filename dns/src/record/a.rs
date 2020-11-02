@@ -35,7 +35,7 @@ impl Wire for A {
         }
         else {
             warn!("Length is incorrect (record length {:?}, but should be four)", stated_length);
-            Err(WireError::WrongRecordLength { stated_length, mandated_length: 4 })
+            Err(WireError::WrongRecordLength { stated_length, mandated_length: MandatedLength::Exactly(4) })
         }
     }
 }
@@ -63,7 +63,7 @@ mod test {
         ];
 
         assert_eq!(A::read(buf.len() as _, &mut Cursor::new(buf)),
-                   Err(WireError::WrongRecordLength { stated_length: 3, mandated_length: 4 }));
+                   Err(WireError::WrongRecordLength { stated_length: 3, mandated_length: MandatedLength::Exactly(4) }));
     }
 
     #[test]
@@ -74,13 +74,13 @@ mod test {
         ];
 
         assert_eq!(A::read(buf.len() as _, &mut Cursor::new(buf)),
-                   Err(WireError::WrongRecordLength { stated_length: 5, mandated_length: 4 }));
+                   Err(WireError::WrongRecordLength { stated_length: 5, mandated_length: MandatedLength::Exactly(4) }));
     }
 
     #[test]
     fn record_empty() {
         assert_eq!(A::read(0, &mut Cursor::new(&[])),
-                   Err(WireError::WrongRecordLength { stated_length: 0, mandated_length: 4 }));
+                   Err(WireError::WrongRecordLength { stated_length: 0, mandated_length: MandatedLength::Exactly(4) }));
     }
 
     #[test]

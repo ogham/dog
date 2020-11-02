@@ -391,7 +391,7 @@ pub enum WireError {
         stated_length: u16,
 
         /// The length of the record that the DNS specification mandates.
-        mandated_length: u16,
+        mandated_length: MandatedLength,
     },
 
     /// When the length of this record as specified in the packet differs from
@@ -455,6 +455,17 @@ pub enum WireError {
         /// The maximum version that this version of dog supports.
         maximum_supported_version: u8,
     }
+}
+
+/// The rule for how long a record in a packet should be.
+#[derive(PartialEq, Debug, Copy, Clone)]
+pub enum MandatedLength {
+
+    /// The record should be exactly this many bytes in length.
+    Exactly(u16),
+
+    /// The record should be _at least_ this many bytes in length.
+    AtLeast(u16),
 }
 
 impl From<io::Error> for WireError {
