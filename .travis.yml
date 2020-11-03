@@ -5,6 +5,10 @@ rust:
   - beta
   - nightly
 
+script:
+  - cargo build --verbose --workspace
+  - cargo test --verbose --workspace
+
 os:
   - linux
   - osx
