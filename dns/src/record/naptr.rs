@@ -79,7 +79,7 @@ impl Wire for NAPTR {
 
         let length_after_labels = 2 + 2 +
             1 + u16::from(flags_length) + 1 + u16::from(service_length) +
-            1 + u16::from(regex_length) + u16::from(replacement_length);
+            1 + u16::from(regex_length) + replacement_length;
 
         if stated_length == length_after_labels {
             Ok(Self { order, preference, flags, service, regex, replacement })

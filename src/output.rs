@@ -252,7 +252,7 @@ impl TextFormat {
                     tlsa.certificate_usage,
                     tlsa.selector,
                     tlsa.matching_type,
-                    tlsa.hex_certificate_data().to_string(),
+                    tlsa.hex_certificate_data(),
                 )
             }
             Record::TXT(ref txt) => {
@@ -463,7 +463,7 @@ fn json_record(record: &Record) -> JsonValue {
                 "certificate_usage": rec.certificate_usage,
                 "selector": rec.selector,
                 "matching_type": rec.matching_type,
-                "certificate_data": rec.hex_certificate_data().to_string(),
+                "certificate_data": rec.hex_certificate_data(),
             })
         }
         Record::TXT(rec) => {
