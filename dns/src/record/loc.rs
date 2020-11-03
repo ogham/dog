@@ -86,12 +86,8 @@ impl Wire for LOC {
         }
 
         let size_bits = c.read_u8()?;
-        trace!("Parsed size bits -> {:#08b}", size_bits);
-
-        let base = size_bits >> 4;
-        let power_of_ten = size_bits & 0b_0000_1111;
-        trace!("Split size into base {:?} and power of ten {:?}", base, power_of_ten);
-        let size = Size { base, power_of_ten };
+        let size = Size::from_u8(size_bits);
+        trace!("Parsed size -> {:#08b} ({})", size_bits, size);
 
         let horizontal_precision = c.read_u8()?;
         trace!("Parsed horizontal precision -> {:?}", horizontal_precision);
@@ -113,6 +109,18 @@ impl Wire for LOC {
         Ok(Self {
             size, horizontal_precision, vertical_precision, latitude, longitude, altitude,
         })
+    }
+}
+
+impl Size {
+
+    /// Converts a number into the size it represents. To allow both small and
+    /// large sizes, the input octet is split into two four-bit sizes, one the
+    /// base, and one the power of ten exponent.
+    fn from_u8(input: u8) -> Self {
+        let base = input >> 4;
+        let power_of_ten = input & 0b_0000_1111;
+        Self { base, power_of_ten }
     }
 }
 
@@ -263,6 +271,37 @@ mod test {
 
         assert_eq!(LOC::read(16, &mut Cursor::new(buf)),
                    Err(WireError::IO));
+    }
+}
+
+
+#[cfg(test)]
+mod size_test {
+    use super::*;
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn zeroes() {
+        assert_eq!(Size::from_u8(0b_0000_0000).to_string(),
+                   String::from("0e0"));
+    }
+
+    #[test]
+    fn ones() {
+        assert_eq!(Size::from_u8(0b_0001_0001).to_string(),
+                   String::from("1e1"));
+    }
+
+    #[test]
+    fn schfourteen_teen() {
+        assert_eq!(Size::from_u8(0b_1110_0011).to_string(),
+                   String::from("14e3"));
+    }
+
+    #[test]
+    fn ones_but_bits_this_time() {
+        assert_eq!(Size::from_u8(0b_1111_1111).to_string(),
+                   String::from("15e15"));
     }
 }
 
