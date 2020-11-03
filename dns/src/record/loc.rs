@@ -26,25 +26,43 @@ pub struct LOC {
     /// in centimetres.
     pub vertical_precision: u8,
 
-    /// The latitude of the centre of the sphere, measured in thousandths of
-    /// an arcsecond, positive or negative with 2^31 as the equator.
-    pub latitude: u32,
+    /// The latitude of the centre of the sphere.
+    pub latitude: Position,
 
-    /// The longitude of the centre of the sphere, measured in thousandths of
-    /// an arcsecond, positive or negative with 2^31 as the prime meridian.
-    pub longitude: u32,
+    /// The longitude of the centre of the sphere.
+    pub longitude: Position,
 
     /// The altitude of the centre of the sphere, measured in centimetres
     /// above a base of 100,000 metres below the GPS reference spheroid.
     pub altitude: u32,
 }
 
+/// A measure of size, in centimetres, represented by a base and an exponent.
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub struct Size {
     base: u8,
     power_of_ten: u8,
 }
 
+/// A position on one of the world’s axes.
+#[derive(PartialEq, Debug, Copy, Clone)]
+pub struct Position {
+    degrees: u32,
+    arcminutes: u32,
+    arcseconds: u32,
+    milliarcseconds: u32,
+    direction: Direction,
+}
+
+/// One of the directions a position could be in, relative to the equator or
+/// prime meridian.
+#[derive(PartialEq, Debug, Copy, Clone)]
+pub enum Direction {
+    North,
+    East,
+    South,
+    West,
+}
 
 impl Wire for LOC {
     const NAME: &'static str = "LOC";
@@ -81,11 +99,13 @@ impl Wire for LOC {
         let vertical_precision = c.read_u8()?;
         trace!("Parsed vertical precision -> {:?}", vertical_precision);
 
-        let latitude = c.read_u32::<BigEndian>()?;
-        trace!("Parsed latitude -> {:?}", version);
+        let latitude_num = c.read_u32::<BigEndian>()?;
+        let latitude = Position::from_u32(latitude_num, true);
+        trace!("Parsed latitude -> {:?} ({})", latitude_num, latitude);
 
-        let longitude = c.read_u32::<BigEndian>()?;
-        trace!("Parsed longitude -> {:?}", longitude);
+        let longitude_num = c.read_u32::<BigEndian>()?;
+        let longitude = Position::from_u32(longitude_num, false);
+        trace!("Parsed longitude -> {:?} ({})", longitude_num, longitude);
 
         let altitude = c.read_u32::<BigEndian>()?;
         trace!("Parsed altitude -> {:?}", altitude);
@@ -96,9 +116,68 @@ impl Wire for LOC {
     }
 }
 
+impl Position {
+
+    /// Converts a number into the position it represents. The input number is
+    /// measured in thousandths of an arcsecond (milliarcseconds), with 2^31
+    /// as the equator or prime meridian.
+    fn from_u32(mut input: u32, vertical: bool) -> Self {
+        if input >= 0x_8000_0000 {
+            input -= 0x_8000_0000;
+            let milliarcseconds = input % 1000;
+            let total_arcseconds = input / 1000;
+
+            let arcseconds = total_arcseconds % 60;
+            let total_arcminutes = total_arcseconds / 60;
+
+            let arcminutes = total_arcminutes % 60;
+            let degrees = total_arcminutes / 60;
+
+            let direction = if vertical { Direction::North }
+                                   else { Direction::East };
+
+            Self { degrees, arcminutes, arcseconds, milliarcseconds, direction }
+        }
+        else {
+            let mut pos = Self::from_u32(input + (0x_8000_0000_u32 - input) * 2, vertical);
+
+            pos.direction = if vertical { Direction::South }
+                                   else { Direction::West };
+            pos
+        }
+    }
+}
+
 impl fmt::Display for Size {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}e{}", self.base, self.power_of_ten)
+    }
+}
+
+impl fmt::Display for Position {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}°{}′{}",
+            self.degrees,
+            self.arcminutes,
+            self.arcseconds,
+        )?;
+
+        if self.milliarcseconds != 0 {
+            write!(f, ".{:03}", self.milliarcseconds)?;
+        }
+
+        write!(f, "″ {}", self.direction)
+    }
+}
+
+impl fmt::Display for Direction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::North  => write!(f, "N"),
+            Self::East   => write!(f, "E"),
+            Self::South  => write!(f, "S"),
+            Self::West   => write!(f, "W"),
+        }
     }
 }
 
@@ -106,6 +185,7 @@ impl fmt::Display for Size {
 #[cfg(test)]
 mod test {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn parses() {
@@ -124,8 +204,8 @@ mod test {
                        size: Size { base: 3, power_of_ten: 2 },
                        horizontal_precision: 0,
                        vertical_precision: 0,
-                       latitude:  0x_8b_0d_2c_8c,
-                       longitude: 0x_7f_f8_fc_a5,
+                       latitude:  Position::from_u32(0x_8b_0d_2c_8c, true),
+                       longitude: Position::from_u32(0x_7f_f8_fc_a5, false),
                        altitude:  0x_00_98_96_80,
                    });
     }
@@ -183,5 +263,60 @@ mod test {
 
         assert_eq!(LOC::read(16, &mut Cursor::new(buf)),
                    Err(WireError::IO));
+    }
+}
+
+
+#[cfg(test)]
+mod position_test {
+    use super::*;
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn meridian() {
+        assert_eq!(Position::from_u32(0x_8000_0000, false).to_string(),
+                   String::from("0°0′0″ E"));
+    }
+
+    #[test]
+    fn meridian_plus_one() {
+        assert_eq!(Position::from_u32(0x_8000_0000 + 1, false).to_string(),
+                   String::from("0°0′0.001″ E"));
+    }
+
+    #[test]
+    fn meridian_minus_one() {
+        assert_eq!(Position::from_u32(0x_8000_0000 - 1, false).to_string(),
+                   String::from("0°0′0.001″ W"));
+    }
+
+    #[test]
+    fn equator() {
+        assert_eq!(Position::from_u32(0x_8000_0000, true).to_string(),
+                   String::from("0°0′0″ N"));
+    }
+
+    #[test]
+    fn equator_plus_one() {
+        assert_eq!(Position::from_u32(0x_8000_0000 + 1, true).to_string(),
+                   String::from("0°0′0.001″ N"));
+    }
+
+    #[test]
+    fn equator_minus_one() {
+        assert_eq!(Position::from_u32(0x_8000_0000 - 1, true).to_string(),
+                   String::from("0°0′0.001″ S"));
+    }
+
+    #[test]
+    fn some_latitude() {
+        assert_eq!(Position::from_u32(2332896396, true).to_string(),
+                   String::from("51°30′12.748″ N"));
+    }
+
+    #[test]
+    fn some_longitude() {
+        assert_eq!(Position::from_u32(2147024037, false).to_string(),
+                   String::from("0°7′39.611″ W"));
     }
 }

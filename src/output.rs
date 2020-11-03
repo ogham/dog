@@ -399,8 +399,8 @@ fn json_record(record: &Record) -> JsonValue {
                     "vertical": rec.vertical_precision,
                 },
                 "point": {
-                    "latitude": rec.latitude,
-                    "longitude": rec.longitude,
+                    "latitude": rec.latitude.to_string(),
+                    "longitude": rec.longitude.to_string(),
                     "altitude": rec.altitude,
                 },
             })
