@@ -245,7 +245,7 @@ mod test {
             0xbf,  // label of length 191
         ];
 
-        buf.extend(&[0x65; 191]);  // the rest of the label
+        buf.extend(vec![0x65; 191]);  // the rest of the label
         buf.push(0x00);  // end reading
 
         assert_eq!(Cursor::new(&*buf).read_labels().unwrap().1, 193);
