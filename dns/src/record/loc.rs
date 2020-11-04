@@ -26,11 +26,13 @@ pub struct LOC {
     /// in centimetres.
     pub vertical_precision: u8,
 
-    /// The latitude of the centre of the sphere.
-    pub latitude: Position,
+    /// The latitude of the centre of the sphere. If `None`, the packet
+    /// parses, but the position is out of range.
+    pub latitude: Option<Position>,
 
-    /// The longitude of the centre of the sphere.
-    pub longitude: Position,
+    /// The longitude of the centre of the sphere. If `None`, the packet
+    /// parses, but the position is out of range.
+    pub longitude: Option<Position>,
 
     /// The altitude of the centre of the sphere, measured in centimetres
     /// above a base of 100,000 metres below the GPS reference spheroid.
@@ -97,11 +99,11 @@ impl Wire for LOC {
 
         let latitude_num = c.read_u32::<BigEndian>()?;
         let latitude = Position::from_u32(latitude_num, true);
-        trace!("Parsed latitude -> {:?} ({})", latitude_num, latitude);
+        trace!("Parsed latitude -> {:?} ({:?})", latitude_num, latitude);
 
         let longitude_num = c.read_u32::<BigEndian>()?;
         let longitude = Position::from_u32(longitude_num, false);
-        trace!("Parsed longitude -> {:?} ({})", longitude_num, longitude);
+        trace!("Parsed longitude -> {:?} ({:?})", longitude_num, longitude);
 
         let altitude = c.read_u32::<BigEndian>()?;
         trace!("Parsed altitude -> {:?}", altitude);
@@ -129,8 +131,19 @@ impl Position {
     /// Converts a number into the position it represents. The input number is
     /// measured in thousandths of an arcsecond (milliarcseconds), with 2^31
     /// as the equator or prime meridian.
-    fn from_u32(mut input: u32, vertical: bool) -> Self {
-        if input >= 0x_8000_0000 {
+    ///
+    /// Returns `None` if the input is out of range, meaning it would wrap
+    /// around to another half of the Earth once or more.
+    fn from_u32(mut input: u32, vertical: bool) -> Option<Self> {
+        let max_for_direction = if vertical { 90 } else { 180 };
+        let limit = 1000 * 60 * 60 * max_for_direction;
+
+        if input < (0x_8000_0000 - limit) || input > (0x_8000_0000 + limit) {
+            // Input is out of range
+            None
+        }
+        else if input >= 0x_8000_0000 {
+            // Input is north or east, so de-relativise it and divide into segments
             input -= 0x_8000_0000;
             let milliarcseconds = input % 1000;
             let total_arcseconds = input / 1000;
@@ -144,14 +157,15 @@ impl Position {
             let direction = if vertical { Direction::North }
                                    else { Direction::East };
 
-            Self { degrees, arcminutes, arcseconds, milliarcseconds, direction }
+            Some(Self { degrees, arcminutes, arcseconds, milliarcseconds, direction })
         }
         else {
-            let mut pos = Self::from_u32(input + (0x_8000_0000_u32 - input) * 2, vertical);
+            // Input is south or west, so do the calculations for
+            let mut pos = Self::from_u32(input + (0x_8000_0000_u32 - input) * 2, vertical)?;
 
             pos.direction = if vertical { Direction::South }
                                    else { Direction::West };
-            pos
+            Some(pos)
         }
     }
 }
@@ -311,51 +325,105 @@ mod position_test {
     use super::*;
     use pretty_assertions::assert_eq;
 
+    // centre line tests
+
     #[test]
     fn meridian() {
-        assert_eq!(Position::from_u32(0x_8000_0000, false).to_string(),
+        assert_eq!(Position::from_u32(0x_8000_0000, false).unwrap().to_string(),
                    String::from("0°0′0″ E"));
     }
 
     #[test]
     fn meridian_plus_one() {
-        assert_eq!(Position::from_u32(0x_8000_0000 + 1, false).to_string(),
+        assert_eq!(Position::from_u32(0x_8000_0000 + 1, false).unwrap().to_string(),
                    String::from("0°0′0.001″ E"));
     }
 
     #[test]
     fn meridian_minus_one() {
-        assert_eq!(Position::from_u32(0x_8000_0000 - 1, false).to_string(),
+        assert_eq!(Position::from_u32(0x_8000_0000 - 1, false).unwrap().to_string(),
                    String::from("0°0′0.001″ W"));
     }
 
     #[test]
     fn equator() {
-        assert_eq!(Position::from_u32(0x_8000_0000, true).to_string(),
+        assert_eq!(Position::from_u32(0x_8000_0000, true).unwrap().to_string(),
                    String::from("0°0′0″ N"));
     }
 
     #[test]
     fn equator_plus_one() {
-        assert_eq!(Position::from_u32(0x_8000_0000 + 1, true).to_string(),
+        assert_eq!(Position::from_u32(0x_8000_0000 + 1, true).unwrap().to_string(),
                    String::from("0°0′0.001″ N"));
     }
 
     #[test]
     fn equator_minus_one() {
-        assert_eq!(Position::from_u32(0x_8000_0000 - 1, true).to_string(),
+        assert_eq!(Position::from_u32(0x_8000_0000 - 1, true).unwrap().to_string(),
                    String::from("0°0′0.001″ S"));
     }
 
+    // arbitrary value tests
+
     #[test]
     fn some_latitude() {
-        assert_eq!(Position::from_u32(2332896396, true).to_string(),
+        assert_eq!(Position::from_u32(2332896396, true).unwrap().to_string(),
                    String::from("51°30′12.748″ N"));
     }
 
     #[test]
     fn some_longitude() {
-        assert_eq!(Position::from_u32(2147024037, false).to_string(),
+        assert_eq!(Position::from_u32(2147024037, false).unwrap().to_string(),
                    String::from("0°7′39.611″ W"));
+    }
+
+    // limit tests
+
+    #[test]
+    fn the_north_pole() {
+        assert_eq!(Position::from_u32(0x8000_0000 + (1000 * 60 * 60 * 90), true).unwrap().to_string(),
+                   String::from("90°0′0″ N"));
+    }
+
+    #[test]
+    fn the_north_pole_plus_one() {
+        assert_eq!(Position::from_u32(0x8000_0000 + (1000 * 60 * 60 * 90) + 1, true),
+                   None);
+    }
+
+    #[test]
+    fn the_south_pole() {
+        assert_eq!(Position::from_u32(0x8000_0000 - (1000 * 60 * 60 * 90), true).unwrap().to_string(),
+                   String::from("90°0′0″ S"));
+    }
+
+    #[test]
+    fn the_south_pole_minus_one() {
+        assert_eq!(Position::from_u32(0x8000_0000 - (1000 * 60 * 60 * 90) - 1, true),
+                   None);
+    }
+
+    #[test]
+    fn the_far_east() {
+        assert_eq!(Position::from_u32(0x8000_0000 + (1000 * 60 * 60 * 180), false).unwrap().to_string(),
+                   String::from("180°0′0″ E"));
+    }
+
+    #[test]
+    fn the_far_east_plus_one() {
+        assert_eq!(Position::from_u32(0x8000_0000 + (1000 * 60 * 60 * 180) + 1, false),
+                   None);
+    }
+
+    #[test]
+    fn the_far_west() {
+        assert_eq!(Position::from_u32(0x8000_0000 - (1000 * 60 * 60 * 180), false).unwrap().to_string(),
+                   String::from("180°0′0″ W"));
+    }
+
+    #[test]
+    fn the_far_west_minus_one() {
+        assert_eq!(Position::from_u32(0x8000_0000 - (1000 * 60 * 60 * 180) - 1, false),
+                   None);
     }
 }

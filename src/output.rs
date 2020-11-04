@@ -202,8 +202,8 @@ impl TextFormat {
                     loc.size,
                     loc.horizontal_precision,
                     loc.vertical_precision,
-                    loc.latitude,
-                    loc.longitude,
+                    loc.latitude.map(|e| e.to_string()).unwrap_or_else(|| "Out of range".into()),
+                    loc.longitude.map(|e| e.to_string()).unwrap_or_else(|| "Out of range".into()),
                     loc.altitude,
                 )
             }
@@ -399,8 +399,8 @@ fn json_record(record: &Record) -> JsonValue {
                     "vertical": rec.vertical_precision,
                 },
                 "point": {
-                    "latitude": rec.latitude.to_string(),
-                    "longitude": rec.longitude.to_string(),
+                    "latitude": rec.latitude.map(|e| e.to_string()),
+                    "longitude": rec.longitude.map(|e| e.to_string()),
                     "altitude": rec.altitude,
                 },
             })
