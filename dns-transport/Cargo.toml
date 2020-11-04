@@ -23,7 +23,7 @@ tokio-tls = { version = "0.3", optional = true }
 native-tls = { version = "0.2", optional = true }
 
 # https
-hyper = { version = "0.13", optional = true }
+hyper = { version = "0.13", optional = true, default_features = false }
 hyper-tls = { version = "0.4", optional = true }
 
 [features]
