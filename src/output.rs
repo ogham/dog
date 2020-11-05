@@ -202,8 +202,8 @@ impl TextFormat {
                     loc.size,
                     loc.horizontal_precision,
                     loc.vertical_precision,
-                    loc.latitude.map(|e| e.to_string()).unwrap_or_else(|| "Out of range".into()),
-                    loc.longitude.map(|e| e.to_string()).unwrap_or_else(|| "Out of range".into()),
+                    loc.latitude .map_or_else(|| "Out of range".into(), |e| e.to_string()),
+                    loc.longitude.map_or_else(|| "Out of range".into(), |e| e.to_string()),
                     loc.altitude,
                 )
             }
