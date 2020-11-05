@@ -1,8 +1,12 @@
+//! Creating DNS transports based on the user’s input arguments.
+
 use dns_transport::*;
 
 use crate::resolve::Nameserver;
 
 
+/// A **transport type** creates a `Transport` that determines which protocols
+/// should be used to send and receive DNS wire data over the network.
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub enum TransportType {
 

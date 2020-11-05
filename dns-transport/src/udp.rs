@@ -6,7 +6,7 @@ use dns::{Request, Response};
 use super::{Transport, Error};
 
 
-/// The **UDP transport**, which uses the stdlib.
+/// The **UDP transport**, which sends DNS wire data inside a UDP datagram.
 ///
 /// # Examples
 ///

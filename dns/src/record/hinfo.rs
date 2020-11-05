@@ -10,8 +10,10 @@ use crate::wire::*;
 ///
 /// # References
 ///
-/// - [RFC 1035 §3.3.2](https://tools.ietf.org/html/rfc1035) — Domain Names, Implementation and Specification (November 1987)
-/// - [RFC 8482 §6](https://tools.ietf.org/html/rfc8482#section-6) — Providing Minimal-Sized Responses to DNS Queries That Have QTYPE=ANY (January 2019)
+/// - [RFC 1035 §3.3.2](https://tools.ietf.org/html/rfc1035) — Domain Names,
+///   Implementation and Specification (November 1987)
+/// - [RFC 8482 §6](https://tools.ietf.org/html/rfc8482#section-6) — Providing
+///   Minimal-Sized Responses to DNS Queries That Have QTYPE=ANY (January 2019)
 #[derive(PartialEq, Debug)]
 pub struct HINFO {
 

@@ -9,7 +9,8 @@ use crate::wire::*;
 ///
 /// # References
 ///
-/// - [RFC 2782](https://tools.ietf.org/html/rfc2782) — A DNS RR for specifying the location of services (February 2000)
+/// - [RFC 2782](https://tools.ietf.org/html/rfc2782) — A DNS RR for
+///   specifying the location of services (February 2000)
 #[derive(PartialEq, Debug)]
 pub struct SRV {
 

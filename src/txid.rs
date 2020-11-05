@@ -1,3 +1,6 @@
+//! Transaction ID generation.
+
+
 /// A **transaction ID generator** is used to create unique ID numbers to
 /// identify each packet, as part of the DNS protocol.
 #[derive(PartialEq, Debug, Copy, Clone)]

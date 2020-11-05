@@ -3,12 +3,14 @@ use log::*;
 use crate::wire::*;
 
 
-/// A **CAA** record. These allow domain names to specify which Certificate
-/// Authorities are allowed to issue certificates for the domain.
+/// A **CAA** _(certification authority authorization)_ record. These allow
+/// domain names to specify which Certificate Authorities are allowed to issue
+/// certificates for the domain.
 ///
 /// # References
 ///
-/// - [RFC 6844](https://tools.ietf.org/html/rfc6844) — DNS Certification Authority Authorization Resource Record (January 2013)
+/// - [RFC 6844](https://tools.ietf.org/html/rfc6844) — DNS Certification
+///   Authority Authorization Resource Record (January 2013)
 #[derive(PartialEq, Debug)]
 pub struct CAA {
 

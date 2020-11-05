@@ -28,7 +28,8 @@ use crate::wire::*;
 ///
 /// # References
 ///
-/// - [RFC 6891](https://tools.ietf.org/html/rfc6891) — Extension Mechanisms for DNS (April 2013)
+/// - [RFC 6891](https://tools.ietf.org/html/rfc6891) — Extension Mechanisms
+///   for DNS (April 2013)
 #[derive(PartialEq, Debug)]
 pub struct OPT {
 

@@ -4,8 +4,11 @@ use dns::{Request, Response};
 use super::{Transport, Error, UdpTransport, TcpTransport};
 
 
-/// The **automatic transport**, which uses the UDP transport, then tries
-/// using the TCP transport if the first one fails.
+/// The **automatic transport**, which sends DNS wire data using the UDP
+/// transport, then tries using the TCP transport if the first one fails
+/// because the response wouldn't fit in a single UDP packet.
+///
+/// This is the default behaviour for many DNS clients.
 ///
 /// # Examples
 ///

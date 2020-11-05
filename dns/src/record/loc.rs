@@ -10,7 +10,8 @@ use crate::wire::*;
 ///
 /// # References
 ///
-/// - [RFC 1876](https://tools.ietf.org/html/rfc1876) — A Means for Expressing Location Information in the Domain Name System (January 1996)
+/// - [RFC 1876](https://tools.ietf.org/html/rfc1876) — A Means for Expressing
+///   Location Information in the Domain Name System (January 1996)
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub struct LOC {
 
@@ -181,7 +182,7 @@ impl Position {
 impl Altitude {
     fn from_u32(input: u32) -> Self {
         let mut input = i64::from(input);
-        input -= 100_000_00;  // 100,000m
+        input -= 10_000_000;  // 100,000m
         let metres = input / 100;
         let centimetres = input % 100;
         Self { metres, centimetres }
@@ -224,7 +225,7 @@ impl fmt::Display for Direction {
 
 impl fmt::Display for Altitude {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // Usually there's a space between the number and the unit, but
+        // Usually there’s a space between the number and the unit, but
         // spaces are already used to delimit segments in the record summary
         if self.centimetres == 0 {
             write!(f, "{}m", self.metres)

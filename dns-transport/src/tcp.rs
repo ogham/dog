@@ -8,7 +8,7 @@ use dns::{Request, Response};
 use super::{Transport, Error};
 
 
-/// The **TCP transport**, which uses the stdlib.
+/// The **TCP transport**, which sends DNS wire data over a TCP stream.
 ///
 /// # Examples
 ///
@@ -33,10 +33,12 @@ use super::{Transport, Error};
 /// transport.send(&request);
 /// ```
 ///
-/// # Reference
+/// # References
 ///
-/// - [RFC 1035 §4.2.2](https://tools.ietf.org/html/rfc1035) — Domain Names, Implementation and Specification (November 1987)
-/// - [RFC 7766](https://tools.ietf.org/html/rfc1035) — DNS Transport over TCP, Implementation Requirements (March 2016)
+/// - [RFC 1035 §4.2.2](https://tools.ietf.org/html/rfc1035) — Domain Names,
+///   Implementation and Specification (November 1987)
+/// - [RFC 7766](https://tools.ietf.org/html/rfc1035) — DNS Transport over
+///   TCP, Implementation Requirements (March 2016)
 #[derive(Debug)]
 pub struct TcpTransport {
     addr: String,

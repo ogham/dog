@@ -92,6 +92,7 @@ fn main() {
 }
 
 
+/// Runs dog with some options, returning the status to exit with.
 fn run(Options { requests, format, measure_time }: Options) -> i32 {
     use std::time::Instant;
 
@@ -136,8 +137,8 @@ fn run(Options { requests, format, measure_time }: Options) -> i32 {
 }
 
 
+/// The possible status numbers dog can exit with.
 mod exits {
-    #![allow(unused)]
 
     /// Exit code for when everything turns out OK.
     pub const SUCCESS: i32 = 0;
@@ -146,7 +147,7 @@ mod exits {
     pub const NETWORK_ERROR: i32 = 1;
 
     /// Exit code for when there is no result from the server when running in
-    /// short mode. This can be any received server error, not just NXDOMAIN.
+    /// short mode. This can be any received server error, not just `NXDOMAIN`.
     pub const NO_SHORT_RESULTS: i32 = 2;
 
     /// Exit code for when the command-line options are invalid.

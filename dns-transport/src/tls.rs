@@ -10,7 +10,8 @@ use dns::{Request, Response};
 use super::{Transport, Error};
 
 
-/// The **TLS transport**, which uses Tokio.
+/// The **TLS transport**, which sends DNS wire data using TCP through an
+/// encrypted TLS connection.
 ///
 /// # Examples
 ///

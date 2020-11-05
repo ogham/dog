@@ -1,3 +1,5 @@
+//! Request generation based on the user’s input arguments.
+
 use dns::Labels;
 
 use crate::connect::TransportType;

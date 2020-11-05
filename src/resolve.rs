@@ -1,3 +1,5 @@
+//! Specifying the address of the DNS server to send requests to.
+
 use std::io;
 
 use log::*;

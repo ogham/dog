@@ -48,7 +48,7 @@ mod https;
 pub use self::https::HttpsTransport;
 
 
-/// The trait implemented by all four transport types.
+/// The trait implemented by all transport types.
 pub trait Transport {
 
     /// Convert the request to bytes, send it over the network, wait for a
@@ -56,7 +56,7 @@ pub trait Transport {
     ///
     /// # Errors
     ///
-    /// Returns an [`Error`] error if there's an I/O error sending or
+    /// Returns an `Error` error if there’s an I/O error sending or
     /// receiving data, or the DNS packet in the response contained invalid
     /// bytes and failed to parse, or if there was a protocol-level error for
     /// the TLS and HTTPS transports.
@@ -64,7 +64,7 @@ pub trait Transport {
 }
 
 /// Something that can go wrong making a DNS request.
-#[derive(Debug, From)]  // can't be PartialEq due to tokio error
+#[derive(Debug, From)]  // can’t be PartialEq due to std::io::Error
 pub enum Error {
 
     /// There was a problem with the network sending the request or receiving

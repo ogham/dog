@@ -9,7 +9,8 @@ use dns::{Request, Response};
 use super::{Transport, Error};
 
 
-/// The **HTTPS transport**, which uses Hyper.
+/// The **HTTPS transport**, which sends DNS wire data inside HTTP packets
+/// encrypted with TLS, using TCP.
 ///
 /// # Examples
 ///

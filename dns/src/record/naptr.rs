@@ -4,7 +4,14 @@ use crate::strings::{Labels, ReadLabels};
 use crate::wire::*;
 
 
-/// A **NAPTR** _(naming authority pointer)_ record,
+/// A **NAPTR** _(naming authority pointer)_ record, which holds a rule for
+/// the Dynamic Delegation Discovery System.
+///
+/// # References
+///
+/// - [RFC 3403](https://tools.ietf.org/html/rfc3403) — Dynamic Delegation
+///   Discovery System (DDDS) Part Three: The Domain Name System (DNS) Database
+///   (October 2002)
 #[derive(PartialEq, Debug)]
 pub struct NAPTR {
 

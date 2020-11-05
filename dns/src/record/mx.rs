@@ -9,7 +9,8 @@ use crate::wire::*;
 ///
 /// # References
 ///
-/// - [RFC 1035 §3.3.9](https://tools.ietf.org/html/rfc1035) — Domain Names, Implementation and Specification (November 1987)
+/// - [RFC 1035 §3.3.9](https://tools.ietf.org/html/rfc1035) — Domain Names,
+///   Implementation and Specification (November 1987)
 #[derive(PartialEq, Debug)]
 pub struct MX {
 

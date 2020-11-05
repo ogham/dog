@@ -1,4 +1,4 @@
-//! Tables of DNS response results.
+//! Rendering tables of DNS response results.
 
 use std::time::Duration;
 

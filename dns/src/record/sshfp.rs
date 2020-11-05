@@ -8,7 +8,8 @@ use crate::wire::*;
 ///
 /// # References
 ///
-/// - [RFC 4255](https://tools.ietf.org/html/rfc4255) — Using DNS to Securely Publish Secure Shell (SSH) Key Fingerprints (January 2006)
+/// - [RFC 4255](https://tools.ietf.org/html/rfc4255) — Using DNS to Securely
+///   Publish Secure Shell (SSH) Key Fingerprints (January 2006)
 #[derive(PartialEq, Debug)]
 pub struct SSHFP {
 

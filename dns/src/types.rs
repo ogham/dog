@@ -100,7 +100,7 @@ pub enum Answer {
 }
 
 
-/// A DNS record class. Of these, the only one that's in regular use anymore
+/// A DNS record class. Of these, the only one that’s in regular use anymore
 /// is the Internet class.
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub enum QClass {
@@ -158,6 +158,7 @@ pub struct Flags {
     pub error_code: Option<ErrorCode>,
 }
 
+
 /// A number representing the operation being performed.
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub enum Opcode {
@@ -173,26 +174,32 @@ pub enum Opcode {
 
 
 /// A code indicating an error.
+///
+/// # References
+///
+/// - [RFC 6895 §2.3](https://tools.ietf.org/html/rfc6895#section-2.3) — Domain
+///   Name System (DNS) IANA Considerations (April 2013)
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub enum ErrorCode {
 
-    /// The server was unable to interpret the oquery.
+    /// `FORMERR` — The server was unable to interpret the query.
     FormatError,
 
-    /// There was a problem with the server.
+    /// `SERVFAIL` — There was a problem with the server.
     ServerFailure,
 
-    /// The domain name referenced in the query does not exist.
+    /// `NXDOMAIN` — The domain name referenced in the query does not exist.
     NXDomain,
 
-    /// The server does not support one of the requested features.
+    /// `NotImp` — The server does not support one of the requested features.
     NotImplemented,
 
-    /// The server was able to interpret the query, but refused to fulfil it.
+    /// `Refused` — The server was able to interpret the query, but refused to
+    /// fulfil it.
     QueryRefused,
 
-    /// The server did not accept the EDNS version, or failed to verify a
-    /// signature.
+    /// `NotAuth` — The server did not accept the EDNS version, or failed to
+    /// verify a signature.
     BadVersion,
 
     /// An error code we don’t know what it is.

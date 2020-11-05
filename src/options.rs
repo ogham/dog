@@ -1,3 +1,5 @@
+//! Command-line option parsing.
+
 use std::ffi::OsStr;
 use std::fmt;
 

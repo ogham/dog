@@ -9,7 +9,8 @@ use crate::wire::*;
 ///
 /// # References
 ///
-/// - [RFC 3596](https://tools.ietf.org/html/rfc3596) — DNS Extensions to Support IP Version 6 (October 2003)
+/// - [RFC 3596](https://tools.ietf.org/html/rfc3596) — DNS Extensions to
+///   Support IP Version 6 (October 2003)
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub struct AAAA {
 

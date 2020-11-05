@@ -8,7 +8,9 @@ use crate::wire::*;
 ///
 /// # References
 ///
-/// [RFC 6698](https://tools.ietf.org/html/rfc6698) — The DNS-Based Authentication of Named Entities (DANE) Transport Layer Security Protocol: TLSA (August 2012)
+/// - [RFC 6698](https://tools.ietf.org/html/rfc6698) — The DNS-Based
+///   Authentication of Named Entities (DANE) Transport Layer Security
+///   Protocol: TLSA (August 2012)
 #[derive(PartialEq, Debug)]
 pub struct TLSA {
 
