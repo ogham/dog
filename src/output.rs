@@ -401,7 +401,7 @@ fn json_record(record: &Record) -> JsonValue {
                 "point": {
                     "latitude": rec.latitude.map(|e| e.to_string()),
                     "longitude": rec.longitude.map(|e| e.to_string()),
-                    "altitude": rec.altitude,
+                    "altitude": rec.altitude.to_string(),
                 },
             })
         }

@@ -36,7 +36,7 @@ pub struct LOC {
 
     /// The altitude of the centre of the sphere, measured in centimetres
     /// above a base of 100,000 metres below the GPS reference spheroid.
-    pub altitude: u32,
+    pub altitude: Altitude,
 }
 
 /// A measure of size, in centimetres, represented by a base and an exponent.
@@ -54,6 +54,13 @@ pub struct Position {
     arcseconds: u32,
     milliarcseconds: u32,
     direction: Direction,
+}
+
+/// A position on the vertical axis.
+#[derive(PartialEq, Debug, Copy, Clone)]
+pub struct Altitude {
+    metres: i64,
+    centimetres: i64,
 }
 
 /// One of the directions a position could be in, relative to the equator or
@@ -105,8 +112,9 @@ impl Wire for LOC {
         let longitude = Position::from_u32(longitude_num, false);
         trace!("Parsed longitude -> {:?} ({:?})", longitude_num, longitude);
 
-        let altitude = c.read_u32::<BigEndian>()?;
-        trace!("Parsed altitude -> {:?}", altitude);
+        let altitude_num = c.read_u32::<BigEndian>()?;
+        let altitude = Altitude::from_u32(altitude_num);
+        trace!("Parsed altitude -> {:?} ({:})", altitude_num, altitude);
 
         Ok(Self {
             size, horizontal_precision, vertical_precision, latitude, longitude, altitude,
@@ -170,6 +178,17 @@ impl Position {
     }
 }
 
+impl Altitude {
+    fn from_u32(input: u32) -> Self {
+        let mut input = i64::from(input);
+        input -= 100_000_00;  // 100,000m
+        let metres = input / 100;
+        let centimetres = input % 100;
+        Self { metres, centimetres }
+    }
+}
+
+
 impl fmt::Display for Size {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}e{}", self.base, self.power_of_ten)
@@ -203,6 +222,19 @@ impl fmt::Display for Direction {
     }
 }
 
+impl fmt::Display for Altitude {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Usually there's a space between the number and the unit, but
+        // spaces are already used to delimit segments in the record summary
+        if self.centimetres == 0 {
+            write!(f, "{}m", self.metres)
+        }
+        else {
+            write!(f, "{}.{:02}m", self.metres, self.centimetres)
+        }
+    }
+}
+
 
 #[cfg(test)]
 mod test {
@@ -228,7 +260,7 @@ mod test {
                        vertical_precision: 0,
                        latitude:  Position::from_u32(0x_8b_0d_2c_8c, true),
                        longitude: Position::from_u32(0x_7f_f8_fc_a5, false),
-                       altitude:  0x_00_98_96_80,
+                       altitude:  Altitude::from_u32(0x_00_98_96_80),
                    });
     }
 
@@ -425,5 +457,36 @@ mod position_test {
     fn the_far_west_minus_one() {
         assert_eq!(Position::from_u32(0x8000_0000 - (1000 * 60 * 60 * 180) - 1, false),
                    None);
+    }
+}
+
+
+#[cfg(test)]
+mod altitude_test {
+    use super::*;
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn base_level() {
+        assert_eq!(Altitude::from_u32(10000000).to_string(),
+                   String::from("0m"));
+    }
+
+    #[test]
+    fn up_high() {
+        assert_eq!(Altitude::from_u32(20000000).to_string(),
+                   String::from("100000m"));
+    }
+
+    #[test]
+    fn down_low() {
+        assert_eq!(Altitude::from_u32(0).to_string(),
+                   String::from("-100000m"));
+    }
+
+    #[test]
+    fn with_decimal() {
+        assert_eq!(Altitude::from_u32(50505050).to_string(),
+                   String::from("405050.50m"));
     }
 }
