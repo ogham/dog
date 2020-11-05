@@ -118,4 +118,4 @@ For documentation on how to use dog, see the website: <https://dns.lookup.dog/>
 
 ## Licence
 
-dog’s source code is under the [MIT Licence](LICENCE).
+dog’s source code is licenced under the [European Union Public Licence](https://choosealicense.com/licenses/eupl-1.2/).

@@ -1,12 +1,17 @@
 [package]
 name = "dog"
-version = "0.1.0-pre"
+description = "A command-line DNS client"
+
 authors = ["Benjamin Sago <ogham@bsago.me>"]
+categories = ["command-line-utilities"]
 edition = "2018"
 exclude = [
     "/completions/*", "/man/*", "/xtests/*",
     "/dog-screenshot.png", "/Justfile", "/README.md", "/.rustfmt.toml", "/.travis.yml",
 ]
+homepage = "https://dns.lookup.dog/"
+license = "EUPL-1.2"
+version = "0.1.0-pre"
 
 [[bin]]
 name = "dog"
