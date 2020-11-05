@@ -1,9 +1,8 @@
 use std::convert::TryFrom;
+use std::net::TcpStream;
+use std::io::{Read, Write};
 
-use async_trait::async_trait;
 use log::*;
-use tokio::net::TcpStream;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use dns::{Request, Response};
 use super::{Transport, Error};
@@ -52,15 +51,14 @@ impl TcpTransport {
 }
 
 
-#[async_trait]
 impl Transport for TcpTransport {
-    async fn send(&self, request: &Request) -> Result<Response, Error> {
+    fn send(&self, request: &Request) -> Result<Response, Error> {
         let mut stream =
             if self.addr.contains(':') {
-                TcpStream::connect(&*self.addr).await?
+                TcpStream::connect(&*self.addr)?
             }
             else {
-                TcpStream::connect((&*self.addr, 53)).await?
+                TcpStream::connect((&*self.addr, 53))?
             };
         info!("Created stream");
 
@@ -73,19 +71,19 @@ impl Transport for TcpTransport {
 
         info!("Sending {} bytes of data to {} over TCP", bytes.len(), self.addr);
 
-        let written_len = stream.write(&bytes).await?;
+        let written_len = stream.write(&bytes)?;
         debug!("Wrote {} bytes", written_len);
 
         info!("Waiting to receive...");
         let mut buf = [0; 4096];
-        let mut read_len = stream.read(&mut buf[..]).await?;
+        let mut read_len = stream.read(&mut buf[..])?;
 
         if read_len == 0 {
             panic!("Received no bytes!");
         }
         else if read_len == 1 {
             info!("Received one byte of data");
-            let second_read_len = stream.read(&mut buf[1..]).await?;
+            let second_read_len = stream.read(&mut buf[1..])?;
             if second_read_len == 0 {
                 panic!("Received no bytes the second time!");
             }
@@ -105,15 +103,15 @@ impl Transport for TcpTransport {
         debug!("We need to read {} bytes total", total_len);
         let mut combined_buffer = buf[2..read_len].to_vec();
         while combined_buffer.len() < usize::from(total_len) {
-            let mut buf = [0; 4096];
-            let read_len = stream.read(&mut buf[..]).await?;
-            info!("Received further {} bytes of data (of {})", read_len, total_len);
+            let mut extend_buf = [0; 4096];
+            let extend_len = stream.read(&mut extend_buf[..])?;
+            info!("Received further {} bytes of data (of {})", extend_len, total_len);
 
             if read_len == 0 {
                 panic!("Read zero bytes!");
             }
 
-            combined_buffer.extend(&buf[0 .. read_len]);
+            combined_buffer.extend(&extend_buf[0 .. extend_len]);
         }
 
         let response = Response::from_bytes(&combined_buffer)?;

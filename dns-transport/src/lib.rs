@@ -23,7 +23,6 @@
 #![deny(clippy::cast_sign_loss)]
 #![deny(unsafe_code)]
 
-use async_trait::async_trait;
 use derive_more::From;
 
 use dns::{Request, Response};
@@ -48,17 +47,20 @@ pub use self::tls::TlsTransport;
 mod https;
 pub use self::https::HttpsTransport;
 
-pub use tokio::runtime::Runtime;
-
-
 
 /// The trait implemented by all four transport types.
-#[async_trait]
 pub trait Transport {
 
     /// Convert the request to bytes, send it over the network, wait for a
     /// response, deserialise it from bytes, and return it, asynchronously.
-    async fn send(&self, request: &Request) -> Result<Response, Error>;
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Error`] error if there's an I/O error sending or
+    /// receiving data, or the DNS packet in the response contained invalid
+    /// bytes and failed to parse, or if there was a protocol-level error for
+    /// the TLS and HTTPS transports.
+    fn send(&self, request: &Request) -> Result<Response, Error>;
 }
 
 /// Something that can go wrong making a DNS request.
@@ -67,15 +69,15 @@ pub enum Error {
 
     /// There was a problem with the network sending the request or receiving
     /// a response asynchorously.
-    NetworkError(tokio::io::Error),
-
-    /// There was a problem making an HTTPS request.
-    #[cfg(feature="https")]
-    HttpError(hyper::Error),
+    NetworkError(std::io::Error),
 
     /// There was a problem making a TLS request.
     #[cfg(feature="tls")]
     TlsError(native_tls::Error),
+
+    /// There was a problem _establishing_ a TLS request.
+    #[cfg(feature="tls")]
+    TlsHandshakeError(native_tls::HandshakeError<std::net::TcpStream>),
 
     /// The data in the response did not parse correctly from the DNS wire
     /// protocol format.

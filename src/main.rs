@@ -95,7 +95,6 @@ fn main() {
 fn run(Options { requests, format, measure_time }: Options) -> i32 {
     use std::time::Instant;
 
-    let mut runtime = dns_transport::Runtime::new().expect("Failed to create runtime");
     let should_show_opt = requests.edns.should_show();
 
     let mut responses = Vec::new();
@@ -103,7 +102,7 @@ fn run(Options { requests, format, measure_time }: Options) -> i32 {
 
     let mut errored = false;
     for (request, transport) in requests.generate() {
-        let result = runtime.block_on(async { transport.send(&request).await });
+        let result = transport.send(&request);
 
         match result {
             Ok(mut response) => {

@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use log::*;
 
 use dns::{Request, Response};
@@ -45,11 +44,10 @@ impl AutoTransport {
 }
 
 
-#[async_trait]
 impl Transport for AutoTransport {
-    async fn send(&self, request: &Request) -> Result<Response, Error> {
+    fn send(&self, request: &Request) -> Result<Response, Error> {
         let udp_transport = UdpTransport::new(&self.addr);
-        let udp_response = udp_transport.send(&request).await?;
+        let udp_response = udp_transport.send(&request)?;
 
         if ! udp_response.flags.truncated {
             return Ok(udp_response);
@@ -58,7 +56,7 @@ impl Transport for AutoTransport {
         debug!("Truncated flag set, so switching to TCP");
 
         let tcp_transport = TcpTransport::new(&self.addr);
-        let tcp_response = tcp_transport.send(&request).await?;
+        let tcp_response = tcp_transport.send(&request)?;
         Ok(tcp_response)
     }
 }

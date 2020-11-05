@@ -1,6 +1,8 @@
 #![cfg_attr(not(feature="https"), allow(unused))]
 
-use async_trait::async_trait;
+use std::io::{Read, Write};
+use std::net::TcpStream;
+
 use log::*;
 
 use dns::{Request, Response};
@@ -44,49 +46,74 @@ impl HttpsTransport {
     }
 }
 
-#[async_trait]
 impl Transport for HttpsTransport {
 
     #[cfg(feature="https")]
-    async fn send(&self, request: &Request) -> Result<Response, Error> {
-        use hyper::body::HttpBody as _;
+    fn send(&self, request: &Request) -> Result<Response, Error> {
+        let connector = native_tls::TlsConnector::new()?;
 
-        let https = hyper_tls::HttpsConnector::new();
-        let client = hyper::Client::builder().build::<_, hyper::Body>(https);
+        let (domain, path) = self.split_domain().expect("Invalid HTTPS nameserver");
 
-        let bytes = request.to_bytes().expect("failed to serialise request");
-        info!("Sending {} bytes of data to {:?}", bytes.len(), self.url);
+        info!("Opening TLS socket to {:?}", domain);
+        let stream = TcpStream::connect(format!("{}:443", domain))?;
+        let mut stream = connector.connect(domain, stream)?;
 
-        let request = hyper::Request::builder()
-            .method("POST")
-            .uri(&self.url)
-            .header("Content-Type", "application/dns-message")
-            .header("Accept",       "application/dns-message")
-            .body(hyper::Body::from(bytes))
-            .expect("Failed to build request");  // we control the request, so this should never fail
+        let request_bytes = request.to_bytes().expect("failed to serialise request");
+        let mut bytes = format!("\
+            POST {} HTTP/1.1\r\n\
+            Host: {}\r\n\
+            Content-Type: application/dns-message\r\n\
+            Accept: application/dns-message\r\n\
+            User-Agent: {}\r\n\
+            Content-Length: {}\r\n\r\n",
+            path, domain, USER_AGENT, request_bytes.len()).into_bytes();
+        bytes.extend(request_bytes);
 
-        let mut response = client.request(request).await?;
-        debug!("Response: {}", response.status());
-        debug!("Headers: {:#?}", response.headers());
+        info!("Sending {:?} bytes of data to {}", bytes.len(), self.url);
+        stream.write_all(&bytes)?;
+        debug!("Sent");
 
-        if response.status() != 200 {
+        info!("Waiting to receive...");
+        let mut buf = [0; 4096];
+        let read_len = stream.read(&mut buf)?;
+        info!("Received {} bytes of data", read_len);
+
+        let mut headers = [httparse::EMPTY_HEADER; 16];
+        let mut response = httparse::Response::new(&mut headers);
+        let index: usize = response.parse(&buf).unwrap().unwrap();
+        let body = &buf[index .. read_len];
+
+        if response.code != Some(200) {
             return Err(Error::BadRequest);
         }
 
-        debug!("Reading body...");
-        let mut buf = Vec::new();
-        while let Some(chunk) = response.body_mut().data().await {
-            buf.extend(&chunk?);
+        for header in response.headers {
+            trace!("Header {:?} -> {:?}", header.name, String::from_utf8_lossy(header.value));
         }
 
-        info!("Received {} bytes of data", buf.len());
-        let response = Response::from_bytes(&buf)?;
-
+        info!("HTTP body has {} bytes", body.len());
+        let response = Response::from_bytes(&body)?;
         Ok(response)
     }
 
     #[cfg(not(feature="https"))]
-    async fn send(&self, _request: &Request) -> Result<Response, Error> {
+    fn send(&self, request: &Request) -> Result<Response, Error> {
         unimplemented!("HTTPS feature disabled")
     }
 }
+
+impl HttpsTransport {
+    fn split_domain(&self) -> Option<(&str, &str)> {
+        if let Some(sp) = self.url.strip_prefix("https://") {
+            if let Some(colon_index) = sp.find('/') {
+                return Some((&sp[.. colon_index], &sp[colon_index ..]));
+            }
+        }
+
+        None
+    }
+}
+
+/// The User-Agent header sent with HTTPS requests.
+static USER_AGENT: &str = concat!("dog/", env!("CARGO_PKG_VERSION"));
+

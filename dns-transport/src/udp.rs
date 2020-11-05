@@ -1,8 +1,6 @@
-use std::net::Ipv4Addr;
+use std::net::{Ipv4Addr, UdpSocket};
 
-use async_trait::async_trait;
 use log::*;
-use tokio::net::UdpSocket;
 
 use dns::{Request, Response};
 use super::{Transport, Error};
@@ -47,31 +45,30 @@ impl UdpTransport {
 }
 
 
-#[async_trait]
 impl Transport for UdpTransport {
-    async fn send(&self, request: &Request) -> Result<Response, Error> {
+    fn send(&self, request: &Request) -> Result<Response, Error> {
         info!("Opening UDP socket");
-        let mut socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0)).await?;
+        let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0))?;
 
         if self.addr.contains(':') {
-            socket.connect(&*self.addr).await?;
+            socket.connect(&*self.addr)?;
         }
         else {
-            socket.connect((&*self.addr, 53)).await?;
+            socket.connect((&*self.addr, 53))?;
         }
 
         let bytes = request.to_bytes().expect("failed to serialise request");
         info!("Sending {} bytes of data to {} over UDP", bytes.len(), self.addr);
 
-        let len = socket.send(&bytes).await?;
-        debug!("Sent {} bytes", len);
+        let sent_len = socket.send(&bytes)?;
+        debug!("Sent {} bytes", sent_len);
 
         info!("Waiting to receive...");
         let mut buf = vec![0; 1024];
-        let len = socket.recv(&mut buf).await?;
+        let received_len = socket.recv(&mut buf)?;
 
-        info!("Received {} bytes of data", len);
-        let response = Response::from_bytes(&buf[..len])?;
+        info!("Received {} bytes of data", received_len);
+        let response = Response::from_bytes(&buf[.. received_len])?;
 
         Ok(response)
     }

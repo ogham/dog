@@ -14,19 +14,13 @@ dns = { path = "../dns" }
 # logging
 log = "0.4"
 
-# base networking
-async-trait = "0.1"
-tokio = { version = "0.2", features = ["dns", "tcp", "udp", "io-util"] }  # dns is used to resolve nameservers
-tokio-tls = { version = "0.3", optional = true }
-
-# tls
+# tls networking
 native-tls = { version = "0.2", optional = true }
 
-# https
-hyper = { version = "0.13", optional = true, default_features = false }
-hyper-tls = { version = "0.4", optional = true }
+# http response parsing
+httparse = { version = "1.3", optional = true }
 
 [features]
 default = []  # these are enabled in the main dog crate
-tls = ["native-tls", "tokio-tls"]
-https = ["hyper", "hyper-tls"]
+tls   = ["native-tls"]
+https = ["native-tls", "httparse"]
