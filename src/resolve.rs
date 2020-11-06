@@ -19,37 +19,43 @@ pub enum Resolver {
 
 pub type Nameserver = String;
 
-
 impl Resolver {
     pub fn lookup(self) -> io::Result<Option<Nameserver>> {
         match self {
-            Self::Specified(ns) => {
-                Ok(Some(ns))
-            }
+            Self::Specified(ns)  => Ok(Some(ns)),
+            Self::SystemDefault  => system_nameservers(),
+        }
+    }
+}
 
-            Self::SystemDefault => {
-                use std::io::{BufRead, BufReader};
-                use std::fs::File;
 
-                let f = File::open("/etc/resolv.conf")?;
-                let reader = BufReader::new(f);
+#[cfg(unix)]
+fn system_nameservers() -> io::Result<Option<Nameserver>> {
+    use std::io::{BufRead, BufReader};
+    use std::fs::File;
 
-                let mut nameservers = Vec::new();
-                for line in reader.lines() {
-                    let line = line?;
+    let f = File::open("/etc/resolv.conf")?;
+    let reader = BufReader::new(f);
 
-                    if let Some(nameserver_str) = line.strip_prefix("nameserver ") {
-                        let ip: Result<std::net::Ipv4Addr, _> = nameserver_str.parse();
+    let mut nameservers = Vec::new();
+    for line in reader.lines() {
+        let line = line?;
 
-                        match ip {
-                            Ok(_ip) => nameservers.push(nameserver_str.into()),
-                            Err(e)  => warn!("Failed to parse nameserver line {:?}: {}", line, e),
-                        }
-                    }
-                }
+        if let Some(nameserver_str) = line.strip_prefix("nameserver ") {
+            let ip: Result<std::net::Ipv4Addr, _> = nameserver_str.parse();
 
-                Ok(nameservers.first().cloned())
+            match ip {
+                Ok(_ip) => nameservers.push(nameserver_str.into()),
+                Err(e)  => warn!("Failed to parse nameserver line {:?}: {}", line, e),
             }
         }
     }
+
+    Ok(nameservers.first().cloned())
+}
+
+#[cfg(not(unix))]
+fn system_nameservers() -> io::Result<Option<Nameserver>> {
+    warn!("Unable to fetch default nameservers on this platform.");
+    Ok(None)
 }
