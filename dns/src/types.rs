@@ -182,13 +182,13 @@ pub enum Opcode {
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub enum ErrorCode {
 
-    /// `FORMERR` — The server was unable to interpret the query.
+    /// `FormErr` — The server was unable to interpret the query.
     FormatError,
 
-    /// `SERVFAIL` — There was a problem with the server.
+    /// `ServFail` — There was a problem with the server.
     ServerFailure,
 
-    /// `NXDOMAIN` — The domain name referenced in the query does not exist.
+    /// `NXDomain` — The domain name referenced in the query does not exist.
     NXDomain,
 
     /// `NotImp` — The server does not support one of the requested features.
@@ -198,12 +198,15 @@ pub enum ErrorCode {
     /// fulfil it.
     QueryRefused,
 
-    /// `NotAuth` — The server did not accept the EDNS version, or failed to
-    /// verify a signature.
+    /// `BADVERS` and `BADSIG` — The server did not accept the EDNS version,
+    /// or failed to verify a signature. The same code is used for both.
     BadVersion,
 
-    /// An error code we don’t know what it is.
+    /// An error code with no currently-defined meaning.
     Other(u16),
+
+    /// An error code within the ‘Reserved for Private Use’ range.
+    Private(u16)
 }
 
 

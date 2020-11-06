@@ -498,6 +498,7 @@ pub fn print_error_code(rcode: ErrorCode) {
         ErrorCode::NotImplemented  => println!("Status: Not Implemented"),
         ErrorCode::QueryRefused    => println!("Status: Query Refused"),
         ErrorCode::BadVersion      => println!("Status: Bad Version"),
+        ErrorCode::Private(num)    => println!("Status: Private Reason ({})", num),
         ErrorCode::Other(num)      => println!("Status: Other Failure ({})", num),
     }
 }

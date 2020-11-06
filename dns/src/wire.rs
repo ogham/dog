@@ -325,6 +325,10 @@ impl ErrorCode {
 
     /// Extracts the rcode from the last four bits of the flags field.
     fn from_bits(bits: u16) -> Option<Self> {
+        if (0x0F01 .. 0x0FFF).contains(&bits) {
+            return Some(Self::Private(bits));
+        }
+
         match bits {
             0 => None,
             1 => Some(Self::FormatError),
