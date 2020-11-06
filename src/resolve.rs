@@ -13,13 +13,17 @@ pub enum Resolver {
     /// Read the list of nameservers from the system, and use that.
     SystemDefault,
 
-    // Use a resolver specified by the user.
+    // Use a specific nameserver specified by the user.
     Specified(Nameserver),
 }
 
 pub type Nameserver = String;
 
 impl Resolver {
+
+    /// Returns a nameserver that queries should be sent to, possibly by
+    /// obtaining one based on the system, returning an error if there was a
+    /// problem looking one up.
     pub fn lookup(self) -> io::Result<Option<Nameserver>> {
         match self {
             Self::Specified(ns)  => Ok(Some(ns)),
@@ -29,6 +33,10 @@ impl Resolver {
 }
 
 
+/// Looks up the system default nameserver on Unix, by querying
+/// `/etc/resolv.conf` and returning the first line that specifies one.
+/// Returns an error if there’s a problem reading the file, or `None` if no
+/// nameserver is specified in the file.
 #[cfg(unix)]
 fn system_nameservers() -> io::Result<Option<Nameserver>> {
     use std::io::{BufRead, BufReader};
@@ -54,7 +62,45 @@ fn system_nameservers() -> io::Result<Option<Nameserver>> {
     Ok(nameservers.first().cloned())
 }
 
-#[cfg(not(unix))]
+
+/// Looks up the system default nameserver on Windows, by iterating through
+/// the list of network adapters and returning the first nameserver it finds.
+#[cfg(windows)]
+fn system_nameservers() -> io::Result<Option<Nameserver>> {
+    let adapters = match ipconfig::get_adapters() {
+        Ok(a) => a,
+        Err(e) => {
+            warn!("Error getting network adapters: {}", e);
+            return Ok(None);
+        }
+    };
+
+    let first_adapter = match adapters.first() {
+        Some(a) => a,
+        None => {
+            warn!("No network adapters available");
+            return Ok(None);
+        }
+    };
+    debug!("Found network adapter {:?}", first_adapter.adapter_name());
+
+    let first_nameserver = match first_adapter.dns_servers().first() {
+        Some(ns) => ns,
+        None => {
+            warn!("No nameservers available");
+            return Ok(None);
+        }
+    };
+    debug!("Found nameserver {:?}", first_nameserver);
+
+    // todo: have this not be turned into a string, then parsed again later
+    Ok(Some(first_nameserver.to_string()))
+}
+
+
+/// The fall-back system default nameserver determinator that is not very
+/// determined as it returns nothing without actually checking anything.
+#[cfg(all(not(unix), not(windows)))]
 fn system_nameservers() -> io::Result<Option<Nameserver>> {
     warn!("Unable to fetch default nameservers on this platform.");
     Ok(None)
