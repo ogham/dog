@@ -39,7 +39,6 @@ use super::{Transport, Error};
 ///   Implementation and Specification (November 1987)
 /// - [RFC 7766](https://tools.ietf.org/html/rfc1035) — DNS Transport over
 ///   TCP, Implementation Requirements (March 2016)
-#[derive(Debug)]
 pub struct TcpTransport {
     addr: String,
 }

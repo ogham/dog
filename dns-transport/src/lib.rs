@@ -23,14 +23,6 @@
 #![deny(clippy::cast_sign_loss)]
 #![deny(unsafe_code)]
 
-use derive_more::From;
-
-use dns::{Request, Response};
-
-
-// Re-export the five transport types, as well as the Tokio runtime, so that
-// the dog crate can just use something called “Runtime” without worrying
-// about which runtime it actually is.
 
 mod auto;
 pub use self::auto::AutoTransport;
@@ -47,6 +39,9 @@ pub use self::tls::TlsTransport;
 mod https;
 pub use self::https::HttpsTransport;
 
+mod error;
+pub use self::error::Error;
+
 
 /// The trait implemented by all transport types.
 pub trait Transport {
@@ -60,30 +55,5 @@ pub trait Transport {
     /// receiving data, or the DNS packet in the response contained invalid
     /// bytes and failed to parse, or if there was a protocol-level error for
     /// the TLS and HTTPS transports.
-    fn send(&self, request: &Request) -> Result<Response, Error>;
-}
-
-/// Something that can go wrong making a DNS request.
-#[derive(Debug, From)]  // can’t be PartialEq due to std::io::Error
-pub enum Error {
-
-    /// There was a problem with the network sending the request or receiving
-    /// a response asynchorously.
-    NetworkError(std::io::Error),
-
-    /// There was a problem making a TLS request.
-    #[cfg(feature="tls")]
-    TlsError(native_tls::Error),
-
-    /// There was a problem _establishing_ a TLS request.
-    #[cfg(feature="tls")]
-    TlsHandshakeError(native_tls::HandshakeError<std::net::TcpStream>),
-
-    /// The data in the response did not parse correctly from the DNS wire
-    /// protocol format.
-    WireError(dns::WireError),
-
-    /// The server specifically indicated that the request we sent it was
-    /// malformed.
-    BadRequest,
+    fn send(&self, request: &dns::Request) -> Result<dns::Response, Error>;
 }

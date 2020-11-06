@@ -30,7 +30,6 @@ use super::{Transport, Error};
 /// let transport = UdpTransport::new("8.8.8.8");
 /// transport.send(&request);
 /// ```
-#[derive(Debug)]
 pub struct UdpTransport {
     addr: String,
 }

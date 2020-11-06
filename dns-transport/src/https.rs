@@ -34,7 +34,6 @@ use super::{Transport, Error};
 /// let transport = HttpsTransport::new("https://cloudflare-dns.com/dns-query");
 /// transport.send(&request);
 /// ```
-#[derive(Debug)]
 pub struct HttpsTransport {
     url: String,
 }

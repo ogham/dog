@@ -32,7 +32,6 @@ use super::{Transport, Error, UdpTransport, TcpTransport};
 /// let transport = AutoTransport::new("8.8.8.8");
 /// transport.send(&request);
 /// ```
-#[derive(Debug)]
 pub struct AutoTransport {
     addr: String,
 }

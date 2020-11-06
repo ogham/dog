@@ -35,7 +35,6 @@ use super::{Transport, Error};
 /// let transport = TlsTransport::new("dns.google");
 /// transport.send(&request);
 /// ```
-#[derive(Debug)]
 pub struct TlsTransport {
     addr: String,
 }
