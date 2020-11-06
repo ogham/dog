@@ -54,6 +54,7 @@ impl TcpTransport {
 
 impl Transport for TcpTransport {
     fn send(&self, request: &Request) -> Result<Response, Error> {
+        info!("Opening TCP stream");
         let mut stream =
             if self.addr.contains(':') {
                 TcpStream::connect(&*self.addr)?
@@ -61,32 +62,61 @@ impl Transport for TcpTransport {
             else {
                 TcpStream::connect((&*self.addr, 53))?
             };
-        info!("Created stream");
+        debug!("Opened");
 
         // The message is prepended with the length when sent over TCP,
         // so the server knows how long it is (RFC 1035 §4.2.2)
-        let mut bytes = request.to_bytes().expect("failed to serialise request");
-        let len_bytes = u16::try_from(bytes.len()).expect("request too long").to_be_bytes();
-        bytes.insert(0, len_bytes[0]);
-        bytes.insert(1, len_bytes[1]);
+        let mut bytes_to_send = request.to_bytes().expect("failed to serialise request");
+        Self::prefix_with_length(&mut bytes_to_send);
 
-        info!("Sending {} bytes of data to {} over TCP", bytes.len(), self.addr);
-
-        let written_len = stream.write(&bytes)?;
+        info!("Sending {} bytes of data to {:?} over TCP", bytes_to_send.len(), self.addr);
+        let written_len = stream.write(&bytes_to_send)?;
         debug!("Wrote {} bytes", written_len);
 
+        let read_bytes = Self::length_prefixed_read(&mut stream)?;
+        let response = Response::from_bytes(&read_bytes)?;
+        Ok(response)
+    }
+}
+
+impl TcpTransport {
+
+    /// Mutate the given byte buffer, prefixing it with its own length as a
+    /// big-endian `u16`.
+    pub(crate) fn prefix_with_length(bytes: &mut Vec<u8>) {
+        let len_bytes = u16::try_from(bytes.len())
+            .expect("request too long")
+            .to_be_bytes();
+
+        bytes.insert(0, len_bytes[0]);
+        bytes.insert(1, len_bytes[1]);
+    }
+
+    /// Reads from the given I/O source as many times as necessary to read a
+    /// length-prefixed stream of bytes. The first two bytes are taken as a
+    /// big-endian `u16` to determine the length. Then, that many bytes are
+    /// read from the source.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if there’s a network error during reading, or not
+    /// enough bytes have been sent.
+    pub(crate) fn length_prefixed_read(stream: &mut impl Read) -> Result<Vec<u8>, Error> {
         info!("Waiting to receive...");
-        let mut buf = [0; 4096];
+
+        let mut buf = vec![0; 4096];
         let mut read_len = stream.read(&mut buf[..])?;
 
         if read_len == 0 {
-            panic!("Received no bytes!");
+            warn!("Received no bytes!");
+            return Err(Error::TruncatedResponse);
         }
         else if read_len == 1 {
             info!("Received one byte of data");
             let second_read_len = stream.read(&mut buf[1..])?;
             if second_read_len == 0 {
-                panic!("Received no bytes the second time!");
+                warn!("Received no bytes the second time!");
+                return Err(Error::TruncatedResponse);
             }
 
             read_len += second_read_len;
@@ -97,8 +127,10 @@ impl Transport for TcpTransport {
 
         let total_len = u16::from_be_bytes([buf[0], buf[1]]);
         if read_len - 2 == usize::from(total_len) {
-            let response = Response::from_bytes(&buf[2 .. read_len])?;
-            return Ok(response);
+            debug!("We have enough bytes");
+            let _ = buf.remove(1);
+            let _ = buf.remove(0);
+            return Ok(buf);
         }
 
         debug!("We need to read {} bytes total", total_len);
@@ -109,13 +141,13 @@ impl Transport for TcpTransport {
             info!("Received further {} bytes of data (of {})", extend_len, total_len);
 
             if read_len == 0 {
-                panic!("Read zero bytes!");
+                warn!("Read zero bytes!");
+                return Err(Error::TruncatedResponse);
             }
 
             combined_buffer.extend(&extend_buf[0 .. extend_len]);
         }
 
-        let response = Response::from_bytes(&combined_buffer)?;
-        Ok(response)
+        Ok(combined_buffer)
     }
 }

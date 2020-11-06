@@ -55,20 +55,20 @@ impl Transport for UdpTransport {
         else {
             socket.connect((&*self.addr, 53))?;
         }
+        debug!("Opened");
 
-        let bytes = request.to_bytes().expect("failed to serialise request");
-        info!("Sending {} bytes of data to {} over UDP", bytes.len(), self.addr);
+        let bytes_to_send = request.to_bytes().expect("failed to serialise request");
 
-        let sent_len = socket.send(&bytes)?;
-        debug!("Sent {} bytes", sent_len);
+        info!("Sending {} bytes of data to {} over UDP", bytes_to_send.len(), self.addr);
+        let written_len = socket.send(&bytes_to_send)?;
+        debug!("Wrote {} bytes", written_len);
 
         info!("Waiting to receive...");
-        let mut buf = vec![0; 1024];
+        let mut buf = vec![0; 4096];
         let received_len = socket.recv(&mut buf)?;
 
         info!("Received {} bytes of data", received_len);
         let response = Response::from_bytes(&buf[.. received_len])?;
-
         Ok(response)
     }
 }

@@ -1,13 +1,12 @@
 #![cfg_attr(not(feature="tls"), allow(unused))]
 
-use std::convert::TryFrom;
 use std::net::TcpStream;
-use std::io::{Read, Write};
+use std::io::Write;
 
 use log::*;
 
 use dns::{Request, Response};
-use super::{Transport, Error};
+use super::{Transport, Error, TcpTransport};
 
 
 /// The **TLS transport**, which sends DNS wire data using TCP through an
@@ -63,27 +62,22 @@ impl Transport for TlsTransport {
                 TcpStream::connect((&*self.addr, 853))?
             };
 
-        info!("Connecting");
-        let mut stream = connector.connect(self.sni_domain(), stream).unwrap();
+        let domain = self.sni_domain();
+        info!("Connecting using domain {:?}", domain);
+        let mut stream = connector.connect(domain, stream).unwrap();
+        debug!("Connected");
 
-        // As with TCP, we need to prepend the message with its length.
-        let mut bytes = request.to_bytes().expect("failed to serialise request");
-        let len_bytes = u16::try_from(bytes.len()).expect("request too long").to_be_bytes();
-        bytes.insert(0, len_bytes[0]);
-        bytes.insert(1, len_bytes[1]);
+        // The message is prepended with the length when sent over TCP,
+        // so the server knows how long it is (RFC 1035 §4.2.2)
+        let mut bytes_to_send = request.to_bytes().expect("failed to serialise request");
+        TcpTransport::prefix_with_length(&mut bytes_to_send);
 
-        info!("Sending {} bytes of data to {}", bytes.len(), self.addr);
-        stream.write_all(&bytes)?;
-        debug!("Sent");
+        info!("Sending {} bytes of data to {} over TLS", bytes_to_send.len(), self.addr);
+        stream.write_all(&bytes_to_send)?;
+        debug!("Wrote all bytes");
 
-        info!("Waiting to receive...");
-        let mut buf = [0; 4096];
-        let read_len = stream.read(&mut buf)?;
-
-        // Remember to deal with the length again.
-        info!("Received {} bytes of data", read_len);
-        let response = Response::from_bytes(&buf[2 .. read_len])?;
-
+        let read_bytes = TcpTransport::length_prefixed_read(&mut stream)?;
+        let response = Response::from_bytes(&read_bytes)?;
         Ok(response)
     }
 

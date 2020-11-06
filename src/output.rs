@@ -508,6 +508,7 @@ pub fn print_error_code(rcode: ErrorCode) {
 fn erroneous_phase(error: &TransportError) -> &'static str {
     match error {
         TransportError::WireError(_)          => "protocol",
+        TransportError::TruncatedResponse     |
         TransportError::NetworkError(_)       => "network",
         #[cfg(feature="tls")]
         TransportError::TlsError(_)           |
@@ -522,6 +523,7 @@ fn erroneous_phase(error: &TransportError) -> &'static str {
 fn error_message(error: TransportError) -> String {
     match error {
         TransportError::WireError(e)          => wire_error_message(e),
+        TransportError::TruncatedResponse     => "Truncated response".into(),
         TransportError::NetworkError(e)       => e.to_string(),
         #[cfg(feature="tls")]
         TransportError::TlsError(e)           => e.to_string(),

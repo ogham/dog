@@ -1,3 +1,5 @@
+# HTTPS
+
 [[cmd]]
 name = "Using a DNS-over-HTTPS server that returns status 500"
 shell = "dog --https @https://eu.httpbin.org/status/500 lookup.dog"
@@ -13,3 +15,24 @@ stdout = { empty = true }
 stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
 status = 1
 tags = [ 'live', 'httpbin', 'https' ]
+
+
+# TCP
+
+# [[cmd]]
+# name = "Using a TCP server that returns an empty message"
+# shell = "dog --tcp @52.20.16.20:30000 lookup.dog"
+# stdout = { empty = true }
+# stderr = { string = "Error [network]: Truncated response" }
+# status = 1
+# tags = [ 'live', 'tcpbin', 'tcp' ]
+
+# The above test is flaky. It works correctly the first time, but produces a
+# different error message on subsequent runs.
+#
+# The ‘other’ tcpbin can be used to test the truncated response error
+# handling, but it requires waiting 60 seconds for their server to give up and
+# send us a FIN:
+#
+# - dog --tcp bsago.me @tcpbin.com:4242
+# - dog --tls bsago.me @tcpbin.com:4243

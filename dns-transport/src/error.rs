@@ -9,6 +9,10 @@ pub enum Error {
     /// There was a problem with the network making a TCP or UDP request.
     NetworkError(std::io::Error),
 
+    /// Not enough information was received from the server before a `read`
+    /// call returned zero bytes.
+    TruncatedResponse,
+
     /// There was a problem making a TLS request.
     #[cfg(feature="tls")]
     TlsError(native_tls::Error),

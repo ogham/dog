@@ -57,9 +57,10 @@ impl Transport for HttpsTransport {
         info!("Opening TLS socket to {:?}", domain);
         let stream = TcpStream::connect(format!("{}:443", domain))?;
         let mut stream = connector.connect(domain, stream)?;
+        debug!("Connected");
 
         let request_bytes = request.to_bytes().expect("failed to serialise request");
-        let mut bytes = format!("\
+        let mut bytes_to_send = format!("\
             POST {} HTTP/1.1\r\n\
             Host: {}\r\n\
             Content-Type: application/dns-message\r\n\
@@ -67,11 +68,11 @@ impl Transport for HttpsTransport {
             User-Agent: {}\r\n\
             Content-Length: {}\r\n\r\n",
             path, domain, USER_AGENT, request_bytes.len()).into_bytes();
-        bytes.extend(request_bytes);
+        bytes_to_send.extend(request_bytes);
 
-        info!("Sending {:?} bytes of data to {}", bytes.len(), self.url);
-        stream.write_all(&bytes)?;
-        debug!("Sent");
+        info!("Sending {} bytes of data to {:?} over HTTPS", bytes_to_send.len(), self.url);
+        stream.write_all(&bytes_to_send)?;
+        debug!("Wrote all bytes");
 
         info!("Waiting to receive...");
         let mut buf = [0; 4096];
@@ -89,10 +90,10 @@ impl Transport for HttpsTransport {
         }
 
         for header in response.headers {
-            trace!("Header {:?} -> {:?}", header.name, String::from_utf8_lossy(header.value));
+            debug!("Header {:?} -> {:?}", header.name, String::from_utf8_lossy(header.value));
         }
 
-        info!("HTTP body has {} bytes", body.len());
+        debug!("HTTP body has {} bytes", body.len());
         let response = Response::from_bytes(&body)?;
         Ok(response)
     }
