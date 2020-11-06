@@ -152,21 +152,21 @@ impl OutputFormat {
     /// Print an error that’s ocurred while sending or receiving DNS packets
     /// to standard error.
     pub fn print_error(self, error: TransportError) {
-    	match self {
-    		Self::Short(..) | Self::Text(..) => {
-    			eprintln!("Error [{}]: {}", erroneous_phase(&error), error_message(error));
-    		}
+        match self {
+            Self::Short(..) | Self::Text(..) => {
+                eprintln!("Error [{}]: {}", erroneous_phase(&error), error_message(error));
+            }
 
-    		Self::JSON => {
-    			let object = json!({
-    				"error": true,
-    				"error_phase": erroneous_phase(&error),
-    				"error_message": error_message(error),
-    			});
+            Self::JSON => {
+                let object = json!({
+                    "error": true,
+                    "error_phase": erroneous_phase(&error),
+                    "error_message": error_message(error),
+                });
 
-    			eprintln!("{}", object);
-    		}
-    	}
+                eprintln!("{}", object);
+            }
+        }
     }
 }
 
@@ -505,32 +505,32 @@ pub fn print_error_code(rcode: ErrorCode) {
 /// Returns the “phase” of operation where an error occurred. This gets shown
 /// to the user so they can debug what went wrong.
 fn erroneous_phase(error: &TransportError) -> &'static str {
-	match error {
-		TransportError::WireError(_)          => "protocol",
-		TransportError::NetworkError(_)       => "network",
+    match error {
+        TransportError::WireError(_)          => "protocol",
+        TransportError::NetworkError(_)       => "network",
         #[cfg(feature="tls")]
-		TransportError::TlsError(_)           |
-		TransportError::TlsHandshakeError(_)  => "tls",
+        TransportError::TlsError(_)           |
+        TransportError::TlsHandshakeError(_)  => "tls",
         #[cfg(feature="https")]
-		TransportError::HttpError(_)          |
-		TransportError::WrongHttpStatus(_,_)  => "http",
-	}
+        TransportError::HttpError(_)          |
+        TransportError::WrongHttpStatus(_,_)  => "http",
+    }
 }
 
 /// Formats an error into its human-readable message.
 fn error_message(error: TransportError) -> String {
-	match error {
-		TransportError::WireError(e)          => wire_error_message(e),
-		TransportError::NetworkError(e)       => e.to_string(),
+    match error {
+        TransportError::WireError(e)          => wire_error_message(e),
+        TransportError::NetworkError(e)       => e.to_string(),
         #[cfg(feature="tls")]
-		TransportError::TlsError(e)           => e.to_string(),
+        TransportError::TlsError(e)           => e.to_string(),
         #[cfg(feature="tls")]
-		TransportError::TlsHandshakeError(e)  => e.to_string(),
+        TransportError::TlsHandshakeError(e)  => e.to_string(),
         #[cfg(feature="https")]
-		TransportError::HttpError(e)          => e.to_string(),
+        TransportError::HttpError(e)          => e.to_string(),
         #[cfg(feature="https")]
-		TransportError::WrongHttpStatus(t,r)  => format!("Nameserver returned HTTP {} ({})", t, r.unwrap_or_else(|| "No reason".into()))
-	}
+        TransportError::WrongHttpStatus(t,r)  => format!("Nameserver returned HTTP {} ({})", t, r.unwrap_or_else(|| "No reason".into()))
+    }
 }
 
 /// Formats a wire error into its human-readable message, describing what was

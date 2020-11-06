@@ -57,11 +57,11 @@ export DOG_DEBUG := ""
 
 # prints out the data that caused crashes during fuzzing as hexadecimal
 @fuzz-hex:
-	for crash in dns/fuzz/artifacts/fuzz_parsing/crash-*; do echo; echo $crash; hexyl $crash; done
+    for crash in dns/fuzz/artifacts/fuzz_parsing/crash-*; do echo; echo $crash; hexyl $crash; done
 
 # removes fuzz log files
 @fuzz-clean:
-	rm dns/fuzz/fuzz-*.log
+    rm dns/fuzz/fuzz-*.log
 
 
 # lints the code
