@@ -1,4 +1,4 @@
-% dog(1) v0.9.0
+% dog(1) v0.1.0
 
 <!-- This is the dog(1) man page, written in Markdown. -->
 <!-- To generate the roff version, run `just man`, -->
@@ -54,6 +54,14 @@ QUERY OPTIONS
 `--class=CLASS`
 : Network class of the DNS record being queried (`IN`, `CH`, `HS`)
 
+By default, dog will request A records using the system default resolver. At least one domain name must be passed — dog will not automatically query the root nameservers.
+
+Query options passed in using a command-line option, such as ‘`--query lookup.dog`’ or ‘`--type MX`’, or as plain arguments, such as ‘`lookup.dog`’ or ‘`MX`’. dog will make an intelligent guess as to what plain arguments mean (`MX` is quite clearly a type), which makes it easier to compose ad-hoc queries quickly. If precision is desired, use the long-form options.
+
+If more than one domain, type, nameserver, or class is specified, dog will perform one query for each combination, and display the combined results in a table. For example, passing three type arguments and two domain name arguments will send six requests.
+
+DNS traditionally uses port 53 for both TCP and UDP. To use a resolver with a different port, include the port number after a colon (`:`) in the nameserver address.
+
 
 SENDING OPTIONS
 ===============
@@ -82,6 +90,14 @@ TRANSPORT OPTIONS
 
 `-H`, `--https`
 : Use the DNS-over-HTTPS protocol.
+
+By default, dog will use the UDP protocol, automatically re-sending the request using TCP if the response indicates that the message is too large for UDP. Passing `--udp` will only use UDP and will fail in this case; passing `--tcp` will use TCP by default.
+
+The DNS-over-TLS (DoT) and DNS-over-HTTPS (DoH) protocols are available with the `--tls` and `--https` options. Bear in mind that the system default resolver is unlikely to respond to requests using these protocols.
+
+Note that if a hostname or domain name is given as a nameserver, rather than an IP address, the resolution of that host is performed by the operating system, _not_ by dog.
+
+Unlike the others, the HTTPS transport type requires an entire URL, complete with protocol, domain name, and path.
 
 
 OUTPUT OPTIONS
@@ -120,7 +136,67 @@ dog responds to the following environment variables:
 
 ## `DOG_DEBUG`
 
-Set this to a non-empty value to have dog emit debugging information to standard error.
+Set this to any non-empty value to have dog emit debugging information to standard error. For more in-depth output, set this to the exact string ‘`trace`’.
+
+
+RECORD TYPES
+============
+
+dog understands and can interpret the following record types:
+
+`A`
+: IPv4 addresses
+
+`AAAA`
+: IPv6 addresses
+
+`CAA`
+: permitted certificate authorities
+
+`CNAME`
+: canonical domain aliases
+
+`HINFO`
+: system information and, sometimes, forbidden request explanations
+
+`LOC`
+: location information
+
+`MX`
+: e-mail server addresses
+
+`NAPTR`
+: DDDS rules
+
+`NS`
+: domain name servers
+
+`OPT`
+: extensions to the DNS protocol
+
+`PTR`
+: pointers to canonical names, usually for reverse lookups
+
+`SOA`
+: administrative information about zones
+
+`SRV`
+: IP addresses with port numbers
+
+`SSHFP`
+: SSH key fingerprints
+
+`TLSA`
+: TLS certificates, public keys, and hashes
+
+`TXT`
+: arbitrary textual information
+
+When a response DNS packet contains a record of one of these known types, dog will display it in a table containing the type name and a human-readable summary of its contents.
+
+Records with a type number that does not map to any known record type will still be displayed. As they cannot be interpreted, their contents will be displayed as a series of numbers instead.
+
+dog also contains a list of record type names that it knows the type number of, but is not able to interpret, such as `IXFR` or `ANY` or `AFSDB`. These are acceptable as command-line arguments, meaning you can send an AFSDB request with ‘`dog AFSDB`’. However, their response contents will still be displayed as numbers. They may be supported in future versions of dog.
 
 
 EXIT STATUSES
