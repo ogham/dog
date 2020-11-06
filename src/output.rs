@@ -506,25 +506,30 @@ pub fn print_error_code(rcode: ErrorCode) {
 /// to the user so they can debug what went wrong.
 fn erroneous_phase(error: &TransportError) -> &'static str {
 	match error {
+		TransportError::WireError(_)          => "protocol",
 		TransportError::NetworkError(_)       => "network",
         #[cfg(feature="tls")]
 		TransportError::TlsError(_)           |
 		TransportError::TlsHandshakeError(_)  => "tls",
-		TransportError::BadRequest            => "http-status",
-		TransportError::WireError(_)          => "protocol",
+        #[cfg(feature="https")]
+		TransportError::HttpError(_)          |
+		TransportError::WrongHttpStatus(_,_)  => "http",
 	}
 }
 
 /// Formats an error into its human-readable message.
 fn error_message(error: TransportError) -> String {
 	match error {
+		TransportError::WireError(e)          => wire_error_message(e),
 		TransportError::NetworkError(e)       => e.to_string(),
         #[cfg(feature="tls")]
 		TransportError::TlsError(e)           => e.to_string(),
         #[cfg(feature="tls")]
 		TransportError::TlsHandshakeError(e)  => e.to_string(),
-		TransportError::BadRequest            => "Nameserver returned HTTP 400 Bad Request".into(),
-		TransportError::WireError(e)          => wire_error_message(e),
+        #[cfg(feature="https")]
+		TransportError::HttpError(e)          => e.to_string(),
+        #[cfg(feature="https")]
+		TransportError::WrongHttpStatus(t,r)  => format!("Nameserver returned HTTP {} ({})", t, r.unwrap_or_else(|| "No reason".into()))
 	}
 }
 

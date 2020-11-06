@@ -2,8 +2,11 @@
 #[derive(Debug)]
 pub enum Error {
 
-    /// There was a problem with the network sending the request or receiving
-    /// a response asynchorously.
+    /// The data in the response did not parse correctly from the DNS wire
+    /// protocol format.
+    WireError(dns::WireError),
+
+    /// There was a problem with the network making a TCP or UDP request.
     NetworkError(std::io::Error),
 
     /// There was a problem making a TLS request.
@@ -14,13 +17,14 @@ pub enum Error {
     #[cfg(feature="tls")]
     TlsHandshakeError(native_tls::HandshakeError<std::net::TcpStream>),
 
-    /// The data in the response did not parse correctly from the DNS wire
-    /// protocol format.
-    WireError(dns::WireError),
+    /// There was a problem decoding the response HTTP headers or body.
+    #[cfg(feature="https")]
+    HttpError(httparse::Error),
 
-    /// The server specifically indicated that the request we sent it was
-    /// malformed.
-    BadRequest,
+    /// The HTTP response code was something other than 200 OK, along with the
+    /// response code text, if present.
+    #[cfg(feature="https")]
+    WrongHttpStatus(u16, Option<String>),
 }
 
 
@@ -33,21 +37,28 @@ impl From<dns::WireError> for Error {
 }
 
 impl From<std::io::Error> for Error {
-    fn from(inner: std::io::Error) -> Error {
+    fn from(inner: std::io::Error) -> Self {
         Self::NetworkError(inner)
     }
 }
 
 #[cfg(feature="tls")]
 impl From<native_tls::Error> for Error {
-    fn from(inner: native_tls::Error) -> Error {
+    fn from(inner: native_tls::Error) -> Self {
         Self::TlsError(inner)
     }
 }
 
 #[cfg(feature="tls")]
 impl From<native_tls::HandshakeError<std::net::TcpStream>> for Error {
-    fn from(inner: native_tls::HandshakeError<std::net::TcpStream>) -> Error {
+    fn from(inner: native_tls::HandshakeError<std::net::TcpStream>) -> Self {
         Self::TlsHandshakeError(inner)
+    }
+}
+
+#[cfg(feature="https")]
+impl From<httparse::Error> for Error {
+    fn from(inner: httparse::Error) -> Self {
+        Self::HttpError(inner)
     }
 }

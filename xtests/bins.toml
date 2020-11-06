@@ -1,0 +1,15 @@
+[[cmd]]
+name = "Using a DNS-over-HTTPS server that returns status 500"
+shell = "dog --https @https://eu.httpbin.org/status/500 lookup.dog"
+stdout = { empty = true }
+stderr = { string = "Error [http]: Nameserver returned HTTP 500 (INTERNAL SERVER ERROR)" }
+status = 1
+tags = [ 'live', 'httpbin', 'https' ]
+
+[[cmd]]
+name = "Using a DNS-over-HTTPS server that returns no content"
+shell = "dog --https @https://eu.httpbin.org/status/200 lookup.dog"
+stdout = { empty = true }
+stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
+status = 1
+tags = [ 'live', 'httpbin', 'https' ]

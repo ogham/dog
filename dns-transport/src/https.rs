@@ -80,11 +80,12 @@ impl Transport for HttpsTransport {
 
         let mut headers = [httparse::EMPTY_HEADER; 16];
         let mut response = httparse::Response::new(&mut headers);
-        let index: usize = response.parse(&buf).unwrap().unwrap();
+        let index: usize = response.parse(&buf)?.unwrap();
         let body = &buf[index .. read_len];
 
         if response.code != Some(200) {
-            return Err(Error::BadRequest);
+            let reason = response.reason.map(|e| e.to_string());
+            return Err(Error::WrongHttpStatus(response.code.unwrap(), reason));
         }
 
         for header in response.headers {
