@@ -69,3 +69,21 @@ static TYPES: &[(&str, u16)] = &[
     ("TSIG",      250),
     ("URI",       256),
 ];
+
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn known() {
+        assert_eq!(UnknownQtype::from(46).to_string(),
+                   String::from("RRSIG"));
+    }
+
+    #[test]
+    fn unknown() {
+        assert_eq!(UnknownQtype::from(4444).to_string(),
+                   String::from("4444"));
+    }
+}
