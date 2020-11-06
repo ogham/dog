@@ -64,7 +64,7 @@ impl Transport for TlsTransport {
 
         let domain = self.sni_domain();
         info!("Connecting using domain {:?}", domain);
-        let mut stream = connector.connect(domain, stream).unwrap();
+        let mut stream = connector.connect(domain, stream)?;
         debug!("Connected");
 
         // The message is prepended with the length when sent over TCP,
