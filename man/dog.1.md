@@ -199,6 +199,24 @@ Records with a type number that does not map to any known record type will still
 dog also contains a list of record type names that it knows the type number of, but is not able to interpret, such as `IXFR` or `ANY` or `AFSDB`. These are acceptable as command-line arguments, meaning you can send an AFSDB request with ‘`dog AFSDB`’. However, their response contents will still be displayed as numbers. They may be supported in future versions of dog.
 
 
+PROTOCOL TWEAKS
+===============
+
+The `-Z` command-line argument can be used one or more times to set some protocol-level options in the DNS queries that get sent. It accepts the following values:
+
+`aa`
+: Sets the `AA` (Authoritative Answers) bit in the query.
+
+`ad`
+: Sets the `AD` (Authentic Data) bit in the query.
+
+`bufsize=NUM`
+: Sets the UDP payload size field in the OPT field in the query. This has no effect if EDNS is diabled.
+
+`cd`
+: Sets the `CD` (Checking Disabled) bit in the query.
+
+
 EXIT STATUSES
 =============
 
