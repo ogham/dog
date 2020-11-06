@@ -10,7 +10,7 @@ __dog() {
         --class"[Network class of the DNS record being queried]:(network class):(IN CH HS)" \
         --edns"[Whether to OPT in to EDNS]:(edns setting):(disable hide show)" \
         --txid"[Set the transaction ID to a specific value]" \
-        -Z"[Configure uncommon protocol-level tweaks]:(protocol tweak):(aa ad cd)" \
+        -Z"[Configure uncommon protocol-level tweaks]:(protocol tweak):(aa ad bufsize= cd)" \
         {-U,--udp}"[Use the DNS protocol over UDP]" \
         {-T,--tcp}"[Use the DNS protocol over TCP]" \
         {-S,--tls}"[Use the DNS-over-TLS protocol]" \

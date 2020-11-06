@@ -19,6 +19,7 @@ complete -c dog        -l 'txid'       -d "Set the transaction ID to a specific 
 complete -c dog -s 'Z'                 -d "Configure uncommon protocol-level tweaks" -x -a "
     aa\t'Set the AA (Authoritative Answers) query bit'
     ad\t'Set the AD (Authentic Data) query bit'
+    bufsize=\t'Set the UDP payload size'
     cd\t'Set the CD (Checking Disabled) query bit'
 "
 

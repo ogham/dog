@@ -57,6 +57,9 @@ pub struct ProtocolTweaks {
 
     /// Set the `CD` (Checking Disabled) flag in the header of each request.
     pub set_checking_disabled_flag: bool,
+
+    /// Set the buffer size field in the OPT record of each request.
+    pub udp_payload_size: Option<u16>,
 }
 
 /// Whether to send or display OPT packets.
@@ -98,7 +101,9 @@ impl RequestGenerator {
 
                             let mut additional = None;
                             if self.edns.should_send() {
-                                additional = Some(dns::Request::additional_record());
+                                let mut opt = dns::Request::additional_record();
+                                self.protocol_tweaks.set_request_opt_fields(&mut opt);
+                                additional = Some(opt);
                             }
 
                             let query = dns::Query { qname: domain.clone(), qtype, qclass };
@@ -141,6 +146,12 @@ impl ProtocolTweaks {
 
         if self.set_checking_disabled_flag {
             flags.checking_disabled = true;
+        }
+    }
+
+    pub fn set_request_opt_fields(self, opt: &mut dns::record::OPT) {
+        if let Some(bufsize) = self.udp_payload_size {
+            opt.udp_payload_size = bufsize;
         }
     }
 }

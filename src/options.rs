@@ -380,6 +380,18 @@ impl ProtocolTweaks {
                     tweaks.set_checking_disabled_flag = true;
                 }
                 otherwise => {
+                    if let Some(remaining_num) = tweak_str.strip_prefix("bufsize=") {
+                        match remaining_num.parse() {
+                            Ok(parsed_bufsize) => {
+                                tweaks.udp_payload_size = Some(parsed_bufsize);
+                                continue;
+                            }
+                            Err(e) => {
+                                warn!("Failed to parse buffer size: {}", e);
+                            }
+                        }
+                    }
+
                     return Err(OptionsError::InvalidTweak(otherwise.into()));
                 }
             }
@@ -675,6 +687,24 @@ mod test {
         let options = Options::getopts(&[ "dom.ain", "-Z", "aa", "-Z", "cd" ]).unwrap();
         assert_eq!(options.requests.protocol_tweaks.set_authoritative_flag, true);
         assert_eq!(options.requests.protocol_tweaks.set_checking_disabled_flag, true);
+    }
+
+    #[test]
+    fn udp_size() {
+        let options = Options::getopts(&[ "dom.ain", "-Z", "bufsize=4096" ]).unwrap();
+        assert_eq!(options.requests.protocol_tweaks.udp_payload_size, Some(4096));
+    }
+
+    #[test]
+    fn udp_size_invalid() {
+        assert_eq!(Options::getopts(&[ "-Z", "bufsize=null" ]),
+                   OptionsResult::InvalidOptions(OptionsError::InvalidTweak("bufsize=null".into())));
+    }
+
+    #[test]
+    fn udp_size_too_big() {
+        assert_eq!(Options::getopts(&[ "-Z", "bufsize=999999999" ]),
+                   OptionsResult::InvalidOptions(OptionsError::InvalidTweak("bufsize=999999999".into())));
     }
 
     #[test]
