@@ -12,7 +12,7 @@ export DOG_DEBUG := ""
 # compiles the dog binary (in release mode)
 @build-release:
     cargo build --release --verbose
-    strip target/release/dog
+    strip "${CARGO_TARGET_DIR:-target}/release/dog"
 
 # compiles the dog binary (without some features)
 @build-quick:
@@ -25,7 +25,7 @@ export DOG_DEBUG := ""
 
 # runs unit tests (in release mode)
 @test-release:
-    cargo test --release --all --verbose
+    cargo test --release --workspace --verbose
 
 # runs unit tests (without some features)
 @test-quick:
@@ -91,8 +91,8 @@ export DOG_DEBUG := ""
 
 
 # renders the documentation
-@doc args="":
-    cargo doc --no-deps --all {{args}}
+@doc:
+    cargo doc --no-deps --workspace
 
 # builds the man pages
 @man:
@@ -102,3 +102,19 @@ export DOG_DEBUG := ""
 # builds and previews the man page
 @man-preview: man
     man "${CARGO_TARGET_DIR:-target}/man/dog.1"
+
+
+# creates a distributable package
+package release:
+    #!/usr/bin/env perl
+    use Archive::Zip;
+    -e 'target/release/dog' || die 'Binary not built!';
+    -e 'target/man/dog.1' || die 'Man page not built!';
+    my $zip = Archive::Zip->new();
+    $zip->addFile('completions/dog.bash');
+    $zip->addFile('completions/dog.zsh');
+    $zip->addFile('completions/dog.fish');
+    $zip->addFile('target/man/dog.1', 'man/dog.1');
+    $zip->addFile('target/release/dog', 'bin/dog');
+    $zip->writeToFileNamed('dog-{{ release }}.zip') == AZ_OK || die 'Zip write error!';
+    system 'unzip -l "dog-{{ release }}".zip'
