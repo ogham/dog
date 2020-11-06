@@ -52,27 +52,27 @@ impl Options {
         opts.optmulti("",  "class",       "Network class of the DNS record being queried (IN, CH, HS)", "CLASS");
 
         // Sending options
-        opts.optopt ("",  "edns",         "Whether to OPT in to EDNS (disable, hide, show)", "SETTING");
-        opts.optopt ("",  "txid",         "Set the transaction ID to a specific value", "NUMBER");
-        opts.optopt ("Z", "",             "Uncommon protocol tweaks", "TWEAKS");
+        opts.optopt  ("",  "edns",         "Whether to OPT in to EDNS (disable, hide, show)", "SETTING");
+        opts.optopt  ("",  "txid",         "Set the transaction ID to a specific value", "NUMBER");
+        opts.optmulti("Z", "",             "Set uncommon protocol tweaks", "TWEAKS");
 
         // Protocol options
-        opts.optflag("U", "udp",          "Use the DNS protocol over UDP");
-        opts.optflag("T", "tcp",          "Use the DNS protocol over TCP");
-        opts.optflag("S", "tls",          "Use the DNS-over-TLS protocol");
-        opts.optflag("H", "https",        "Use the DNS-over-HTTPS protocol");
+        opts.optflag ("U", "udp",          "Use the DNS protocol over UDP");
+        opts.optflag ("T", "tcp",          "Use the DNS protocol over TCP");
+        opts.optflag ("S", "tls",          "Use the DNS-over-TLS protocol");
+        opts.optflag ("H", "https",        "Use the DNS-over-HTTPS protocol");
 
         // Output options
-        opts.optopt ("",  "color",        "When to use terminal colors",  "WHEN");
-        opts.optopt ("",  "colour",       "When to use terminal colours", "WHEN");
-        opts.optflag("J", "json",         "Display the output as JSON");
-        opts.optflag("",  "seconds",      "Do not format durations, display them as seconds");
-        opts.optflag("1", "short",        "Short mode: display nothing but the first result");
-        opts.optflag("",  "time",         "Print how long the response took to arrive");
+        opts.optopt  ("",  "color",        "When to use terminal colors",  "WHEN");
+        opts.optopt  ("",  "colour",       "When to use terminal colours", "WHEN");
+        opts.optflag ("J", "json",         "Display the output as JSON");
+        opts.optflag ("",  "seconds",      "Do not format durations, display them as seconds");
+        opts.optflag ("1", "short",        "Short mode: display nothing but the first result");
+        opts.optflag ("",  "time",         "Print how long the response took to arrive");
 
         // Meta options
-        opts.optflag("v", "version",      "Print version information");
-        opts.optflag("?", "help",         "Print list of command-line options");
+        opts.optflag ("v", "version",      "Print version information");
+        opts.optflag ("?", "help",         "Print list of command-line options");
 
         let matches = match opts.parse(args) {
             Ok(m)  => m,
@@ -368,11 +368,19 @@ impl ProtocolTweaks {
     fn deduce(matches: &getopts::Matches) -> Result<Self, OptionsError> {
         let mut tweaks = Self::default();
 
-        if let Some(tweak_strs) = matches.opt_str("Z") {
-            for tweak_str in tweak_strs.split(',') {
-                match &*tweak_str {
-                    "authentic"  => { tweaks.set_authentic_flag = true; },
-                    otherwise    => return Err(OptionsError::InvalidTweak(otherwise.into())),
+        for tweak_str in matches.opt_strs("Z") {
+            match &*tweak_str {
+                "aa" | "authoritative" => {
+                    tweaks.set_authoritative_flag = true;
+                }
+                "ad" | "authentic" => {
+                    tweaks.set_authentic_flag = true;
+                }
+                "cd" | "checking-disabled" => {
+                    tweaks.set_checking_disabled_flag = true;
+                }
+                otherwise => {
+                    return Err(OptionsError::InvalidTweak(otherwise.into()));
                 }
             }
         }
@@ -660,6 +668,13 @@ mod test {
         let options = Options::getopts(&[ "dom.ain", "--edns", "show", "-Z", "authentic" ]).unwrap();
         assert_eq!(options.requests.edns, UseEDNS::SendAndShow);
         assert_eq!(options.requests.protocol_tweaks.set_authentic_flag, true);
+    }
+
+    #[test]
+    fn two_more_tweaks() {
+        let options = Options::getopts(&[ "dom.ain", "-Z", "aa", "-Z", "cd" ]).unwrap();
+        assert_eq!(options.requests.protocol_tweaks.set_authoritative_flag, true);
+        assert_eq!(options.requests.protocol_tweaks.set_checking_disabled_flag, true);
     }
 
     #[test]

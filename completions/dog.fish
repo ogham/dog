@@ -16,8 +16,10 @@ complete -c dog        -l 'edns'       -d "Whether to OPT in to EDNS" -x -a "
     show\t'Send an OPT query, and show the result'
 "
 complete -c dog        -l 'txid'       -d "Set the transaction ID to a specific value" -x
-complete -c dog -s 'Z'                 -d "Configure uncommon protocol tweaks" -x -a "
-    authentic\t'Set the AD (Authentic Data) query bit'
+complete -c dog -s 'Z'                 -d "Configure uncommon protocol-level tweaks" -x -a "
+    aa\t'Set the AA (Authoritative Answers) query bit'
+    ad\t'Set the AD (Authentic Data) query bit'
+    cd\t'Set the CD (Checking Disabled) query bit'
 "
 
 # Protocol options

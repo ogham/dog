@@ -19,7 +19,7 @@ _dog()
             ;;
 
         -Z)
-            COMPREPLY=( $( compgen -W 'authentic' -- "$cur" ) )
+            COMPREPLY=( $( compgen -W 'aa ad cd' -- "$cur" ) )
             return
             ;;
 

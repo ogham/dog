@@ -46,11 +46,17 @@ pub struct Inputs {
 }
 
 /// Weird protocol options that are allowed by the spec but are not common.
-#[derive(PartialEq, Debug, Default)]
+#[derive(PartialEq, Debug, Default, Copy, Clone)]
 pub struct ProtocolTweaks {
 
-    /// Set the `AD` flag (Authentic Data) in the header of each request.
+    /// Set the `AA` (Authoritative Answer) flag in the header of each request.
+    pub set_authoritative_flag: bool,
+
+    /// Set the `AD` (Authentic Data) flag in the header of each request.
     pub set_authentic_flag: bool,
+
+    /// Set the `CD` (Checking Disabled) flag in the header of each request.
+    pub set_checking_disabled_flag: bool,
 }
 
 /// Whether to send or display OPT packets.
@@ -88,9 +94,7 @@ impl RequestGenerator {
 
                             let transaction_id = self.txid_generator.generate();
                             let mut flags = dns::Flags::query();
-                            if self.protocol_tweaks.set_authentic_flag {
-                                flags.authentic_data = true;
-                            }
+                            self.protocol_tweaks.set_request_flags(&mut flags);
 
                             let mut additional = None;
                             if self.edns.should_send() {
@@ -122,5 +126,21 @@ impl UseEDNS {
     /// Whether the user wants to display sent OPT records.
     pub fn should_show(self) -> bool {
         self == Self::SendAndShow
+    }
+}
+
+impl ProtocolTweaks {
+    pub fn set_request_flags(self, flags: &mut dns::Flags) {
+        if self.set_authoritative_flag {
+            flags.authoritative = true;
+        }
+
+        if self.set_authentic_flag {
+            flags.authentic_data = true;
+        }
+
+        if self.set_checking_disabled_flag {
+            flags.checking_disabled = true;
+        }
     }
 }
