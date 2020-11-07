@@ -105,16 +105,16 @@ export DOG_DEBUG := ""
 
 
 # creates a distributable package
-package release:
+zip desc exe="dog":
     #!/usr/bin/env perl
     use Archive::Zip;
-    -e 'target/release/dog' || die 'Binary not built!';
+    -e 'target/release/{{ exe }}' || die 'Binary not built!';
     -e 'target/man/dog.1' || die 'Man page not built!';
     my $zip = Archive::Zip->new();
     $zip->addFile('completions/dog.bash');
     $zip->addFile('completions/dog.zsh');
     $zip->addFile('completions/dog.fish');
     $zip->addFile('target/man/dog.1', 'man/dog.1');
-    $zip->addFile('target/release/dog', 'bin/dog');
-    $zip->writeToFileNamed('dog-{{ release }}.zip') == AZ_OK || die 'Zip write error!';
-    system 'unzip -l "dog-{{ release }}".zip'
+    $zip->addFile('target/release/{{ exe }}', 'bin/{{ exe }}');
+    $zip->writeToFileNamed('dog-{{ desc }}.zip') == AZ_OK || die 'Zip write error!';
+    system 'unzip -l "dog-{{ desc }}".zip'
