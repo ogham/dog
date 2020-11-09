@@ -132,6 +132,7 @@ impl Inputs {
         inputs.load_transport_types(&matches);
         inputs.load_named_args(&matches)?;
         inputs.load_free_args(matches)?;
+        inputs.check_for_missing_nameserver()?;
         inputs.load_fallbacks();
         Ok(inputs)
     }
@@ -259,6 +260,15 @@ impl Inputs {
 
         if self.transport_types.is_empty() {
             self.transport_types.push(TransportType::Automatic);
+        }
+    }
+
+    fn check_for_missing_nameserver(&self) -> Result<(), OptionsError> {
+        if self.resolvers.is_empty() && self.transport_types == [TransportType::HTTPS] {
+            Err(OptionsError::MissingHttpsUrl)
+        }
+        else {
+            Ok(())
         }
     }
 }
@@ -446,6 +456,7 @@ pub enum OptionsError {
     InvalidTxid(String),
     InvalidTweak(String),
     QueryTypeOPT,
+    MissingHttpsUrl,
 }
 
 impl fmt::Display for OptionsError {
@@ -459,6 +470,7 @@ impl fmt::Display for OptionsError {
             Self::InvalidTxid(txid)      => write!(f, "Invalid transaction ID {:?}", txid),
             Self::InvalidTweak(tweak)    => write!(f, "Invalid protocol tweak {:?}", tweak),
             Self::QueryTypeOPT           => write!(f, "OPT request is sent by default (see -Z flag)"),
+            Self::MissingHttpsUrl        => write!(f, "You must pass a URL as a nameserver when using --https"),
         }
     }
 }
@@ -782,6 +794,12 @@ mod test {
     fn opt() {
         assert_eq!(Options::getopts(&[ "OPT", "lookup.dog" ]),
                    OptionsResult::InvalidOptions(OptionsError::QueryTypeOPT));
+    }
+
+    #[test]
+    fn missing_https_url() {
+        assert_eq!(Options::getopts(&[ "--https", "lookup.dog" ]),
+                   OptionsResult::InvalidOptions(OptionsError::MissingHttpsUrl));
     }
 
     // txid tests
