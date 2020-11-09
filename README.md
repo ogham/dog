@@ -67,7 +67,18 @@ It has colourful output, understands normal command-line argument syntax, suppor
 
 ## Installation
 
-Installing dog requires building it from source.
+To install dog, you can download a pre-compiled binary, or you can compile it from source. You _may_ be able to install dog using your OS’s package manager, depending on your platform.
+
+
+### Packages
+
+- For Arch Linux, install the [`dog-dns`](https://aur.archlinux.org/packages/dog-dns/) package from the AUR.
+- For Homebrew on macOS, install the [`dog`](https://formulae.brew.sh/formula/dog) formula.
+
+
+### Downloads
+
+Binary downloads of dog are available from [the releases section on GitHub](https://github.com/ogham/dog/releases/) for 64-bit Windows, macOS, and Linux targets. They contain the compiled executable, the manual page, and shell completions.
 
 
 ### Compilation
