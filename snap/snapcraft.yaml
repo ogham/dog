@@ -1,0 +1,39 @@
+name: dog
+summary: Command-line DNS client
+description: |
+  `dog` is a command-line DNS client, like `dig`.
+
+  It has colourful output, understands normal command-line argument syntax,
+  supports the DNS-over-TLS and DNS-over-HTTPS protocols, and can emit JSON.
+adopt-info: dog
+base: core20
+grade: stable
+confinement: strict
+
+apps:
+  dog:
+    command: dog
+    completer: dog.bash
+    plugs:
+      - network
+
+parts:
+  dog:
+    plugin: rust
+    source: .
+    source-type: git
+    build-packages:
+      - libssl-dev
+      - pkg-config
+    override-build: |
+      set -e
+      snapcraftctl build
+      strip -s "$SNAPCRAFT_PART_INSTALL/bin/dog"
+      cp "$SNAPCRAFT_PART_SRC/completions/dog.bash" "$SNAPCRAFT_PART_INSTALL"
+      VERSION=$(awk '/^version =/ { gsub(/\"/, "", $NF); print $NF; }' "$SNAPCRAFT_PART_SRC/Cargo.toml")
+      snapcraftctl set-version "$VERSION"
+    organize:
+      bin/dog: /
+    stage:
+      - dog
+      - dog.bash
