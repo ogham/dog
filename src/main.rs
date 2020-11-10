@@ -46,6 +46,11 @@ fn main() {
 
     logger::configure(env::var_os("DOG_DEBUG"));
 
+    #[cfg(windows)]
+    if let Err(e) = ansi_term::enable_ansi_support() {
+        warn!("Failed to enable ANSI support: {}", e);
+    }
+
     match Options::getopts(env::args_os().skip(1)) {
         OptionsResult::Ok(options) => {
             info!("Running with options -> {:#?}", options);
