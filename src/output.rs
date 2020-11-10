@@ -257,7 +257,7 @@ impl TextFormat {
             }
             Record::TXT(ref txt) => {
                 let messages = txt.messages.iter().map(|t| format!("{:?}", t)).collect::<Vec<_>>();
-                format!("{}", messages.join(", "))
+                messages.join(", ")
             }
             Record::Other { ref bytes, .. } => {
                 format!("{:?}", bytes)

@@ -85,7 +85,7 @@ impl Transport for HttpsTransport {
         let body = &buf[index .. read_len];
 
         if response.code != Some(200) {
-            let reason = response.reason.map(|e| e.to_string());
+            let reason = response.reason.map(str::to_owned);
             return Err(Error::WrongHttpStatus(response.code.unwrap(), reason));
         }
 
