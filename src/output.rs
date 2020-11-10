@@ -256,7 +256,8 @@ impl TextFormat {
                 )
             }
             Record::TXT(ref txt) => {
-                format!("{:?}", txt.message)
+                let messages = txt.messages.iter().map(|t| format!("{:?}", t)).collect::<Vec<_>>();
+                format!("{}", messages.join(", "))
             }
             Record::Other { ref bytes, .. } => {
                 format!("{:?}", bytes)
@@ -469,7 +470,7 @@ fn json_record(record: &Record) -> JsonValue {
         Record::TXT(rec) => {
             json!({
                 "type": "TXT",
-                "message": rec.message,
+                "messages": rec.messages,
             })
         }
         Record::Other { type_number, bytes } => {

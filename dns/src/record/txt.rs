@@ -17,8 +17,8 @@ use crate::wire::*;
 #[derive(PartialEq, Debug)]
 pub struct TXT {
 
-    /// The message contained in the record.
-    pub message: String,
+    /// The messages contained in the record.
+    pub messages: Vec<String>,
 }
 
 impl Wire for TXT {
@@ -27,36 +27,45 @@ impl Wire for TXT {
 
     #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
-        let mut buf = Vec::new();
-        let mut total_len = 0_u16;
+        let mut messages = Vec::new();
+        let mut total_length = 0_u16;
 
         loop {
-            let next_len = c.read_u8()?;
-            total_len += u16::from(next_len) + 1;
-            trace!("Parsed slice length -> {:?} (total so far {:?})", next_len, total_len);
+            let mut buf = Vec::new();
 
-            for _ in 0 .. next_len {
-                buf.push(c.read_u8()?);
+            loop {
+                let next_length = c.read_u8()?;
+                total_length += u16::from(next_length) + 1;
+                trace!("Parsed slice length -> {:?} (total so far {:?})", next_length, total_length);
+
+                for _ in 0 .. next_length {
+                    buf.push(c.read_u8()?);
+                }
+
+                if next_length < 255 {
+                    break;
+                }
+                else {
+                    trace!("Got length 255, so looping");
+                }
             }
 
-            if next_len < 255 {
+            let message = String::from_utf8_lossy(&buf).to_string();
+            trace!("Parsed message -> {:?}", message);
+            messages.push(message);
+
+            if total_length >= stated_length {
                 break;
             }
-            else {
-                trace!("Got length 255, so looping");
-            }
         }
 
-        let message = String::from_utf8_lossy(&buf).to_string();
-        trace!("Parsed message -> {:?}", message);
-
-        if stated_length == total_len {
+        if stated_length == total_length {
             trace!("Length is correct");
-            Ok(Self { message })
+            Ok(Self { messages })
         }
         else {
-            warn!("Length is incorrect (stated length {:?}, message length {:?})", stated_length, total_len);
-            Err(WireError::WrongLabelLength { stated_length, length_after_labels: total_len })
+            warn!("Length is incorrect (stated length {:?}, messages length {:?})", stated_length, total_length);
+            Err(WireError::WrongLabelLength { stated_length, length_after_labels: total_length })
         }
     }
 }
@@ -76,7 +85,7 @@ mod test {
 
         assert_eq!(TXT::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
                    TXT {
-                       message: String::from("txt me"),
+                       messages: vec![ String::from("txt me") ],
                    });
     }
 
@@ -114,15 +123,17 @@ mod test {
 
         assert_eq!(TXT::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
                    TXT {
-                       message: String::from("AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
-                                              AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
-                                              AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
-                                              AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
-                                              AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
-                                              AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
-                                              AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
-                                              AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
-                                              AAAAAAAAAAAAAAAAAAAAAAAAAAA"),
+                       messages: vec![
+                           String::from("AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
+                                         AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
+                                         AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
+                                         AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
+                                         AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
+                                         AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
+                                         AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
+                                         AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
+                                         AAAAAAAAAAAAAAAAAAAAAAAAAAA"),
+                       ],
                    });
         // did you know you can just _write_ code like this, and nobody will stop you?
     }
@@ -159,27 +170,47 @@ mod test {
 
         assert_eq!(TXT::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
                    TXT {
-                       message: String::from("BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
-                                              BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
-                                              BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
-                                              BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
-                                              BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
-                                              BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
-                                              BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
-                                              BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
-                                              BBBBBBBBBBBBBBBBBBBBBB"),
+                       messages: vec![
+                           String::from("BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
+                                         BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
+                                         BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
+                                         BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
+                                         BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
+                                         BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
+                                         BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
+                                         BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
+                                         BBBBBBBBBBBBBBBBBBBBBB"),
+                       ],
                    });
     }
 
     #[test]
-    fn incorrect_length() {
+    fn another_message() {
+        let buf = &[
+            0x06,  // message chunk length
+            0x74, 0x78, 0x74, 0x20, 0x6d, 0x65,  // message chunk
+            0x06,  // message chunk length
+            0x79, 0x61, 0x20, 0x62, 0x65, 0x62,  // message chunk
+        ];
+
+        assert_eq!(TXT::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
+                   TXT {
+                       messages: vec![
+                           String::from("txt me"),
+                           String::from("ya beb"),
+                       ],
+                   });
+    }
+
+    #[test]
+    fn length_too_short() {
         let buf = &[
             0x06,  // message chunk length
             0x74, 0x78, 0x74, 0x20, 0x6d, 0x65,  // message chunk
         ];
 
-        assert_eq!(TXT::read(123, &mut Cursor::new(buf)),
-                   Err(WireError::WrongLabelLength { stated_length: 123, length_after_labels: 7 }));
+        assert_eq!(TXT::read(2, &mut Cursor::new(buf)),
+                   Err(WireError::WrongLabelLength { stated_length: 2, length_after_labels: 7 }));
     }
 
     #[test]
