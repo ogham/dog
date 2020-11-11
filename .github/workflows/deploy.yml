@@ -1,0 +1,17 @@
+name: Deploy
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  homebrew:
+    name: Bump Homebrew formula
+    runs-on: ubuntu-latest
+    steps:
+      - uses: mislav/bump-homebrew-formula-action@v1.7
+        if: "!contains(github.ref, '-')" # skip prereleases
+        with:
+          formula-name: dog
+        env:
+          COMMITTER_TOKEN: ${{ secrets.COMMITTER_TOKEN }}
