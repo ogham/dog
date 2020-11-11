@@ -75,26 +75,17 @@ fn system_nameservers() -> io::Result<Option<Nameserver>> {
         }
     };
 
-    let first_adapter = match adapters.first() {
-        Some(a) => a,
-        None => {
-            warn!("No network adapters available");
-            return Ok(None);
-        }
-    };
-    debug!("Found network adapter {:?}", first_adapter.adapter_name());
+    for dns_server in adapters
+        .iter()
+        .flat_map(|adapter| adapter.dns_servers().iter()) {
+            if dns_server.is_ipv4() {
+                debug!("Found first nameserver {:?}", dns_server);
+                return Ok(Some(dns_server.to_string()))
+            }
+    }
 
-    let first_nameserver = match first_adapter.dns_servers().first() {
-        Some(ns) => ns,
-        None => {
-            warn!("No nameservers available");
-            return Ok(None);
-        }
-    };
-    debug!("Found nameserver {:?}", first_nameserver);
-
-    // todo: have this not be turned into a string, then parsed again later
-    Ok(Some(first_nameserver.to_string()))
+    warn!("No nameservers available");
+    return Ok(None)
 }
 
 
