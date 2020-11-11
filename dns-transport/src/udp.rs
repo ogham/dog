@@ -47,6 +47,7 @@ impl UdpTransport {
 impl Transport for UdpTransport {
     fn send(&self, request: &Request) -> Result<Response, Error> {
         info!("Opening UDP socket");
+        // TODO: This will need to be changed for IPv6 support.
         let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0))?;
 
         if self.addr.contains(':') {

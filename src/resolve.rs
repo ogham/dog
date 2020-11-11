@@ -51,6 +51,7 @@ fn system_nameservers() -> io::Result<Option<Nameserver>> {
 
         if let Some(nameserver_str) = line.strip_prefix("nameserver ") {
             let ip: Result<std::net::Ipv4Addr, _> = nameserver_str.parse();
+            // TODO: This will need to be changed for IPv6 support.
 
             match ip {
                 Ok(_ip) => nameservers.push(nameserver_str.into()),
@@ -78,6 +79,7 @@ fn system_nameservers() -> io::Result<Option<Nameserver>> {
     for dns_server in adapters
         .iter()
         .flat_map(|adapter| adapter.dns_servers().iter()) {
+            // TODO: This will need to be changed for IPv6 support.
             if dns_server.is_ipv4() {
                 debug!("Found first nameserver {:?}", dns_server);
                 return Ok(Some(dns_server.to_string()))
