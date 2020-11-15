@@ -4,7 +4,7 @@ __dog() {
     _arguments \
         "(- 1 *)"{-v,--version}"[Show version of dog]" \
         "(- 1 *)"{-\?,--help}"[Show list of command-line options]" \
-        {-q,--query}"[Host name or IP address to query]::_hosts" \
+        {-q,--query}"[Host name or domain name to query]::_hosts" \
         {-t,--type}"[Type of the DNS record being queried]:(record type):(A AAAA CAA CNAME HINFO MX NS PTR SOA SRV TXT)" \
         {-n,--nameserver}"[Address of the nameserver to send packets to]::_hosts;" \
         --class"[Network class of the DNS record being queried]:(network class):(IN CH HS)" \
