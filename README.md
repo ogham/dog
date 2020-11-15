@@ -36,7 +36,7 @@ It has colourful output, understands normal command-line argument syntax, suppor
 ### Query options
 
     <arguments>              Human-readable host names, nameservers, types, or classes
-    -q, --query=HOST         Host name or IP address to query
+    -q, --query=HOST         Host name or domain name to query
     -t, --type=TYPE          Type of the DNS record being queried (A, MX, NS...)
     -n, --nameserver=ADDR    Address of the nameserver to send packets to
     --class=CLASS            Network class of the DNS record being queried (IN, CH, HS)

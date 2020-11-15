@@ -10,7 +10,7 @@
 
 \4mQuery options:\0m
   \32m<arguments>\0m              Human-readable host names, nameservers, types, or classes
-  \1;33m-q\0m, \1;33m--query\0m=\33mHOST\0m         Host name or IP address to query
+  \1;33m-q\0m, \1;33m--query\0m=\33mHOST\0m         Host name or domain name to query
   \1;33m-t\0m, \1;33m--type\0m=\33mTYPE\0m          Type of the DNS record being queried (A, MX, NS...)
   \1;33m-n\0m, \1;33m--nameserver\0m=\33mADDR\0m    Address of the nameserver to send packets to
   \1;33m--class\0m=\33mCLASS\0m            Network class of the DNS record being queried (IN, CH, HS)
