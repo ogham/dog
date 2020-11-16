@@ -49,6 +49,9 @@ pub use self::tlsa::TLSA;
 mod txt;
 pub use self::txt::TXT;
 
+mod uri;
+pub use self::uri::URI;
+
 
 mod others;
 pub use self::others::{UnknownQtype, find_other_qtype_number};
@@ -104,6 +107,9 @@ pub enum Record {
 
     /// A **TXT** record.
     TXT(TXT),
+
+    /// A **URI** record.
+    URI(URI),
 
     /// A record with a type that we don’t recognise.
     Other {

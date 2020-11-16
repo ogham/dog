@@ -187,6 +187,7 @@ impl Record {
         try_record!(SRV);
         try_record!(TLSA);
         try_record!(TXT);
+        try_record!(URI);
 
         // Otherwise, collect the bytes into a vector and return an unknown
         // record type.
@@ -250,6 +251,7 @@ pub fn find_qtype_number(record_type: &str) -> Option<TypeInt> {
     try_record!(SRV);
     try_record!(TLSA);
     try_record!(TXT);
+    try_record!(URI);
 
     None
 }

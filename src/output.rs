@@ -259,6 +259,9 @@ impl TextFormat {
                 let messages = txt.messages.iter().map(|t| format!("{:?}", t)).collect::<Vec<_>>();
                 messages.join(", ")
             }
+            Record::URI(ref uri) => {
+                format!("{} {} {:?}", uri.priority, uri.weight, uri.contents)
+            }
             Record::Other { ref bytes, .. } => {
                 format!("{:?}", bytes)
             }
@@ -471,6 +474,14 @@ fn json_record(record: &Record) -> JsonValue {
             json!({
                 "type": "TXT",
                 "messages": rec.messages,
+            })
+        }
+        Record::URI(rec) => {
+            json!({
+                "type": "URI",
+                "priority": rec.priority,
+                "weight": rec.weight,
+                "contents": rec.contents,
             })
         }
         Record::Other { type_number, bytes } => {
