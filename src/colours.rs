@@ -29,6 +29,7 @@ pub struct Colours {
     pub srv: Style,
     pub tlsa: Style,
     pub txt: Style,
+    pub uri: Style,
     pub unknown: Style,
 }
 
@@ -60,6 +61,7 @@ impl Colours {
             srv: Cyan.normal(),
             tlsa: Yellow.normal(),
             txt: Yellow.normal(),
+            uri: Yellow.normal(),
             unknown: White.on(Red),
         }
     }
