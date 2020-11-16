@@ -25,7 +25,7 @@ pub struct URI {
 
     /// The URI contained in the record. Since all we are doing is displaying
     /// it to the user, we do not need to parse it for accuracy.
-    pub contents: String,
+    pub target: String,
 }
 
 impl Wire for URI {
@@ -40,6 +40,7 @@ impl Wire for URI {
         let weight = c.read_u16::<BigEndian>()?;
         trace!("Parsed weight -> {:?}", weight);
 
+        // The target must not be empty.
         if stated_length <= 4 {
             let mandated_length = MandatedLength::AtLeast(5);
             return Err(WireError::WrongRecordLength { stated_length, mandated_length });
@@ -52,10 +53,10 @@ impl Wire for URI {
             buf.push(c.read_u8()?);
         }
 
-        let contents = String::from_utf8_lossy(&buf).to_string();
-        trace!("Parsed contents -> {:?}", contents);
+        let target = String::from_utf8_lossy(&buf).to_string();
+        trace!("Parsed target -> {:?}", target);
 
-        Ok(Self { priority, weight, contents })
+        Ok(Self { priority, weight, target })
     }
 }
 
@@ -78,7 +79,7 @@ mod test {
                    URI {
                        priority: 10,
                        weight: 16,
-                       contents: String::from("https://rfcs.io/"),
+                       target: String::from("https://rfcs.io/"),
                    });
     }
 
