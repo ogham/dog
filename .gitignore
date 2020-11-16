@@ -1,3 +1,5 @@
 /target
 /tarpaulin-report.html
 fuzz-*.log
+.bash_history
+.idea

@@ -104,6 +104,19 @@ The `just man` command will compile the Markdown into manual pages, which it wil
 To use them, copy them into a directory that `man` will read.
 `/usr/local/share/man` is usually a good choice.
 
+### Container image
+
+To build the container image of dog, you can use Docker or Kaniko. Here an example using Docker:
+
+    $ docker build -t dog .
+
+You can then run it using the following command:
+
+    $ docker run -it --rm dog
+
+To run dog directly, you can then define the following alias:
+
+    $ alias dog="docker run -it --rm dog"
 
 ### Testing
 
