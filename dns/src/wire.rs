@@ -272,18 +272,18 @@ impl Flags {
     /// Converts the flags into a two-byte number.
     pub fn to_u16(self) -> u16 {                 // 0123 4567 89AB CDEF
         let mut                          bits  = 0b_0000_0000_0000_0000;
-        if self.response               { bits += 0b_1000_0000_0000_0000; }
+        if self.response               { bits |= 0b_1000_0000_0000_0000; }
         match self.opcode {
-            Opcode::Query     =>       { bits += 0b_0000_0000_0000_0000; }
+            Opcode::Query     =>       { bits |= 0b_0000_0000_0000_0000; }
             Opcode::Other(_)  =>       { unimplemented!(); }
         }
-        if self.authoritative          { bits += 0b_0000_0100_0000_0000; }
-        if self.truncated              { bits += 0b_0000_0010_0000_0000; }
-        if self.recursion_desired      { bits += 0b_0000_0001_0000_0000; }
-        if self.recursion_available    { bits += 0b_0000_0000_1000_0000; }
+        if self.authoritative          { bits |= 0b_0000_0100_0000_0000; }
+        if self.truncated              { bits |= 0b_0000_0010_0000_0000; }
+        if self.recursion_desired      { bits |= 0b_0000_0001_0000_0000; }
+        if self.recursion_available    { bits |= 0b_0000_0000_1000_0000; }
         // (the Z bit is reserved)               0b_0000_0000_0100_0000
-        if self.authentic_data         { bits += 0b_0000_0000_0010_0000; }
-        if self.checking_disabled      { bits += 0b_0000_0000_0001_0000; }
+        if self.authentic_data         { bits |= 0b_0000_0000_0010_0000; }
+        if self.checking_disabled      { bits |= 0b_0000_0000_0001_0000; }
 
         bits
     }
