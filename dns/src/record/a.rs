@@ -1,3 +1,4 @@
+use std::io::Read;
 use std::net::Ipv4Addr;
 
 use log::*;
@@ -24,20 +25,19 @@ impl Wire for A {
 
     #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
-        let mut buf = Vec::new();
-        for _ in 0 .. stated_length {
-            buf.push(c.read_u8()?);
+        if stated_length != 4 {
+            warn!("Length is incorrect (record length {:?}, but should be four)", stated_length);
+            let mandated_length = MandatedLength::Exactly(4);
+            return Err(WireError::WrongRecordLength { stated_length, mandated_length });
         }
 
-        if let [a, b, c, d] = *buf {
-            let address = Ipv4Addr::new(a, b, c, d);
-            trace!("Parsed IPv4 address -> {:?}", address);
-            Ok(Self { address })
-        }
-        else {
-            warn!("Length is incorrect (record length {:?}, but should be four)", stated_length);
-            Err(WireError::WrongRecordLength { stated_length, mandated_length: MandatedLength::Exactly(4) })
-        }
+        let mut buf = [0_u8; 4];
+        c.read_exact(&mut buf)?;
+
+        let address = Ipv4Addr::from(buf);
+        trace!("Parsed IPv4 address -> {:?}", address);
+
+        Ok(Self { address })
     }
 }
 
