@@ -47,7 +47,7 @@ impl Wire for URI {
         }
 
         let remaining_length = stated_length - 4;
-        let mut buf = Vec::with_capacity(usize::from(remaining_length));
+        let mut buf = Vec::with_capacity(remaining_length.into());
 
         for _ in 0 .. remaining_length {
             buf.push(c.read_u8()?);
@@ -80,6 +80,22 @@ mod test {
                        priority: 10,
                        weight: 16,
                        target: String::from("https://rfcs.io/"),
+                   });
+    }
+
+    #[test]
+    fn one_byte_of_uri() {
+        let buf = &[
+            0x00, 0x0A,  // priority
+            0x00, 0x10,  // weight
+            0x2f,  // one byte of uri (invalid but still a legitimate DNS record)
+        ];
+
+        assert_eq!(URI::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
+                   URI {
+                       priority: 10,
+                       weight: 16,
+                       target: String::from("/"),
                    });
     }
 

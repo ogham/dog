@@ -73,14 +73,30 @@ mod test {
         let buf = &[
             0x01,  // algorithm
             0x01,  // fingerprint type
-            0x21, 0x22, 0x23, 0x24,  // an extremely short fingerprint
+            0x21, 0x22, 0x23, 0x24, 0x25, 0x26,  // a short fingerprint
         ];
 
         assert_eq!(SSHFP::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
                    SSHFP {
                        algorithm: 1,
                        fingerprint_type: 1,
-                       fingerprint: vec![ 0x21, 0x22, 0x23, 0x24 ],
+                       fingerprint: vec![ 0x21, 0x22, 0x23, 0x24, 0x25, 0x26 ],
+                   });
+    }
+
+    #[test]
+    fn one_byte_fingerprint() {
+        let buf = &[
+            0x01,  // algorithm
+            0x01,  // fingerprint type
+            0x21,  // an extremely short fingerprint
+        ];
+
+        assert_eq!(SSHFP::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
+                   SSHFP {
+                       algorithm: 1,
+                       fingerprint_type: 1,
+                       fingerprint: vec![ 0x21 ],
                    });
     }
 
