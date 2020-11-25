@@ -28,7 +28,7 @@ impl Wire for CAA {
     const NAME: &'static str = "CAA";
     const RR_TYPE: u16 = 257;
 
-    #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
+    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let flags = c.read_u8()?;
         trace!("Parsed flags -> {:#08b}", flags);

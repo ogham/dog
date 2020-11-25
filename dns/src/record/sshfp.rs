@@ -30,7 +30,7 @@ impl Wire for SSHFP {
     const NAME: &'static str = "SSHFP";
     const RR_TYPE: u16 = 44;
 
-    #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
+    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let algorithm = c.read_u8()?;
         trace!("Parsed algorithm -> {:?}", algorithm);

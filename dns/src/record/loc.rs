@@ -78,7 +78,7 @@ impl Wire for LOC {
     const NAME: &'static str = "LOC";
     const RR_TYPE: u16 = 29;
 
-    #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
+    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let version = c.read_u8()?;
         trace!("Parsed version -> {:?}", version);

@@ -27,7 +27,7 @@ impl Wire for PTR {
     const NAME: &'static str = "PTR";
     const RR_TYPE: u16 = 12;
 
-    #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
+    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let (cname, cname_length) = c.read_labels()?;
         trace!("Parsed cname -> {:?}", cname);

@@ -116,7 +116,7 @@ const RECURSION_LIMIT: usize = 8;
 /// recursions to track backtracking positions. Returns the count of bytes
 /// that had to be read to produce the string, including the bytes to signify
 /// backtracking, but not including the bytes read _during_ backtracking.
-#[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
+#[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
 fn read_string_recursive(labels: &mut Labels, c: &mut Cursor<&[u8]>, recursions: &mut Vec<u16>) -> Result<u16, WireError> {
     let mut bytes_read = 0;
 
