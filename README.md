@@ -72,7 +72,7 @@ To install dog, you can download a pre-compiled binary, or you can compile it fr
 
 ### Packages
 
-- For Arch Linux, install the [`dog-dns`](https://aur.archlinux.org/packages/dog-dns/) package from the AUR.
+- For Arch Linux, install the [`dog`](https://www.archlinux.org/packages/community/x86_64/dog/) package.
 - For Homebrew on macOS, install the [`dog`](https://formulae.brew.sh/formula/dog) formula.
 
 
