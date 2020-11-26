@@ -223,6 +223,9 @@ impl TextFormat {
             Record::NS(ref ns) => {
                 format!("{:?}", ns.nameserver.to_string())
             }
+            Record::OPENPGPKEY(ref opgp) => {
+                format!("{:?}", opgp.base64_key())
+            }
             Record::PTR(ref ptr) => {
                 format!("{:?}", ptr.cname.to_string())
             }
@@ -430,6 +433,12 @@ fn json_record(record: &Record) -> JsonValue {
             json!({
                 "type": "NS",
                 "nameserver": rec.nameserver.to_string(),
+            })
+        }
+        Record::OPENPGPKEY(rec) => {
+            json!({
+                "type": "OPENPGPKEY",
+                "key": rec.base64_key(),
             })
         }
         Record::PTR(rec) => {

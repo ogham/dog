@@ -1,6 +1,6 @@
 //! Parsing the DNS wire protocol.
 
-pub(crate) use std::io::Cursor;
+pub(crate) use std::io::{Cursor, Read};
 pub(crate) use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 use std::io;
@@ -184,6 +184,7 @@ impl Record {
         try_record!(MX);
         try_record!(NAPTR);
         try_record!(NS);
+        try_record!(OPENPGPKEY);
         // OPT is handled separately
         try_record!(PTR);
         try_record!(SSHFP);
@@ -248,6 +249,7 @@ pub fn find_qtype_number(record_type: &str) -> Option<TypeInt> {
     try_record!(MX);
     try_record!(NAPTR);
     try_record!(NS);
+    try_record!(OPENPGPKEY);
     // OPT is elsewhere
     try_record!(PTR);
     try_record!(SSHFP);

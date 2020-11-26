@@ -28,6 +28,9 @@ pub use self::naptr::NAPTR;
 mod ns;
 pub use self::ns::NS;
 
+mod openpgpkey;
+pub use self::openpgpkey::OPENPGPKEY;
+
 mod opt;
 pub use self::opt::OPT;
 
@@ -87,6 +90,9 @@ pub enum Record {
 
     /// A **NS** record.
     NS(NS),
+
+    /// An **OPENPGPKEY** record.
+    OPENPGPKEY(OPENPGPKEY),
 
     // OPT is not included here.
 

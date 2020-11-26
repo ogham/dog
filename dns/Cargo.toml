@@ -13,6 +13,9 @@ log = "0.4"
 # protocol parsing
 byteorder = "1.3"
 
+# packet printing
+base64 = "0.13"
+
 # testing
 mutagen = { git = "https://github.com/llogiq/mutagen", optional = true }
 
