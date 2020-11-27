@@ -13,6 +13,9 @@ pub use self::caa::CAA;
 mod cname;
 pub use self::cname::CNAME;
 
+mod eui48;
+pub use self::eui48::EUI48;
+
 mod hinfo;
 pub use self::hinfo::HINFO;
 
@@ -75,6 +78,9 @@ pub enum Record {
 
     /// A **CNAME** record.
     CNAME(CNAME),
+
+    /// An **EUI48** record.
+    EUI48(EUI48),
 
     /// A **HINFO** record.
     HINFO(HINFO),

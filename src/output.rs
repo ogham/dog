@@ -194,6 +194,9 @@ impl TextFormat {
             Record::CNAME(ref cname) => {
                 format!("{:?}", cname.domain.to_string())
             }
+            Record::EUI48(ref eui48) => {
+                format!("{:?}", eui48.formatted_address())
+            }
             Record::HINFO(ref hinfo) => {
                 format!("{:?} {:?}", hinfo.cpu, hinfo.os)
             }
@@ -388,6 +391,12 @@ fn json_record(record: &Record) -> JsonValue {
             json!({
                 "type": "CNAME",
                 "domain": rec.domain.to_string(),
+            })
+        }
+        Record::EUI48(rec) => {
+            json!({
+                "type": "EUI48",
+                "identifier": rec.formatted_address(),
             })
         }
         Record::HINFO(rec) => {

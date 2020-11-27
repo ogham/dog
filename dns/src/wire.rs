@@ -179,6 +179,7 @@ impl Record {
         try_record!(AAAA);
         try_record!(CAA);
         try_record!(CNAME);
+        try_record!(EUI48);
         try_record!(HINFO);
         try_record!(LOC);
         try_record!(MX);
@@ -244,6 +245,7 @@ pub fn find_qtype_number(record_type: &str) -> Option<TypeInt> {
     try_record!(AAAA);
     try_record!(CAA);
     try_record!(CNAME);
+    try_record!(EUI48);
     try_record!(HINFO);
     try_record!(LOC);
     try_record!(MX);
