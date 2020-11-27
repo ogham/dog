@@ -1,4 +1,3 @@
-use std::io::Read;
 use std::net::Ipv4Addr;
 
 use log::*;
