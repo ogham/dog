@@ -367,139 +367,139 @@ fn json_answers(answers: &[Answer]) -> JsonValue {
 /// Serialises a received DNS record as a JSON value.
 fn json_record(record: &Record) -> JsonValue {
     match record {
-        Record::A(rec) => {
+        Record::A(a) => {
             json!({
                 "type": "A",
-                "address": rec.address.to_string(),
+                "address": a.address.to_string(),
             })
         }
-        Record::AAAA(rec) => {
+        Record::AAAA(aaaa) => {
             json!({
                 "type": "AAAA",
-                "address": rec.address.to_string(),
+                "address": aaaa.address.to_string(),
             })
         }
-        Record::CAA(rec) => {
+        Record::CAA(caa) => {
             json!({
                 "type": "CAA",
-                "critical": rec.critical,
-                "tag": rec.tag,
-                "value": rec.value,
+                "critical": caa.critical,
+                "tag": caa.tag,
+                "value": caa.value,
             })
         }
-        Record::CNAME(rec) => {
+        Record::CNAME(cname) => {
             json!({
                 "type": "CNAME",
-                "domain": rec.domain.to_string(),
+                "domain": cname.domain.to_string(),
             })
         }
-        Record::EUI48(rec) => {
+        Record::EUI48(eui48) => {
             json!({
                 "type": "EUI48",
-                "identifier": rec.formatted_address(),
+                "identifier": eui48.formatted_address(),
             })
         }
-        Record::HINFO(rec) => {
+        Record::HINFO(hinfo) => {
             json!({
                 "type": "HINFO",
-                "cpu": rec.cpu,
-                "os": rec.os,
+                "cpu": hinfo.cpu,
+                "os": hinfo.os,
             })
         }
-        Record::LOC(rec) => {
+        Record::LOC(loc) => {
             json!({
                 "type": "LOC",
-                "size": rec.size.to_string(),
+                "size": loc.size.to_string(),
                 "precision": {
-                    "horizontal": rec.horizontal_precision,
-                    "vertical": rec.vertical_precision,
+                    "horizontal": loc.horizontal_precision,
+                    "vertical": loc.vertical_precision,
                 },
                 "point": {
-                    "latitude": rec.latitude.map(|e| e.to_string()),
-                    "longitude": rec.longitude.map(|e| e.to_string()),
-                    "altitude": rec.altitude.to_string(),
+                    "latitude": loc.latitude.map(|e| e.to_string()),
+                    "longitude": loc.longitude.map(|e| e.to_string()),
+                    "altitude": loc.altitude.to_string(),
                 },
             })
         }
-        Record::MX(rec) => {
+        Record::MX(mx) => {
             json!({
                 "type": "MX",
-                "preference": rec.preference,
-                "exchange": rec.exchange.to_string(),
+                "preference": mx.preference,
+                "exchange": mx.exchange.to_string(),
             })
         }
-        Record::NAPTR(rec) => {
+        Record::NAPTR(naptr) => {
             json!({
                 "type": "NAPTR",
-                "order": rec.order,
-                "flags": rec.flags,
-                "service": rec.service,
-                "regex": rec.service,
-                "replacement": rec.replacement.to_string(),
+                "order": naptr.order,
+                "flags": naptr.flags,
+                "service": naptr.service,
+                "regex": naptr.service,
+                "replacement": naptr.replacement.to_string(),
             })
         }
-        Record::NS(rec) => {
+        Record::NS(ns) => {
             json!({
                 "type": "NS",
-                "nameserver": rec.nameserver.to_string(),
+                "nameserver": ns.nameserver.to_string(),
             })
         }
-        Record::OPENPGPKEY(rec) => {
+        Record::OPENPGPKEY(opgp) => {
             json!({
                 "type": "OPENPGPKEY",
-                "key": rec.base64_key(),
+                "key": opgp.base64_key(),
             })
         }
-        Record::PTR(rec) => {
+        Record::PTR(ptr) => {
             json!({
                 "type": "PTR",
-                "cname": rec.cname.to_string(),
+                "cname": ptr.cname.to_string(),
             })
         }
-        Record::SSHFP(rec) => {
+        Record::SSHFP(sshfp) => {
             json!({
                 "type": "SSHFP",
-                "algorithm": rec.algorithm,
-                "fingerprint_type": rec.fingerprint_type,
-                "fingerprint": rec.hex_fingerprint(),
+                "algorithm": sshfp.algorithm,
+                "fingerprint_type": sshfp.fingerprint_type,
+                "fingerprint": sshfp.hex_fingerprint(),
             })
         }
-        Record::SOA(rec) => {
+        Record::SOA(soa) => {
             json!({
                 "type": "SOA",
-                "mname": rec.mname.to_string(),
+                "mname": soa.mname.to_string(),
             })
         }
-        Record::SRV(rec) => {
+        Record::SRV(srv) => {
             json!({
                 "type": "SRV",
-                "priority": rec.priority,
-                "weight": rec.weight,
-                "port": rec.port,
-                "target": rec.target.to_string(),
+                "priority": srv.priority,
+                "weight": srv.weight,
+                "port": srv.port,
+                "target": srv.target.to_string(),
             })
         }
-        Record::TLSA(rec) => {
+        Record::TLSA(tlsa) => {
             json!({
                 "type": "TLSA",
-                "certificate_usage": rec.certificate_usage,
-                "selector": rec.selector,
-                "matching_type": rec.matching_type,
-                "certificate_data": rec.hex_certificate_data(),
+                "certificate_usage": tlsa.certificate_usage,
+                "selector": tlsa.selector,
+                "matching_type": tlsa.matching_type,
+                "certificate_data": tlsa.hex_certificate_data(),
             })
         }
-        Record::TXT(rec) => {
+        Record::TXT(txt) => {
             json!({
                 "type": "TXT",
-                "messages": rec.messages,
+                "messages": txt.messages,
             })
         }
-        Record::URI(rec) => {
+        Record::URI(uri) => {
             json!({
                 "type": "URI",
-                "priority": rec.priority,
-                "weight": rec.weight,
-                "target": rec.target,
+                "priority": uri.priority,
+                "weight": uri.weight,
+                "target": uri.target,
             })
         }
         Record::Other { type_number, bytes } => {
