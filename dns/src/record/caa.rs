@@ -59,16 +59,7 @@ impl Wire for CAA {
         let value = String::from_utf8_lossy(&value_buf).to_string();
         trace!("Parsed value -> {:?}", value);
 
-        let got_length = 1 + 1 + u16::from(tag_length) + remaining_length;
-        if stated_length == got_length {
-            // This one’s a little weird, because remaining_len is based on len
-            trace!("Length is correct");
-            Ok(Self { critical, tag, value })
-        }
-        else {
-            warn!("Length is incorrect (stated length {:?}, flags plus tag plus data length {:?}", stated_length, got_length);
-            Err(WireError::WrongLabelLength { stated_length, length_after_labels: got_length })
-        }
+        Ok(Self { critical, tag, value })
     }
 }
 
