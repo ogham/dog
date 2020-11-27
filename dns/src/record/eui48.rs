@@ -22,7 +22,7 @@ impl Wire for EUI48 {
 
     #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
-        if stated_length !=  6 {
+        if stated_length != 6 {
             warn!("Length is incorrect (record length {:?}, but should be six)", stated_length);
             let mandated_length = MandatedLength::Exactly(6);
             return Err(WireError::WrongRecordLength { stated_length, mandated_length });

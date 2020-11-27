@@ -16,6 +16,9 @@ pub use self::cname::CNAME;
 mod eui48;
 pub use self::eui48::EUI48;
 
+mod eui64;
+pub use self::eui64::EUI64;
+
 mod hinfo;
 pub use self::hinfo::HINFO;
 
@@ -81,6 +84,9 @@ pub enum Record {
 
     /// An **EUI48** record.
     EUI48(EUI48),
+
+    /// An **EUI64** record.
+    EUI64(EUI64),
 
     /// A **HINFO** record.
     HINFO(HINFO),

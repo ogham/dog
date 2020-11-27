@@ -197,6 +197,9 @@ impl TextFormat {
             Record::EUI48(ref eui48) => {
                 format!("{:?}", eui48.formatted_address())
             }
+            Record::EUI64(ref eui64) => {
+                format!("{:?}", eui64.formatted_address())
+            }
             Record::HINFO(ref hinfo) => {
                 format!("{:?} {:?}", hinfo.cpu, hinfo.os)
             }
@@ -397,6 +400,12 @@ fn json_record(record: &Record) -> JsonValue {
             json!({
                 "type": "EUI48",
                 "identifier": eui48.formatted_address(),
+            })
+        }
+        Record::EUI64(eui64) => {
+            json!({
+                "type": "EUI64",
+                "identifier": eui64.formatted_address(),
             })
         }
         Record::HINFO(hinfo) => {
