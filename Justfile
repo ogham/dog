@@ -97,7 +97,7 @@ export DOG_DEBUG := ""
 # builds the man pages
 @man:
     mkdir -p "${CARGO_TARGET_DIR:-target}/man"
-    pandoc --standalone -f markdown -t man man/dog.1.md > "${CARGO_TARGET_DIR:-target}/man/dog.1"
+    scdoc < man/dog.1.scd > "${CARGO_TARGET_DIR:-target}/man/dog.1"
 
 # builds and previews the man page
 @man-preview: man
