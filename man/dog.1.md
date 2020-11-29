@@ -118,6 +118,9 @@ OUTPUT OPTIONS
 `--time`
 : Print how long the response took to arrive.
 
+`-v`
+: Increase logging verbosity by adding multiple '`-vv`'. This will override the '`DOG_DEBUG`' environment variable.
+
 
 META OPTIONS
 ============

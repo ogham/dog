@@ -61,6 +61,7 @@ It has colourful output, understands normal command-line argument syntax, suppor
     --color, --colour=WHEN   When to colourise the output (always, automatic, never)
     --seconds                Do not format durations, display them as seconds
     --time                   Print how long the response took to arrive
+    -v                       Increase output verbosity by adding multiple (-vv)
 
 
 ---

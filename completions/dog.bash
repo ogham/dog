@@ -4,7 +4,7 @@ _dog()
     prev=${COMP_WORDS[COMP_CWORD-1]}
 
     case "$prev" in
-        -'?'|--help|-v|--version)
+        -'?'|--help|-v|-V|--version)
             return
             ;;
 

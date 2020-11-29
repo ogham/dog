@@ -1,5 +1,5 @@
 # Meta options
-complete -c dog -s 'v' -l 'version' -d "Show version of dog"
+complete -c dog -s 'V' -l 'version' -d "Show version of dog"
 complete -c dog -s '?' -l 'help'    -d "Show list of command-line options"
 
 # Query options
@@ -44,3 +44,4 @@ complete -c dog        -l 'colour'     -d "When to colourise the output" -x -a "
 "
 complete -c dog        -l 'seconds'    -d "Do not format durations, display them as seconds"
 complete -c dog        -l 'time'       -d "Print how long the response took to arrive"
+complete -c dog -s 'v'                 -d "Increase verbosity by adding multiple -v options"

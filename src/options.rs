@@ -9,6 +9,7 @@ use dns::{QClass, Labels, find_qtype_number, qtype};
 use dns::record::{A, find_other_qtype_number};
 
 use crate::connect::TransportType;
+use crate::logger;
 use crate::output::{OutputFormat, UseColours, TextFormat};
 use crate::requests::{RequestGenerator, Inputs, ProtocolTweaks, UseEDNS};
 use crate::resolve::Resolver;
@@ -71,7 +72,8 @@ impl Options {
         opts.optflag ("",  "time",         "Print how long the response took to arrive");
 
         // Meta options
-        opts.optflag ("v", "version",      "Print version information");
+        opts.optflag ("V", "version",      "Print version information");
+        opts.optflagmulti ("v", "",        "Increase verbosity by adding multiple (-vv)");
         opts.optflag ("?", "help",         "Print list of command-line options");
 
         let matches = match opts.parse(args) {
@@ -81,6 +83,11 @@ impl Options {
 
         let uc = UseColours::deduce(&matches);
 
+        match matches.opt_count("v") {
+            0 => (),
+            1 => logger::configure(Some("debug")),
+            _ => logger::configure(Some("trace")),
+        }
         if matches.opt_present("version") {
             OptionsResult::Version(uc)
         }
@@ -518,6 +525,18 @@ mod test {
     }
 
     #[test]
+    fn verbose() {
+        assert_eq!(Options::getopts(&[ "-vv" ]),
+                   OptionsResult::Help(HelpReason::NoDomains, UseColours::Automatic));
+    }
+
+    #[test]
+    fn verbose_no_colour() {
+        assert_eq!(Options::getopts(&[ "-vv", "--colour=never" ]),
+                   OptionsResult::Help(HelpReason::NoDomains, UseColours::Never));
+    }
+
+    #[test]
     fn version() {
         assert_eq!(Options::getopts(&[ "--version" ]),
                    OptionsResult::Version(UseColours::Automatic));
@@ -612,7 +631,7 @@ mod test {
 
     #[test]
     fn all_parameters() {
-        let options = Options::getopts(&[ "-q", "lookup.dog", "--class", "CH", "--type", "SOA", "--nameserver", "1.1.1.1" ]).unwrap();
+        let options = Options::getopts(&[ "-vv", "-q", "lookup.dog", "--class", "CH", "--type", "SOA", "--nameserver", "1.1.1.1" ]).unwrap();
         assert_eq!(options.requests.inputs, Inputs {
             domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
             classes:    vec![ QClass::CH ],
