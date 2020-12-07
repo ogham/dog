@@ -1,6 +1,7 @@
 //! Request generation based on the user’s input arguments.
 
 use dns::Labels;
+use dns_transport::Error as TransportError;
 
 use crate::connect::TransportType;
 use crate::resolve::Resolver;
@@ -83,10 +84,17 @@ impl RequestGenerator {
 
     /// Iterate through the inputs matrix, returning pairs of DNS requests and
     /// the details of the transport to send them down.
-    pub fn generate(self) -> Vec<(dns::Request, Box<dyn dns_transport::Transport>)> {
+    pub fn generate(self) -> Result<Vec<(dns::Request, Box<dyn dns_transport::Transport>)>, TransportError> {
         let nameservers = self.inputs.resolvers.into_iter()
-                              .map(|e| e.lookup().expect("Failed to get nameserver").expect("No nameserver found"))
+                              .filter_map(|e| match e.lookup() {
+                                  Ok(Some(r)) => Some(r),
+                                  _ => None,
+                              })
                               .collect::<Vec<_>>();
+
+        if nameservers.is_empty() {
+            return Err(TransportError::NoNameservers);
+        }
 
         let mut requests = Vec::new();
         for domain in &self.inputs.domains {
@@ -117,7 +125,7 @@ impl RequestGenerator {
             }
         }
 
-        requests
+        Ok(requests)
     }
 }
 

@@ -22,7 +22,7 @@ impl Wire for OPENPGPKEY {
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         if stated_length == 0 {
             let mandated_length = MandatedLength::AtLeast(1);
-            return Err(WireError::WrongRecordLength { stated_length, mandated_length });
+            return Err(WireError::wrong_record_length(stated_length, mandated_length));
         }
 
         let mut key = vec![0_u8; usize::from(stated_length)];
@@ -72,7 +72,7 @@ mod test {
     #[test]
     fn record_empty() {
         assert_eq!(OPENPGPKEY::read(0, &mut Cursor::new(&[])),
-                   Err(WireError::WrongRecordLength { stated_length: 0, mandated_length: MandatedLength::AtLeast(1) }));
+                   Err(WireError::wrong_record_length(0, MandatedLength::AtLeast(1))));
     }
 
     #[test]

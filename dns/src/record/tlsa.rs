@@ -48,7 +48,7 @@ impl Wire for TLSA {
 
         if stated_length <= 3 {
             let mandated_length = MandatedLength::AtLeast(4);
-            return Err(WireError::WrongRecordLength { stated_length, mandated_length });
+            return Err(WireError::wrong_record_length(stated_length, mandated_length));
         }
 
         let certificate_data_length = stated_length - 1 - 1 - 1;
@@ -121,7 +121,7 @@ mod test {
         ];
 
         assert_eq!(TLSA::read(buf.len() as _, &mut Cursor::new(buf)),
-                   Err(WireError::WrongRecordLength { stated_length: 3, mandated_length: MandatedLength::AtLeast(4) }));
+                   Err(WireError::wrong_record_length(3, MandatedLength::AtLeast(4))));
     }
 
     #[test]

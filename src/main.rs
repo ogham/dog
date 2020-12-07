@@ -107,7 +107,16 @@ fn run(Options { requests, format, measure_time }: Options) -> i32 {
     let timer = if measure_time { Some(Instant::now()) } else { None };
 
     let mut errored = false;
-    for (request, transport) in requests.generate() {
+
+    let requests = match requests.generate() {
+        Ok(requests) => requests,
+        Err(e) => {
+            format.print_error(e);
+            return exits::OPTIONS_ERROR;
+        },
+    };
+
+    for (request, transport) in requests {
         let result = transport.send(&request);
 
         match result {

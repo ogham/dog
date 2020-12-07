@@ -92,7 +92,7 @@ impl Wire for LOC {
 
         if stated_length != 16 {
             let mandated_length = MandatedLength::Exactly(16);
-            return Err(WireError::WrongRecordLength { stated_length, mandated_length });
+            return Err(WireError::wrong_record_length(stated_length, mandated_length));
         }
 
         let size_bits = c.read_u8()?;
@@ -273,7 +273,7 @@ mod test {
         ];
 
         assert_eq!(LOC::read(buf.len() as _, &mut Cursor::new(buf)),
-                   Err(WireError::WrongRecordLength { stated_length: 2, mandated_length: MandatedLength::Exactly(16) }));
+                   Err(WireError::wrong_record_length(2, MandatedLength::Exactly(16))));
     }
 
     #[test]
@@ -290,7 +290,7 @@ mod test {
         ];
 
         assert_eq!(LOC::read(buf.len() as _, &mut Cursor::new(buf)),
-                   Err(WireError::WrongRecordLength { stated_length: 19, mandated_length: MandatedLength::Exactly(16) }));
+                   Err(WireError::wrong_record_length(19, MandatedLength::Exactly(16))));
     }
 
     #[test]

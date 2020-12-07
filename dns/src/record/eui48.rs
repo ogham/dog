@@ -25,7 +25,7 @@ impl Wire for EUI48 {
         if stated_length != 6 {
             warn!("Length is incorrect (record length {:?}, but should be six)", stated_length);
             let mandated_length = MandatedLength::Exactly(6);
-            return Err(WireError::WrongRecordLength { stated_length, mandated_length });
+            return Err(WireError::wrong_record_length(stated_length, mandated_length));
         }
 
         let mut octets = [0_u8; 6];
@@ -69,7 +69,7 @@ mod test {
         ];
 
         assert_eq!(EUI48::read(buf.len() as _, &mut Cursor::new(buf)),
-                   Err(WireError::WrongRecordLength { stated_length: 3, mandated_length: MandatedLength::Exactly(6) }));
+                   Err(WireError::wrong_record_length(3, MandatedLength::Exactly(6))));
     }
 
     #[test]
@@ -80,13 +80,13 @@ mod test {
         ];
 
         assert_eq!(EUI48::read(buf.len() as _, &mut Cursor::new(buf)),
-                   Err(WireError::WrongRecordLength { stated_length: 7, mandated_length: MandatedLength::Exactly(6) }));
+                   Err(WireError::wrong_record_length(7, MandatedLength::Exactly(6))));
     }
 
     #[test]
     fn record_empty() {
         assert_eq!(EUI48::read(0, &mut Cursor::new(&[])),
-                   Err(WireError::WrongRecordLength { stated_length: 0, mandated_length: MandatedLength::Exactly(6) }));
+                   Err(WireError::wrong_record_length(0, MandatedLength::Exactly(6))));
     }
 
     #[test]

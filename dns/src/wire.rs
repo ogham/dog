@@ -388,11 +388,12 @@ macro_rules! qtype {
 
 
 /// Something that can go wrong deciphering a record.
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, thiserror::Error)]
 pub enum WireError {
 
     /// There was an IO error reading from the cursor.
     /// Almost all the time, this means that the buffer was too short.
+    #[error("Malformed packet: insufficient data")]
     IO,
     // (io::Error is not PartialEq so we don’t propagate it)
 
@@ -401,13 +402,29 @@ pub enum WireError {
     ///
     /// This error should be returned regardless of the _content_ of the
     /// record, whatever it is.
-    WrongRecordLength {
+    #[error("Malformed packet: record length should be {mandated_length}, got {stated_length}")]
+    WrongRecordLengthExactly {
 
         /// The length of the record’s data, as specified in the packet.
         stated_length: u16,
 
         /// The length of the record that the DNS specification mandates.
-        mandated_length: MandatedLength,
+        mandated_length: u16,
+    },
+
+    /// When the DNS standard requires records of this type to have a certain
+    /// fixed length, but the response specified a different length.
+    ///
+    /// This error should be returned regardless of the _content_ of the
+    /// record, whatever it is.
+    #[error("Malformed packet: record length should be at least {mandated_length}, got {stated_length}")]
+    WrongRecordLengthAtLeast {
+
+        /// The length of the record’s data, as specified in the packet.
+        stated_length: u16,
+
+        /// The length of the record that the DNS specification mandates.
+        mandated_length: u16,
     },
 
     /// When the length of this record as specified in the packet differs from
@@ -442,6 +459,7 @@ pub enum WireError {
     /// dog picks the second way. If a record ends up reading more or fewer
     /// bytes than it is ‘supposed’ to, it will raise this error, but _after_
     /// having read a different number of bytes than the specified length.
+    #[error("Malformed packet: length {stated_length} was specified, but read {length_after_labels} bytes")]
     WrongLabelLength {
 
         /// The length of the record’s data, as specified in the packet.
@@ -454,15 +472,18 @@ pub enum WireError {
 
     /// When the data contained a string containing a cycle of pointers.
     /// Contains the vector of indexes that was being checked.
+    #[error("Malformed packet: too much recursion: {0:?}")]
     TooMuchRecursion(Vec<u16>),
 
     /// When the data contained a string with a pointer to an index outside of
     /// the packet. Contains the invalid index.
+    #[error("Malformed packet: out of bounds ({0})")]
     OutOfBounds(u16),
 
     /// When a record in the packet contained a version field that specifies
     /// the format of its remaining fields, but this version is too recent to
     /// be supported, so we cannot parse it.
+    #[error("Malformed packet: record specifies version {stated_version}, expected up to {maximum_supported_version}")]
     WrongVersion {
 
         /// The version of the record layout, as specified in the packet
@@ -470,6 +491,23 @@ pub enum WireError {
 
         /// The maximum version that this version of dog supports.
         maximum_supported_version: u8,
+    }
+}
+
+impl WireError {
+    /// Translate a mandated_length error into the right WireError variant
+    #[inline(always)]
+    pub fn wrong_record_length(stated_length: u16, mandated_length: MandatedLength) -> WireError {
+        match mandated_length {
+            MandatedLength::Exactly(mandated_length) => WireError::WrongRecordLengthExactly {
+                stated_length,
+                mandated_length,
+            },
+            MandatedLength::AtLeast(mandated_length) => WireError::WrongRecordLengthAtLeast {
+                stated_length,
+                mandated_length,
+            },
+        }
     }
 }
 

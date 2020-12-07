@@ -40,7 +40,7 @@ impl Wire for SSHFP {
 
         if stated_length <= 2 {
             let mandated_length = MandatedLength::AtLeast(3);
-            return Err(WireError::WrongRecordLength { stated_length, mandated_length });
+            return Err(WireError::wrong_record_length(stated_length, mandated_length));
         }
 
         let fingerprint_length = stated_length - 1 - 1;
@@ -108,7 +108,7 @@ mod test {
         ];
 
         assert_eq!(SSHFP::read(buf.len() as _, &mut Cursor::new(buf)),
-                   Err(WireError::WrongRecordLength { stated_length: 2, mandated_length: MandatedLength::AtLeast(3) }));
+                   Err(WireError::wrong_record_length(2, MandatedLength::AtLeast(3))));
     }
 
     #[test]

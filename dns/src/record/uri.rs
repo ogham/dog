@@ -43,7 +43,7 @@ impl Wire for URI {
         // The target must not be empty.
         if stated_length <= 4 {
             let mandated_length = MandatedLength::AtLeast(5);
-            return Err(WireError::WrongRecordLength { stated_length, mandated_length });
+            return Err(WireError::wrong_record_length(stated_length, mandated_length));
         }
 
         let remaining_length = stated_length - 4;
@@ -107,7 +107,7 @@ mod test {
         ];
 
         assert_eq!(URI::read(buf.len() as _, &mut Cursor::new(buf)),
-                   Err(WireError::WrongRecordLength { stated_length: 4, mandated_length: MandatedLength::AtLeast(5) }));
+                   Err(WireError::wrong_record_length(4, MandatedLength::AtLeast(5))));
     }
 
     #[test]

@@ -25,7 +25,7 @@ impl Wire for EUI64 {
         if stated_length != 8 {
             warn!("Length is incorrect (record length {:?}, but should be eight)", stated_length);
             let mandated_length = MandatedLength::Exactly(8);
-            return Err(WireError::WrongRecordLength { stated_length, mandated_length });
+            return Err(WireError::wrong_record_length(stated_length, mandated_length));
         }
 
         let mut octets = [0_u8; 8];
@@ -69,7 +69,7 @@ mod test {
         ];
 
         assert_eq!(EUI64::read(buf.len() as _, &mut Cursor::new(buf)),
-                   Err(WireError::WrongRecordLength { stated_length: 3, mandated_length: MandatedLength::Exactly(8) }));
+                   Err(WireError::wrong_record_length(3, MandatedLength::Exactly(8))));
     }
 
     #[test]
@@ -80,13 +80,13 @@ mod test {
         ];
 
         assert_eq!(EUI64::read(buf.len() as _, &mut Cursor::new(buf)),
-                   Err(WireError::WrongRecordLength { stated_length: 9, mandated_length: MandatedLength::Exactly(8) }));
+                   Err(WireError::wrong_record_length(9, MandatedLength::Exactly(8))));
     }
 
     #[test]
     fn record_empty() {
         assert_eq!(EUI64::read(0, &mut Cursor::new(&[])),
-                   Err(WireError::WrongRecordLength { stated_length: 0, mandated_length: MandatedLength::Exactly(8) }));
+                   Err(WireError::wrong_record_length(0, MandatedLength::Exactly(8))));
     }
 
     #[test]

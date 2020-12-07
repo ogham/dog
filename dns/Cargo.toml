@@ -6,6 +6,8 @@ edition = "2018"
 
 
 [dependencies]
+# error handling
+thiserror = "1.0.22"
 
 # logging
 log = "0.4"

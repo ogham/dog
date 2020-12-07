@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 
-use dns::{Response, Query, Answer, ErrorCode, WireError, MandatedLength};
+use dns::{Response, Query, Answer, ErrorCode};
 use dns::record::{Record, OPT, UnknownQtype};
 use dns_transport::Error as TransportError;
 use serde_json::{json, Value as JsonValue};
@@ -154,14 +154,14 @@ impl OutputFormat {
     pub fn print_error(self, error: TransportError) {
         match self {
             Self::Short(..) | Self::Text(..) => {
-                eprintln!("Error [{}]: {}", erroneous_phase(&error), error_message(error));
+                eprintln!("Error [{}]: {}", error.erroneous_phase(), error);
             }
 
             Self::JSON => {
                 let object = json!({
                     "error": true,
-                    "error_phase": erroneous_phase(&error),
-                    "error_message": error_message(error),
+                    "error_phase": error.erroneous_phase(),
+                    "error_message": error.to_string(),
                 });
 
                 eprintln!("{}", object);
@@ -539,66 +539,5 @@ pub fn print_error_code(rcode: ErrorCode) {
         ErrorCode::BadVersion      => println!("Status: Bad Version"),
         ErrorCode::Private(num)    => println!("Status: Private Reason ({})", num),
         ErrorCode::Other(num)      => println!("Status: Other Failure ({})", num),
-    }
-}
-
-/// Returns the “phase” of operation where an error occurred. This gets shown
-/// to the user so they can debug what went wrong.
-fn erroneous_phase(error: &TransportError) -> &'static str {
-    match error {
-        TransportError::WireError(_)          => "protocol",
-        TransportError::TruncatedResponse     |
-        TransportError::NetworkError(_)       => "network",
-        #[cfg(feature="tls")]
-        TransportError::TlsError(_)           |
-        TransportError::TlsHandshakeError(_)  => "tls",
-        #[cfg(feature="https")]
-        TransportError::HttpError(_)          |
-        TransportError::WrongHttpStatus(_,_)  => "http",
-    }
-}
-
-/// Formats an error into its human-readable message.
-fn error_message(error: TransportError) -> String {
-    match error {
-        TransportError::WireError(e)          => wire_error_message(e),
-        TransportError::TruncatedResponse     => "Truncated response".into(),
-        TransportError::NetworkError(e)       => e.to_string(),
-        #[cfg(feature="tls")]
-        TransportError::TlsError(e)           => e.to_string(),
-        #[cfg(feature="tls")]
-        TransportError::TlsHandshakeError(e)  => e.to_string(),
-        #[cfg(feature="https")]
-        TransportError::HttpError(e)          => e.to_string(),
-        #[cfg(feature="https")]
-        TransportError::WrongHttpStatus(t,r)  => format!("Nameserver returned HTTP {} ({})", t, r.unwrap_or_else(|| "No reason".into()))
-    }
-}
-
-/// Formats a wire error into its human-readable message, describing what was
-/// wrong with the packet we received.
-fn wire_error_message(error: WireError) -> String {
-    match error {
-        WireError::IO => {
-            "Malformed packet: insufficient data".into()
-        }
-        WireError::WrongRecordLength { stated_length, mandated_length: MandatedLength::Exactly(len) } => {
-            format!("Malformed packet: record length should be {}, got {}", len, stated_length )
-        }
-        WireError::WrongRecordLength { stated_length, mandated_length: MandatedLength::AtLeast(len) } => {
-            format!("Malformed packet: record length should be at least {}, got {}", len, stated_length )
-        }
-        WireError::WrongLabelLength { stated_length, length_after_labels } => {
-            format!("Malformed packet: length {} was specified, but read {} bytes", stated_length, length_after_labels)
-        }
-        WireError::TooMuchRecursion(indices) => {
-            format!("Malformed packet: too much recursion: {:?}", indices)
-        }
-        WireError::OutOfBounds(index) => {
-            format!("Malformed packet: out of bounds ({})", index)
-        }
-        WireError::WrongVersion { stated_version, maximum_supported_version } => {
-            format!("Malformed packet: record specifies version {}, expected up to {}", stated_version, maximum_supported_version)
-        }
     }
 }
