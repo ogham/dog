@@ -4,6 +4,7 @@ use std::convert::TryFrom;
 use std::fmt;
 use std::io::{self, Write};
 
+use unic_idna;
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use log::*;
 
@@ -18,6 +19,11 @@ use crate::wire::*;
 #[derive(PartialEq, Debug, Clone)]
 pub struct Labels {
     segments: Vec<(u8, String)>,
+}
+
+fn label_to_ascii(label: &str) -> Result<String, unic_idna::Errors> {
+    let flags = unic_idna::Flags{use_std3_ascii_rules: true, transitional_processing: false, verify_dns_length: true};
+    unic_idna::to_ascii(label, flags)
 }
 
 impl Labels {
@@ -38,9 +44,15 @@ impl Labels {
                 continue;
             }
 
-            match u8::try_from(label.len()) {
+            let label_idn = label_to_ascii(label)
+                    .map_err(|e| {
+                        warn!("Could not encode label {:?}: {:?}", label, e);
+                        return label;
+                    })?;
+
+            match u8::try_from(label_idn.len()) {
                 Ok(length) => {
-                    segments.push((length, label.to_owned()));
+                    segments.push((length, label_idn));
                 }
                 Err(e) => {
                     warn!("Could not encode label {:?}: {}", label, e);
