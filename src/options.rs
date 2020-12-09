@@ -223,7 +223,7 @@ impl Inputs {
                 trace!("Got nameserver -> {:?}", nameserver);
                 self.add_nameserver(nameserver)?;
             }
-            else if a.chars().all(char::is_uppercase) {
+            else if Self::is_constant_name(&a) {
                 if let Some(class) = self.parse_class_name(&a) {
                     trace!("Got qclass -> {:?}", &a);
                     self.classes.push(class);
@@ -243,6 +243,10 @@ impl Inputs {
         }
 
         Ok(())
+    }
+
+    fn is_constant_name(a: &str) -> bool {
+        a.chars().all(char::is_uppercase) || a == "EUI48" || a == "EUI64"
     }
 
     fn load_fallbacks(&mut self) {
