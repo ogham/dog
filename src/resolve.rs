@@ -76,14 +76,16 @@ fn system_nameservers() -> io::Result<Option<Nameserver>> {
         }
     };
 
-    for dns_server in adapters
-        .iter()
-        .flat_map(|adapter| adapter.dns_servers().iter()) {
+    for adapter in adapters.iter().filter(|a| {
+        a.oper_status() == ipconfig::OperStatus::IfOperStatusUp && !a.gateways().is_empty()
+    }) {
+        for dns_server in adapter.dns_servers().iter() {
             // TODO: This will need to be changed for IPv6 support.
             if dns_server.is_ipv4() {
                 debug!("Found first nameserver {:?}", dns_server);
-                return Ok(Some(dns_server.to_string()))
+                return Ok(Some(dns_server.to_string()));
             }
+        }
     }
 
     warn!("No nameservers available");
