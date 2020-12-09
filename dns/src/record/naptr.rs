@@ -37,7 +37,7 @@ pub struct NAPTR {
 }
 
 impl Wire for NAPTR {
-    const NAME: &'static str = "MX";
+    const NAME: &'static str = "NAPTR";
     const RR_TYPE: u16 = 35;
 
     #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
