@@ -1,0 +1,67 @@
+name: Musl static release build
+on:
+  release:
+    types:
+      - released
+
+jobs:
+  musl-build:
+    runs-on: ubuntu-latest
+    container: clux/muslrust
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Make a binary delivery folder
+        run: mkdir -p build/man && mkdir -p build/bin
+
+      - name: Set rustup Default Toolchain to musl libc
+        run: rustup default nightly && rustup target add x86_64-unknown-linux-musl
+
+      - name: Print rustc and cargo versions
+        run: rustc --version && cargo --version
+
+      - name: Update APT
+        run: apt-get update -yqq
+
+      - name: Install pandoc and zip
+        run: apt-get install -yqq pandoc zip
+
+      - name: Build dog
+        run: cargo build --release --verbose --target x86_64-unknown-linux-musl
+
+      - name: Move dog to binary delivery folder
+        run: mv dog $GITHUB_WORKSPACE/build/bin/
+        working-directory: target/x86_64-unknown-linux-musl/release/
+
+      - name: Strip dog binary
+        run: strip ./dog
+        working-directory: build/bin/
+
+      - name: Build manpage
+        run: pandoc --standalone -f markdown -t man man/dog.1.md > man/dog.1
+
+      - name: Move manpage and completions
+        run: mv completions/ build/ && mv man/dog.1 build/man/
+
+## See TODO below
+#      - name: Bundle dog
+#        run: "zip -r -Z bzip2 dog-release-x86_64-unknown-linux-musl.zip bin/ completions/ man/ && mv *.zip $GITHUB_WORKSPACE/"
+#        working-directory: build/
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v2.2.1
+        with:
+          name: dog-release-x86_64-unknown-linux-musl
+          path: build/
+
+## TODO: GITHUB_REF is not filename safe, until GitHub adds
+## a new envvar; manually download the release from Build
+## Artifacts and upload it to the release.
+#      - name: Upload Release Artifacts
+#        uses: linuxgemini/github-upload-release-artifacts-action@master
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        with:
+#          created_tag: "$GITHUB_REF"
+#          args: "*.zip"
