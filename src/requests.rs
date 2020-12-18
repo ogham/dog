@@ -81,21 +81,16 @@ pub enum UseEDNS {
 
 impl RequestGenerator {
 
-    /// Iterate through the inputs matrix, returning pairs of DNS requests and
-    /// the details of the transport to send them down.
-    pub fn generate(self) -> Vec<(dns::Request, Box<dyn dns_transport::Transport>)> {
-        let nameservers = self.inputs.resolvers.into_iter()
-                              .map(|e| e.lookup().expect("Failed to get nameserver").expect("No nameserver found"))
-                              .collect::<Vec<_>>();
-
+    /// Iterate through the inputs matrix, returning pairs of DNS request list
+    /// and the details of the transport to send them down.
+    pub fn generate(self) -> Vec<(Vec<dns::Request>, Box<dyn dns_transport::Transport>)> {
         let mut requests = Vec::new();
         for domain in &self.inputs.domains {
             for qtype in self.inputs.types.iter().copied() {
                 for qclass in self.inputs.classes.iter().copied() {
-                    for nameserver in &nameservers {
+                    for resolver in &self.inputs.resolvers {
                         for transport_type in &self.inputs.transport_types {
 
-                            let transaction_id = self.txid_generator.generate();
                             let mut flags = dns::Flags::query();
                             self.protocol_tweaks.set_request_flags(&mut flags);
 
@@ -106,11 +101,17 @@ impl RequestGenerator {
                                 additional = Some(opt);
                             }
 
-                            let query = dns::Query { qname: domain.clone(), qtype, qclass };
-                            let request = dns::Request { transaction_id, flags, query, additional };
+                            let nameserver = resolver.nameserver();
+                            let transport = transport_type.make_transport(nameserver);
 
-                            let transport = transport_type.make_transport(nameserver.clone());
-                            requests.push((request, transport));
+                            let mut request_list = Vec::new();
+                            for qname in resolver.name_list(domain) {
+                                let transaction_id = self.txid_generator.generate();
+                                let query = dns::Query { qname, qtype, qclass };
+                                let request = dns::Request { transaction_id, flags, query, additional: additional.clone() };
+                                request_list.push(request);
+                            }
+                            requests.push((request_list, transport));
                         }
                     }
                 }

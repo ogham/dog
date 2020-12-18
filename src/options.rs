@@ -194,7 +194,7 @@ impl Inputs {
     }
 
     fn add_nameserver(&mut self, input: &str) -> Result<(), OptionsError> {
-        self.resolvers.push(Resolver::Specified(input.into()));
+        self.resolvers.push(Resolver::specified(input.into()));
         Ok(())
     }
 
@@ -259,7 +259,7 @@ impl Inputs {
         }
 
         if self.resolvers.is_empty() {
-            self.resolvers.push(Resolver::SystemDefault);
+            self.resolvers.push(Resolver::system_default());
         }
 
         if self.transport_types.is_empty() {
@@ -492,7 +492,7 @@ mod test {
                 domains:         vec![ /* No domains by default */ ],
                 types:           vec![ qtype!(A) ],
                 classes:         vec![ QClass::IN ],
-                resolvers:       vec![ Resolver::SystemDefault ],
+                resolvers:       vec![ Resolver::system_default() ],
                 transport_types: vec![ TransportType::Automatic ],
             }
         }
@@ -587,7 +587,7 @@ mod test {
         let options = Options::getopts(&[ "lookup.dog", "@1.1.1.1" ]).unwrap();
         assert_eq!(options.requests.inputs, Inputs {
             domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
-            resolvers:  vec![ Resolver::Specified("1.1.1.1".into()) ],
+            resolvers:  vec![ Resolver::specified("1.1.1.1".into()) ],
             .. Inputs::fallbacks()
         });
     }
@@ -609,7 +609,7 @@ mod test {
             domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
             classes:    vec![ QClass::CH ],
             types:      vec![ qtype!(NS) ],
-            resolvers:  vec![ Resolver::Specified("1.1.1.1".into()) ],
+            resolvers:  vec![ Resolver::specified("1.1.1.1".into()) ],
             .. Inputs::fallbacks()
         });
     }
@@ -621,7 +621,7 @@ mod test {
             domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
             classes:    vec![ QClass::CH ],
             types:      vec![ qtype!(SOA) ],
-            resolvers:  vec![ Resolver::Specified("1.1.1.1".into()) ],
+            resolvers:  vec![ Resolver::specified("1.1.1.1".into()) ],
             .. Inputs::fallbacks()
         });
     }
@@ -653,7 +653,7 @@ mod test {
             domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
             classes:    vec![ QClass::CH ],
             types:      vec![ qtype!(SOA) ],
-            resolvers:  vec![ Resolver::Specified("1.1.1.1".into()) ],
+            resolvers:  vec![ Resolver::specified("1.1.1.1".into()) ],
             .. Inputs::fallbacks()
         });
     }
@@ -674,8 +674,8 @@ mod test {
         let options = Options::getopts(&[ "lookup.dog", "--nameserver", "1.1.1.1", "--nameserver", "1.0.0.1" ]).unwrap();
         assert_eq!(options.requests.inputs, Inputs {
             domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
-            resolvers:  vec![ Resolver::Specified("1.1.1.1".into()),
-                              Resolver::Specified("1.0.0.1".into()), ],
+            resolvers:  vec![ Resolver::specified("1.1.1.1".into()),
+                              Resolver::specified("1.0.0.1".into()), ],
             .. Inputs::fallbacks()
         });
     }
