@@ -17,16 +17,24 @@ version = "0.2.0-pre"
 name = "dog"
 path = "src/main.rs"
 
+
 [workspace]
 members = [
   "dns",
   "dns-transport",
 ]
 
+
+# make dev builds faster by excluding debug symbols
+[profile.dev]
+debug = false
+
+# use LTO for smaller binaries (that take longer to build)
 [profile.release]
 lto = true
 overflow-checks = true
 panic = "abort"
+
 
 [dependencies]
 
