@@ -19,7 +19,6 @@ use std::io::{self, Write};
 use std::path::PathBuf;
 
 use datetime::{LocalDateTime, ISO};
-use regex::Regex;
 
 
 /// The build script entry point.
@@ -44,28 +43,46 @@ fn main() -> io::Result<()> {
     // We need to create these files in the Cargo output directory.
     let out = PathBuf::from(env::var("OUT_DIR").unwrap());
 
-    // The bits .txt files contain ANSI escape codes, ish.
-    let control_code = Regex::new(r##"\\.+?m"##).unwrap();
-
     // Pretty version text
     let mut f = File::create(&out.join("version.pretty.txt"))?;
-    write!(f, "{}\n", ver.replace("\\", "\x1B["))?;
+    writeln!(f, "{}", convert_codes(&ver))?;
 
     // Bland version text
     let mut f = File::create(&out.join("version.bland.txt"))?;
-    write!(f, "{}\n", control_code.replace_all(&ver, ""))?;
+    writeln!(f, "{}", strip_codes(&ver))?;
 
     // Pretty usage text
     let mut f = File::create(&out.join("usage.pretty.txt"))?;
-    write!(f, "{}\n\n{}", tagline.replace("\\", "\x1B["), usage.replace("\\", "\x1B["))?;
+    writeln!(f, "{}", convert_codes(&tagline))?;
+    writeln!(f)?;
+    write!(f, "{}", convert_codes(&usage))?;
 
     // Bland usage text
     let mut f = File::create(&out.join("usage.bland.txt"))?;
-    write!(f, "{}\n\n{}", control_code.replace_all(tagline, ""), control_code.replace_all(usage, ""))?;
+    writeln!(f, "{}", strip_codes(&tagline))?;
+    writeln!(f)?;
+    write!(f, "{}", strip_codes(&usage))?;
 
     Ok(())
 }
 
+/// Converts the escape codes in ‘usage.txt’ to ANSI escape codes.
+fn convert_codes(input: &str) -> String {
+    input.replace("\\", "\x1B[")
+}
+
+/// Removes escape codes from ‘usage.txt’.
+fn strip_codes(input: &str) -> String {
+    input.replace("\\0m", "")
+         .replace("\\1m", "")
+         .replace("\\4m", "")
+         .replace("\\32m", "")
+         .replace("\\33m", "")
+         .replace("\\1;31m", "")
+         .replace("\\1;32m", "")
+         .replace("\\1;33m", "")
+         .replace("\\1;4;34", "")
+}
 
 /// Retrieve the project’s current Git hash, as a string.
 fn git_hash() -> String {
