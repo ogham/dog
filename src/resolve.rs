@@ -4,31 +4,58 @@ use std::io;
 
 use log::*;
 
+use dns::Labels;
 
-/// A **resolver** is used to obtain the IP address of the server we should
-/// send DNS requests to.
+
+/// A **resolver** knows the address of the server we should
+/// send DNS requests to, and the search list for name lookup.
 #[derive(PartialEq, Debug)]
-pub enum Resolver {
+pub struct Resolver {
 
-    /// Read the list of nameservers from the system, and use that.
-    SystemDefault,
+    /// The address of the name server.
+    pub nameserver: String,
 
-    // Use a specific nameserver specified by the user.
-    Specified(Nameserver),
+    /// The search list for name lookup.
+    pub search_list: Vec<String>,
 }
-
-pub type Nameserver = String;
 
 impl Resolver {
 
-    /// Returns a nameserver that queries should be sent to, possibly by
-    /// obtaining one based on the system, returning an error if there was a
-    /// problem looking one up.
-    pub fn lookup(self) -> io::Result<Option<Nameserver>> {
-        match self {
-            Self::Specified(ns)  => Ok(Some(ns)),
-            Self::SystemDefault  => system_nameservers(),
+    /// Returns a resolver with the specified nameserver and an empty
+    /// search list.
+    pub fn specified(nameserver: String) -> Self {
+        let search_list = Vec::new();
+        Self { nameserver, search_list }
+    }
+
+    /// Returns a resolver that is default for the system.
+    pub fn system_default() -> Self {
+        let (nameserver_opt, search_list) = system_nameservers().expect("Failed to get nameserver");
+        let nameserver = nameserver_opt.expect("No nameserver found");
+        Self { nameserver, search_list }
+    }
+
+    /// Returns a nameserver that queries should be sent to.
+    pub fn nameserver(&self) -> String {
+        self.nameserver.clone()
+    }
+
+    /// Returns a sequence of names to be queried, taking into account
+    /// of the search list.
+    pub fn name_list(&self, name: &Labels) -> Vec<Labels> {
+        let mut list = Vec::new();
+        if name.len() > 1 {
+            list.push(name.clone());
+            return list;
         }
+        for search in &self.search_list {
+            match Labels::encode(search) {
+                Ok(suffix) => list.push(name.extend(&suffix)),
+                Err(_) => panic!("Invalid search list {}", search),
+            }
+        }
+        list.push(name.clone());
+        list
     }
 }
 
@@ -38,7 +65,7 @@ impl Resolver {
 /// Returns an error if there’s a problem reading the file, or `None` if no
 /// nameserver is specified in the file.
 #[cfg(unix)]
-fn system_nameservers() -> io::Result<Option<Nameserver>> {
+fn system_nameservers() -> io::Result<(Option<String>, Vec<String>)> {
     use std::io::{BufRead, BufReader};
     use std::fs::File;
 
@@ -46,6 +73,7 @@ fn system_nameservers() -> io::Result<Option<Nameserver>> {
     let reader = BufReader::new(f);
 
     let mut nameservers = Vec::new();
+    let mut search_list = Vec::new();
     for line in reader.lines() {
         let line = line?;
 
@@ -58,21 +86,26 @@ fn system_nameservers() -> io::Result<Option<Nameserver>> {
                 Err(e)  => warn!("Failed to parse nameserver line {:?}: {}", line, e),
             }
         }
+
+        if let Some(search_str) = line.strip_prefix("search ") {
+            search_list.clear();
+            search_list.extend(search_str.split_ascii_whitespace().map(|s| s.into()));
+        }
     }
 
-    Ok(nameservers.first().cloned())
+    Ok((nameservers.first().cloned(), search_list))
 }
 
 
 /// Looks up the system default nameserver on Windows, by iterating through
 /// the list of network adapters and returning the first nameserver it finds.
 #[cfg(windows)]
-fn system_nameservers() -> io::Result<Option<Nameserver>> {
+fn system_nameservers() -> io::Result<(Option<String>, Vec<String>)> {
     let adapters = match ipconfig::get_adapters() {
         Ok(a) => a,
         Err(e) => {
             warn!("Error getting network adapters: {}", e);
-            return Ok(None);
+            return Ok((None, Vec::new()));
         }
     };
 
@@ -83,20 +116,20 @@ fn system_nameservers() -> io::Result<Option<Nameserver>> {
             // TODO: This will need to be changed for IPv6 support.
             if dns_server.is_ipv4() {
                 debug!("Found first nameserver {:?}", dns_server);
-                return Ok(Some(dns_server.to_string()));
+                return Ok((Some(dns_server.to_string()), Vec::new()));
             }
         }
     }
 
     warn!("No nameservers available");
-    return Ok(None)
+    return Ok((None, Vec::new()))
 }
 
 
 /// The fall-back system default nameserver determinator that is not very
 /// determined as it returns nothing without actually checking anything.
 #[cfg(all(not(unix), not(windows)))]
-fn system_nameservers() -> io::Result<Option<Nameserver>> {
+fn system_nameservers() -> io::Result<(Option<String>, Vec<String>)> {
     warn!("Unable to fetch default nameservers on this platform.");
-    Ok(None)
+    Ok((None, Vec::new()))
 }

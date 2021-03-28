@@ -2,8 +2,6 @@
 
 use dns_transport::*;
 
-use crate::resolve::Nameserver;
-
 
 /// A **transport type** creates a `Transport` that determines which protocols
 /// should be used to send and receive DNS wire data over the network.
@@ -34,7 +32,7 @@ pub enum TransportType {
 impl TransportType {
 
     /// Creates a boxed `Transport` depending on the transport type.
-    pub fn make_transport(self, ns: Nameserver) -> Box<dyn Transport> {
+    pub fn make_transport(self, ns: String) -> Box<dyn Transport> {
         match self {
             Self::Automatic  => Box::new(AutoTransport::new(ns)),
             Self::UDP        => Box::new(UdpTransport::new(ns)),

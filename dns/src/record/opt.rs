@@ -30,7 +30,7 @@ use crate::wire::*;
 ///
 /// - [RFC 6891](https://tools.ietf.org/html/rfc6891) — Extension Mechanisms
 ///   for DNS (April 2013)
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct OPT {
 
     /// The maximum size of a UDP packet that the client supports.

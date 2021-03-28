@@ -63,6 +63,18 @@ impl Labels {
 
         Ok(Self { segments })
     }
+
+    /// Returns the number of segments.
+    pub fn len(&self) -> usize {
+        self.segments.len()
+    }
+
+    /// Returns a new set of labels concatenating two names.
+    pub fn extend(&self, other: &Self) -> Self {
+        let mut segments = self.segments.clone();
+        segments.extend_from_slice(&other.segments);
+        Self { segments }
+    }
 }
 
 impl fmt::Display for Labels {
