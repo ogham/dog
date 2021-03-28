@@ -130,7 +130,7 @@ checksum = "0e25ea47919b1560c4e3b7fe0aaab9becf5b84a10325ddf7db0f0ba5e1026499"
 
 [[package]]
 name = "dns"
-version = "0.1.0"
+version = "0.2.0-pre"
 dependencies = [
  "base64",
  "byteorder",
@@ -142,7 +142,7 @@ dependencies = [
 
 [[package]]
 name = "dns-transport"
-version = "0.1.0"
+version = "0.2.0-pre"
 dependencies = [
  "dns",
  "httparse",
@@ -152,7 +152,7 @@ dependencies = [
 
 [[package]]
 name = "dog"
-version = "0.1.0"
+version = "0.2.0-pre"
 dependencies = [
  "ansi_term",
  "atty",

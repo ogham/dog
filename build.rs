@@ -30,7 +30,11 @@ fn main() -> io::Result<()> {
     let tagline = "dog \\1;32m●\\0m command-line DNS client";
     let url     = "https://dns.lookup.dog/";
 
-    let ver = if is_development_version() {
+    let ver =
+        if is_debug_build() {
+            format!("{}\nv{} \\1;31m(pre-release debug build!)\\0m\n\\1;4;34m{}\\0m", tagline, cargo_version(), url)
+        }
+        else if is_development_version() {
             format!("{}\nv{} [{}] built on {} \\1;31m(pre-release!)\\0m\n\\1;4;34m{}\\0m", tagline, cargo_version(), git_hash(), build_date(), url)
         }
         else {
@@ -74,7 +78,6 @@ fn git_hash() -> String {
             .stdout).trim().to_string()
 }
 
-
 /// Whether we should show pre-release info in the version string.
 ///
 /// Both weekly releases and actual releases are --release releases,
@@ -83,12 +86,15 @@ fn is_development_version() -> bool {
     cargo_version().ends_with("-pre") || env::var("PROFILE").unwrap() == "debug"
 }
 
+/// Whether we are building in debug mode.
+fn is_debug_build() -> bool {
+    env::var("PROFILE").unwrap() == "debug"
+}
 
 /// Retrieves the [package] version in Cargo.toml as a string.
 fn cargo_version() -> String {
     env::var("CARGO_PKG_VERSION").unwrap()
 }
-
 
 /// Formats the current date as an ISO 8601 string.
 fn build_date() -> String {
