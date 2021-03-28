@@ -18,6 +18,7 @@
 #![allow(clippy::too_many_lines)]
 #![allow(clippy::unit_arg)]
 #![allow(clippy::unused_self)]
+#![allow(clippy::upper_case_acronyms)]
 #![allow(clippy::useless_let_if_seq)]
 #![allow(clippy::wildcard_imports)]
 

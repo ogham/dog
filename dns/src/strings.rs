@@ -4,7 +4,6 @@ use std::convert::TryFrom;
 use std::fmt;
 use std::io::{self, Write};
 
-use unic_idna;
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use log::*;
 
@@ -47,7 +46,7 @@ impl Labels {
             let label_idn = label_to_ascii(label)
                     .map_err(|e| {
                         warn!("Could not encode label {:?}: {:?}", label, e);
-                        return label;
+                        label
                     })?;
 
             match u8::try_from(label_idn.len()) {

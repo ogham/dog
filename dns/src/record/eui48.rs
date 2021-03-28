@@ -39,7 +39,7 @@ impl Wire for EUI48 {
 impl EUI48 {
 
     /// Returns this EUI as hexadecimal numbers, separated by dashes.
-    pub fn formatted_address(&self) -> String {
+    pub fn formatted_address(self) -> String {
         format!("{:02x}-{:02x}-{:02x}-{:02x}-{:02x}-{:02x}",
                 self.octets[0], self.octets[1], self.octets[2],
                 self.octets[3], self.octets[4], self.octets[5])
