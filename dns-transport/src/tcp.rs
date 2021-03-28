@@ -10,29 +10,6 @@ use super::{Transport, Error};
 
 /// The **TCP transport**, which sends DNS wire data over a TCP stream.
 ///
-/// # Examples
-///
-/// ```no_run
-/// use dns_transport::{Transport, TcpTransport};
-/// use dns::{Request, Flags, Query, Labels, QClass, qtype, record::MX};
-///
-/// let query = Query {
-///     qname: Labels::encode("dns.lookup.dog").unwrap(),
-///     qclass: QClass::IN,
-///     qtype: qtype!(MX),
-/// };
-///
-/// let request = Request {
-///     transaction_id: 0xABCD,
-///     flags: Flags::query(),
-///     query: query,
-///     additional: None,
-/// };
-///
-/// let transport = TcpTransport::new("8.8.8.8");
-/// transport.send(&request);
-/// ```
-///
 /// # References
 ///
 /// - [RFC 1035 §4.2.2](https://tools.ietf.org/html/rfc1035) — Domain Names,
