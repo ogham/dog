@@ -34,15 +34,15 @@ export DOG_DEBUG := ""
 
 # run unit tests
 @test:
-    cargo test --workspace -- --quiet
+    cargo test --lib --bin dog --workspace -- --quiet
 
 # run unit tests (in release mode)
 @test-release:
-    cargo test --release --workspace --verbose
+    cargo test --lib --bin dog -workspace --release --verbose
 
 # run unit tests (without some features)
 @test-quick:
-    cargo test --workspace --no-default-features -- --quiet
+    cargo test --lib --bin dog --workspace --no-default-features -- --quiet
 
 # run mutation tests
 @test-mutation:

@@ -11,29 +11,6 @@ use super::{Transport, Error, TcpTransport};
 
 /// The **TLS transport**, which sends DNS wire data using TCP through an
 /// encrypted TLS connection.
-///
-/// # Examples
-///
-/// ```no_run
-/// use dns_transport::{Transport, TlsTransport};
-/// use dns::{Request, Flags, Query, Labels, QClass, qtype, record::SRV};
-///
-/// let query = Query {
-///     qname: Labels::encode("dns.lookup.dog").unwrap(),
-///     qclass: QClass::IN,
-///     qtype: qtype!(SRV),
-/// };
-///
-/// let request = Request {
-///     transaction_id: 0xABCD,
-///     flags: Flags::query(),
-///     query: query,
-///     additional: None,
-/// };
-///
-/// let transport = TlsTransport::new("dns.google");
-/// transport.send(&request);
-/// ```
 pub struct TlsTransport {
     addr: String,
 }
