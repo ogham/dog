@@ -18,6 +18,11 @@ export DOG_DEBUG := ""
     cargo build --release --verbose
     strip "${CARGO_TARGET_DIR:-target}/release/dog"
 
+# produce an HTML chart of compilation timings
+@build-time:
+    cargo +nightly clean
+    cargo +nightly build -Z timings
+
 # compile the dog binary (without some features)
 @build-quick:
     cargo build --no-default-features

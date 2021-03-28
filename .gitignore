@@ -1,3 +1,4 @@
 /target
 /tarpaulin-report.html
 fuzz-*.log
+/cargo-timing*.html
