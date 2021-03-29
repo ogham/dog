@@ -160,7 +160,7 @@ fn system_nameservers() -> io::Result<(Option<String>, Vec<String>)> {
     warn!("Unable to fetch default nameservers on this platform.");
     Ok((None, Vec::new()))
 }
-// get the IP of the Network adaptor that is used to access the Internet
+// get the IP of the Network adapter that is used to access the Internet
 // https://stackoverflow.com/questions/24661022/getting-ip-adress-associated-to-real-hardware-ethernet-controller-in-windows-c
 fn get_ipv4() -> io::Result<IpAddr> {
     let s = UdpSocket::bind("0.0.0.0:0")?;
