@@ -1,0 +1,28 @@
+# PTR record successes
+
+[[cmd]]
+name = "Running with ‘ptr.example’ prints the correct PTR record"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 PTR ptr.example"
+stdout = { file = "outputs/ptr.example.ansitxt" }
+stderr = { empty = true }
+status = 0
+tags = [ "ptr", "madns" ]
+
+
+# PTR record invalid packets
+
+[[cmd]]
+name = "Running with ‘empty.ptr.invalid’ displays a protocol error"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 PTR empty.ptr.invalid"
+stdout = { empty = true }
+stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
+status = 1
+tags = [ "ptr", "madns" ]
+
+[[cmd]]
+name = "Running with ‘incomplete.ptr.invalid’ displays a protocol error"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 PTR incomplete.ptr.invalid"
+stdout = { empty = true }
+stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
+status = 1
+tags = [ "ptr", "madns" ]

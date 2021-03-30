@@ -112,7 +112,9 @@ If you have a copy installed, you can run:
 
     just xtests
 
-Specsheet will test the compiled binary by making DNS requests over the network, checking that dog returns results and does not crash.
+Specsheet will test the compiled binary by making DNS requests over the network, checking that dog returns the correct results and does not crash.
+Note that this will expose your IP address.
+For more information, read [the xtests README](xtests/README.md).
 
 
 ---

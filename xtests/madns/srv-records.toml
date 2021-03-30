@@ -1,0 +1,28 @@
+# SRV record successes
+
+[[cmd]]
+name = "Running with ‘srv.example’ prints the correct SRV record"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 SRV srv.example"
+stdout = { file = "outputs/srv.example.ansitxt" }
+stderr = { empty = true }
+status = 0
+tags = [ "soa", "madns" ]
+
+
+# SRV record invalid packets
+
+[[cmd]]
+name = "Running with ‘empty.srv.invalid’ displays a protocol error"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 SRV empty.srv.invalid"
+stdout = { empty = true }
+stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
+status = 1
+tags = [ "soa", "madns" ]
+
+[[cmd]]
+name = "Running with ‘incomplete.srv.invalid’ displays a protocol error"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 SRV incomplete.srv.invalid"
+stdout = { empty = true }
+stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
+status = 1
+tags = [ "soa", "madns" ]

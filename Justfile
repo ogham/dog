@@ -38,7 +38,7 @@ export DOG_DEBUG := ""
 
 # run unit tests (in release mode)
 @test-release:
-    cargo test --lib --bin dog -workspace --release --verbose
+    cargo test --lib --bin dog --workspace --release --verbose
 
 # run unit tests (without some features)
 @test-quick:
@@ -56,15 +56,22 @@ export DOG_DEBUG := ""
 
 # run extended tests
 @xtests:
-    specsheet xtests/*.toml -O cmd.target.dog="${CARGO_TARGET_DIR:-../target}/debug/dog"
+    specsheet xtests/*/*.toml -shide \
+        -O cmd.target.dog="${CARGO_TARGET_DIR:-../../target}/debug/dog"
 
 # run extended tests (in release mode)
 @xtests-release:
-    specsheet xtests/*.toml -O cmd.target.dog="${CARGO_TARGET_DIR:-../target}/release/dog"
+    specsheet xtests/*/*.toml \
+        -O cmd.target.dog="${CARGO_TARGET_DIR:-../../target}/release/dog"
 
 # run extended tests (omitting certain feature tests)
 @xtests-quick:
-    specsheet xtests/*.toml -O cmd.target.dog="${CARGO_TARGET_DIR:-../target}/debug/dog" --skip-tags=udp,tls,https,json
+    specsheet xtests/options/*.toml xtests/live/{basics,tcp}.toml -shide \
+        -O cmd.target.dog="${CARGO_TARGET_DIR:-../../target}/debug/dog"
+
+# display the number of extended tests that get run
+@count-xtests:
+    grep -F '[[cmd]]' -R xtests | wc -l
 
 
 #---------#

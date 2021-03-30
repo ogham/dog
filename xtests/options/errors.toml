@@ -4,6 +4,7 @@ shell = "dog --wibble"
 stdout = { empty = true }
 stderr = { string = "wibble" }
 status = 3
+tags = [ 'options' ]
 
 [[cmd]]
 name = "Running dog with ‘XYZZY’ warns about the invalid record type"
@@ -11,6 +12,7 @@ shell = "dog XYZZY dns.google"
 stdout = { empty = true }
 stderr = { string = "XYZZY" }
 status = 3
+tags = [ 'options' ]
 
 [[cmd]]
 name = "Running dog with ‘OPT’ warns that OPT requests are sent by default"
@@ -18,6 +20,7 @@ shell = "dog OPT dns.google"
 stdout = { empty = true }
 stderr = { string = "OPT request is sent by default" }
 status = 3
+tags = [ 'options' ]
 
 [[cmd]]
 name = "Running dog with a domain longer than 255 bytes warns about it being too long"
@@ -25,6 +28,7 @@ shell = "dog 1234567890123456789012345678901234567890123456789012345678901234567
 stdout = { empty = true }
 stderr = { string = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890" }
 status = 3
+tags = [ 'options' ]
 
 [[cmd]]
 name = "Running dog with ‘--https’ and no nameserver warns that one is missing"
@@ -32,3 +36,4 @@ shell = "dog --https dns.google"
 stdout = { empty = true }
 stderr = { string = "You must pass a URL as a nameserver when using --https" }
 status = 3
+tags = [ 'options' ]

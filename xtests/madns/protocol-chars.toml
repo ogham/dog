@@ -1,0 +1,39 @@
+[[cmd]]
+name = "Running with ‘ansi.str.example’ properly escapes the codes"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 CNAME ansi.str.example"
+stdout = { file = "outputs/ansi.str.example.ansitxt" }
+stderr = { empty = true }
+status = 0
+tags = [ "protocol", "madns" ]
+
+[[cmd]]
+name = "Running with ‘newline.str.example’ properly escapes the newlines"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 CNAME newline.str.example"
+stdout = { file = "outputs/newline.str.example.ansitxt" }
+stderr = { empty = true }
+status = 0
+tags = [ "protocol", "madns" ]
+
+[[cmd]]
+name = "Running with ‘null.str.example’ properly handles the null bytes"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 CNAME null.str.example"
+stdout = { file = "outputs/null.str.example.ansitxt" }
+stderr = { empty = true }
+status = 0
+tags = [ "protocol", "madns" ]
+
+[[cmd]]
+name = "Running with ‘tab.str.example’ properly escapes the tabs"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 CNAME tab.str.example"
+stdout = { file = "outputs/tab.str.example.ansitxt" }
+stderr = { empty = true }
+status = 0
+tags = [ "protocol", "madns" ]
+
+[[cmd]]
+name = "Running with ‘upperbit.str.example’ properly escapes the upper-bit characters"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 CNAME upperbit.str.example"
+stdout = { file = "outputs/upperbit.str.example.ansitxt" }
+stderr = { empty = true }
+status = 0
+tags = [ "protocol", "madns" ]

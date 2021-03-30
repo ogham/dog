@@ -1,0 +1,28 @@
+# CNAME record successes
+
+[[cmd]]
+name = "Running with ‘cname.example’ prints the correct CNAME record"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 CNAME cname.example"
+stdout = { file = "outputs/cname.example.ansitxt" }
+stderr = { empty = true }
+status = 0
+tags = [ "cname", "madns" ]
+
+
+# CNAME record invalid packets
+
+[[cmd]]
+name = "Running with ‘empty.cname.invalid’ displays a protocol error"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 CNAME empty.cname.invalid"
+stdout = { empty = true }
+stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
+status = 1
+tags = [ "cname", "madns" ]
+
+[[cmd]]
+name = "Running with ‘incomplete.cname.invalid’ displays a protocol error"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 CNAME incomplete.cname.invalid"
+stdout = { empty = true }
+stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
+status = 1
+tags = [ "cname", "madns" ]

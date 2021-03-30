@@ -1,0 +1,44 @@
+# URI record successes
+
+[[cmd]]
+name = "Running with ‘uri.example’ prints the correct URI record"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 URI uri.example"
+stdout = { file = "outputs/uri.example.ansitxt" }
+stderr = { empty = true }
+status = 0
+tags = [ "uri", "madns" ]
+
+[[cmd]]
+name = "Running with ‘slash.uri.example’ still prints the correct URI record"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 URI slash.uri.example"
+stdout = { file = "outputs/slash.uri.example.ansitxt" }
+stderr = { empty = true }
+status = 0
+tags = [ "uri", "madns" ]
+
+
+# URI record invalid packets
+
+[[cmd]]
+name = "Running with ‘missing-data.uri.invalid’ displays a packet length error"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 URI missing-data.uri.invalid"
+stdout = { empty = true }
+stderr = { string = "Error [protocol]: Malformed packet: record length should be at least 5, got 4" }
+status = 1
+tags = [ "uri", "madns" ]
+
+[[cmd]]
+name = "Running with ‘empty.uri.invalid’ displays a protocol error"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 URI empty.uri.invalid"
+stdout = { empty = true }
+stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
+status = 1
+tags = [ "uri", "madns" ]
+
+[[cmd]]
+name = "Running with ‘incomplete.uri.invalid’ displays a protocol error"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 URI incomplete.uri.invalid"
+stdout = { empty = true }
+stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
+status = 1
+tags = [ "uri", "madns" ]
