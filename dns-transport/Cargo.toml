@@ -4,6 +4,10 @@ version = "0.2.0-pre"
 authors = ["Benjamin Sago <ogham@bsago.me>"]
 edition = "2018"
 
+[lib]
+doctest = false
+test = false
+
 
 [dependencies]
 

@@ -13,9 +13,11 @@ homepage = "https://dns.lookup.dog/"
 license = "EUPL-1.2"
 version = "0.2.0-pre"
 
+
 [[bin]]
 name = "dog"
 path = "src/main.rs"
+doctest = false
 
 
 [workspace]
