@@ -2,6 +2,7 @@ use log::*;
 
 use crate::wire::*;
 
+
 /// A **EUI64** record, which holds an eight-octet (64-bit) Extended Unique
 /// Identifier.
 ///

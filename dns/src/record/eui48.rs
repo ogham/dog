@@ -2,6 +2,7 @@ use log::*;
 
 use crate::wire::*;
 
+
 /// A **EUI48** record, which holds a six-octet (48-bit) Extended Unique
 /// Identifier. These identifiers can be used as MAC addresses.
 ///
