@@ -1,6 +1,6 @@
 //! Parsing the DNS wire protocol.
 
-pub(crate) use std::io::Cursor;
+pub(crate) use std::io::{Cursor, Read};
 pub(crate) use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 use std::io;
@@ -54,7 +54,7 @@ impl Request {
 impl Response {
 
     /// Reads bytes off of the given slice, parsing them into a response.
-    #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
+    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, WireError> {
         info!("Parsing response");
         trace!("Bytes -> {:?}", bytes);
@@ -108,7 +108,7 @@ impl Query {
 
     /// Reads bytes from the given cursor, and parses them into a query with
     /// the given domain name.
-    #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
+    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn from_bytes(qname: Labels, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let qtype = c.read_u16::<BigEndian>()?;
         trace!("Read qtype -> {:?}", qtype);
@@ -125,7 +125,7 @@ impl Answer {
 
     /// Reads bytes from the given cursor, and parses them into an answer with
     /// the given domain name.
-    #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
+    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn from_bytes(qname: Labels, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let qtype = c.read_u16::<BigEndian>()?;
         trace!("Read qtype -> {:?}", qtype);
@@ -156,9 +156,13 @@ impl Record {
 
     /// Reads at most `len` bytes from the given curser, and parses them into
     /// a record structure depending on the type number, which has already been read.
-    #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
+    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn from_bytes(qtype: TypeInt, len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         use crate::record::*;
+
+        if cfg!(feature = "with_mutagen") {
+            warn!("Mutation is enabled!");
+        }
 
         macro_rules! try_record {
             ($record:tt) => {
@@ -175,11 +179,14 @@ impl Record {
         try_record!(AAAA);
         try_record!(CAA);
         try_record!(CNAME);
+        try_record!(EUI48);
+        try_record!(EUI64);
         try_record!(HINFO);
         try_record!(LOC);
         try_record!(MX);
         try_record!(NAPTR);
         try_record!(NS);
+        try_record!(OPENPGPKEY);
         // OPT is handled separately
         try_record!(PTR);
         try_record!(SSHFP);
@@ -187,6 +194,7 @@ impl Record {
         try_record!(SRV);
         try_record!(TLSA);
         try_record!(TXT);
+        try_record!(URI);
 
         // Otherwise, collect the bytes into a vector and return an unknown
         // record type.
@@ -238,11 +246,14 @@ pub fn find_qtype_number(record_type: &str) -> Option<TypeInt> {
     try_record!(AAAA);
     try_record!(CAA);
     try_record!(CNAME);
+    try_record!(EUI48);
+    try_record!(EUI64);
     try_record!(HINFO);
     try_record!(LOC);
     try_record!(MX);
     try_record!(NAPTR);
     try_record!(NS);
+    try_record!(OPENPGPKEY);
     // OPT is elsewhere
     try_record!(PTR);
     try_record!(SSHFP);
@@ -250,6 +261,7 @@ pub fn find_qtype_number(record_type: &str) -> Option<TypeInt> {
     try_record!(SRV);
     try_record!(TLSA);
     try_record!(TXT);
+    try_record!(URI);
 
     None
 }
@@ -270,18 +282,18 @@ impl Flags {
     /// Converts the flags into a two-byte number.
     pub fn to_u16(self) -> u16 {                 // 0123 4567 89AB CDEF
         let mut                          bits  = 0b_0000_0000_0000_0000;
-        if self.response               { bits += 0b_1000_0000_0000_0000; }
+        if self.response               { bits |= 0b_1000_0000_0000_0000; }
         match self.opcode {
-            Opcode::Query     =>       { bits += 0b_0000_0000_0000_0000; }
+            Opcode::Query     =>       { bits |= 0b_0000_0000_0000_0000; }
             Opcode::Other(_)  =>       { unimplemented!(); }
         }
-        if self.authoritative          { bits += 0b_0000_0100_0000_0000; }
-        if self.truncated              { bits += 0b_0000_0010_0000_0000; }
-        if self.recursion_desired      { bits += 0b_0000_0001_0000_0000; }
-        if self.recursion_available    { bits += 0b_0000_0000_1000_0000; }
+        if self.authoritative          { bits |= 0b_0000_0100_0000_0000; }
+        if self.truncated              { bits |= 0b_0000_0010_0000_0000; }
+        if self.recursion_desired      { bits |= 0b_0000_0001_0000_0000; }
+        if self.recursion_available    { bits |= 0b_0000_0000_1000_0000; }
         // (the Z bit is reserved)               0b_0000_0000_0100_0000
-        if self.authentic_data         { bits += 0b_0000_0000_0010_0000; }
-        if self.checking_disabled      { bits += 0b_0000_0000_0001_0000; }
+        if self.authentic_data         { bits |= 0b_0000_0000_0010_0000; }
+        if self.checking_disabled      { bits |= 0b_0000_0000_0001_0000; }
 
         bits
     }
@@ -478,166 +490,5 @@ impl From<io::Error> for WireError {
     fn from(ioe: io::Error) -> Self {
         error!("IO error -> {:?}", ioe);
         Self::IO
-    }
-}
-
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    use crate::record::{Record, A, SOA, OPT, UnknownQtype};
-    use std::net::Ipv4Addr;
-    use pretty_assertions::assert_eq;
-
-    #[test]
-    fn build_request() {
-        let request = Request {
-            transaction_id: 0xceac,
-            flags: Flags::query(),
-            query: Query {
-                qname: Labels::encode("rfcs.io").unwrap(),
-                qclass: QClass::Other(0x42),
-                qtype: 0x1234,
-            },
-            additional: Some(Request::additional_record()),
-        };
-
-        let result = vec![
-            0xce, 0xac,  // transaction ID
-            0x01, 0x00,  // flags (standard query)
-            0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,  // counts (1, 0, 0, 1)
-
-            // query:
-            0x04, 0x72, 0x66, 0x63, 0x73, 0x02, 0x69, 0x6f, 0x00,  // qname
-            0x12, 0x34,  // type
-            0x00, 0x42,  // class
-
-            // OPT record:
-            0x00,  // name
-            0x00, 0x29,  // type OPT
-            0x02, 0x00,  // UDP payload size
-            0x00,  // higher bits
-            0x00,  // EDNS(0) version
-            0x00, 0x00,  // more flags
-            0x00, 0x00,  // no data
-        ];
-
-        assert_eq!(request.to_bytes().unwrap(), result);
-    }
-
-    #[test]
-    fn complete_response() {
-
-        // This is an artifical amalgam of DNS, not a real-world response!
-        let buf = &[
-            0xce, 0xac,  // transaction ID
-            0x81, 0x80,  // flags (standard query, response, no error)
-            0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x02,  // counts (1, 1, 1, 2)
-
-            // query:
-            0x05, 0x62, 0x73, 0x61, 0x67, 0x6f, 0x02, 0x6d, 0x65, 0x00,  // name
-            0x00, 0x01,  // type A
-            0x00, 0x01,  // class IN
-
-            // answer:
-            0xc0, 0x0c,  // name (backreference)
-            0x00, 0x01,  // type A
-            0x00, 0x01,  // class IN
-            0x00, 0x00, 0x03, 0x77,  // TTL
-            0x00, 0x04,  // data length 4
-            0x8a, 0x44, 0x75, 0x5e,  // IP address
-
-            // authoritative:
-            0x00,  // name
-            0x00, 0x06,  // type SOA
-            0x00, 0x01,  // class IN
-            0xFF, 0xFF, 0xFF, 0xFF,  // TTL (maximum possible!)
-            0x00, 0x1B,  // data length
-            0x01, 0x61, 0x00,  // primary name server ("a")
-            0x02, 0x6d, 0x78, 0x00,  // mailbox ("mx")
-            0x78, 0x68, 0x52, 0x2c,  // serial number
-            0x00, 0x00, 0x07, 0x08,  // refresh interval
-            0x00, 0x00, 0x03, 0x84,  // retry interval
-            0x00, 0x09, 0x3a, 0x80,  // expire limit
-            0x00, 0x01, 0x51, 0x80,  // minimum TTL
-
-            // additional 1:
-            0x00,  // name
-            0x00, 0x99,  // unknown type
-            0x00, 0x99,  // unknown class
-            0x12, 0x34, 0x56, 0x78,  // TTL
-            0x00, 0x04,  // data length 4
-            0x12, 0x34, 0x56, 0x78,  // data
-
-            // additional 2:
-            0x00,  // name
-            0x00, 0x29,  // type OPT
-            0x02, 0x00,  // UDP payload size
-            0x00,  // higher bits
-            0x00,  // EDNS(0) version
-            0x00, 0x00,  // more flags
-            0x00, 0x00,  // no data
-        ];
-
-        let response = Response {
-            transaction_id: 0xceac,
-            flags: Flags::standard_response(),
-            queries: vec![
-                Query {
-                    qname: Labels::encode("bsago.me").unwrap(),
-                    qclass: QClass::IN,
-                    qtype: qtype!(A),
-                },
-            ],
-            answers: vec![
-                Answer::Standard {
-                    qname: Labels::encode("bsago.me").unwrap(),
-                    qclass: QClass::IN,
-                    ttl: 887,
-                    record: Record::A(A {
-                        address: Ipv4Addr::new(138, 68, 117, 94),
-                    }),
-                }
-            ],
-            authorities: vec![
-                Answer::Standard {
-                    qname: Labels::root(),
-                    qclass: QClass::IN,
-                    ttl: 4294967295,
-                    record: Record::SOA(SOA {
-                        mname: Labels::encode("a").unwrap(),
-                        rname: Labels::encode("mx").unwrap(),
-                        serial: 2020102700,
-                        refresh_interval: 1800,
-                        retry_interval: 900,
-                        expire_limit: 604800,
-                        minimum_ttl: 86400,
-                    }),
-                }
-            ],
-            additionals: vec![
-                Answer::Standard {
-                    qname: Labels::root(),
-                    qclass: QClass::Other(153),
-                    ttl: 305419896,
-                    record: Record::Other {
-                        type_number: UnknownQtype::UnheardOf(153),
-                        bytes: vec![ 0x12, 0x34, 0x56, 0x78 ],
-                    },
-                },
-                Answer::Pseudo {
-                    qname: Labels::root(),
-                    opt: OPT {
-                        udp_payload_size: 512,
-                        higher_bits: 0,
-                        edns0_version: 0,
-                        flags: 0,
-                        data: vec![],
-                    },
-                },
-            ],
-        };
-
-        assert_eq!(Response::from_bytes(buf), Ok(response));
     }
 }

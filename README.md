@@ -72,7 +72,7 @@ To install dog, you can download a pre-compiled binary, or you can compile it fr
 
 ### Packages
 
-- For Arch Linux, install the [`dog-dns`](https://aur.archlinux.org/packages/dog-dns/) package from the AUR.
+- For Arch Linux, install the [`dog`](https://www.archlinux.org/packages/community/x86_64/dog/) package.
 - For Homebrew on macOS, install the [`dog`](https://formulae.brew.sh/formula/dog) formula.
 
 
@@ -93,7 +93,7 @@ To build, download the source code and run:
     $ cargo test
 
 - The [just](https://github.com/casey/just) command runner can be used to run some helpful development commands, in a manner similar to `make`.
-Run `just --tasks` to get an overview of what’s available.
+Run `just --list` to get an overview of what’s available.
 
 - If you are compiling a copy for yourself, be sure to run `cargo build --release` or `just build-release` to benefit from release-mode optimisations.
 Copy the resulting binary, which will be in the `target/release` directory, into a folder in your `$PATH`.
@@ -125,7 +125,9 @@ If you have a copy installed, you can run:
 
     just xtests
 
-Specsheet will test the compiled binary by making DNS requests over the network, checking that dog returns results and does not crash.
+Specsheet will test the compiled binary by making DNS requests over the network, checking that dog returns the correct results and does not crash.
+Note that this will expose your IP address.
+For more information, read [the xtests README](xtests/README.md).
 
 
 ---

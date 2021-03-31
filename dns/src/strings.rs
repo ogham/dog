@@ -20,6 +20,11 @@ pub struct Labels {
     segments: Vec<(u8, String)>,
 }
 
+fn label_to_ascii(label: &str) -> Result<String, unic_idna::Errors> {
+    let flags = unic_idna::Flags{use_std3_ascii_rules: true, transitional_processing: false, verify_dns_length: true};
+    unic_idna::to_ascii(label, flags)
+}
+
 impl Labels {
 
     /// Creates a new empty set of labels, which represent the root of the DNS
@@ -38,9 +43,15 @@ impl Labels {
                 continue;
             }
 
-            match u8::try_from(label.len()) {
+            let label_idn = label_to_ascii(label)
+                    .map_err(|e| {
+                        warn!("Could not encode label {:?}: {:?}", label, e);
+                        label
+                    })?;
+
+            match u8::try_from(label_idn.len()) {
                 Ok(length) => {
-                    segments.push((length, label.to_owned()));
+                    segments.push((length, label_idn));
                 }
                 Err(e) => {
                     warn!("Could not encode label {:?}: {}", label, e);
@@ -50,6 +61,18 @@ impl Labels {
         }
 
         Ok(Self { segments })
+    }
+
+    /// Returns the number of segments.
+    pub fn len(&self) -> usize {
+        self.segments.len()
+    }
+
+    /// Returns a new set of labels concatenating two names.
+    pub fn extend(&self, other: &Self) -> Self {
+        let mut segments = self.segments.clone();
+        segments.extend_from_slice(&other.segments);
+        Self { segments }
     }
 }
 
@@ -116,7 +139,7 @@ const RECURSION_LIMIT: usize = 8;
 /// recursions to track backtracking positions. Returns the count of bytes
 /// that had to be read to produce the string, including the bytes to signify
 /// backtracking, but not including the bytes read _during_ backtracking.
-#[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
+#[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
 fn read_string_recursive(labels: &mut Labels, c: &mut Cursor<&[u8]>, recursions: &mut Vec<u16>) -> Result<u16, WireError> {
     let mut bytes_read = 0;
 

@@ -6,6 +6,7 @@ shell = "dog --help"
 stdout = { string = "dog ●" }
 stderr = { empty = true }
 status = 0
+tags = [ 'options' ]
 
 [[cmd]]
 name = "Running ‘dog --help --color=automatic’ not to a terminal shows help without colour"
@@ -13,6 +14,7 @@ shell = "dog --help --color=automatic"
 stdout = { string = "dog ●" }
 stderr = { empty = true }
 status = 0
+tags = [ 'options' ]
 
 [[cmd]]
 name = "Running ‘dog --help --colour=always’ shows help with colour"
@@ -20,6 +22,7 @@ shell = "dog --help --colour=always"
 stdout = { string = "dog \u001B[1;32m●\u001B[0m" }
 stderr = { empty = true }
 status = 0
+tags = [ 'options' ]
 
 [[cmd]]
 name = "Running ‘dog --help --color=never’ shows without colour"
@@ -27,6 +30,7 @@ shell = "dog --help --color=never"
 stdout = { string = "dog ●" }
 stderr = { empty = true }
 status = 0
+tags = [ 'options' ]
 
 [[cmd]]
 name = "Running ‘dog’ with no arguments shows help"
@@ -34,6 +38,7 @@ shell = "dog"
 stdout = { string = "dog ●" }
 stderr = { empty = true }
 status = 3
+tags = [ 'options' ]
 
 
 # versions
@@ -44,6 +49,7 @@ shell = "dog --version"
 stdout = { string = "dog ●" }
 stderr = { empty = true }
 status = 0
+tags = [ 'options' ]
 
 [[cmd]]
 name = "Running ‘dog --version --colour=automatic’ not to a terminal shows version information without colour"
@@ -51,6 +57,7 @@ shell = "dog --version --colour=automatic"
 stdout = { string = "dog ●" }
 stderr = { empty = true }
 status = 0
+tags = [ 'options' ]
 
 [[cmd]]
 name = "Running ‘dog --version --color=always’ shows version information with colour"
@@ -58,6 +65,7 @@ shell = "dog --version --color=always"
 stdout = { string = "dog \u001B[1;32m●\u001B[0m" }
 stderr = { empty = true }
 status = 0
+tags = [ 'options' ]
 
 [[cmd]]
 name = "Running ‘dog --version --colour=never’ shows version information without colour"
@@ -65,3 +73,4 @@ shell = "dog --version --colour=never"
 stdout = { string = "dog ●" }
 stderr = { empty = true }
 status = 0
+tags = [ 'options' ]

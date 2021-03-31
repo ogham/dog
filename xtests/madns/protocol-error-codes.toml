@@ -1,0 +1,39 @@
+[[cmd]]
+name = "Running with ‘formerr.invalid’ displays the error code"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A formerr.invalid"
+stdout = { string = "Status: Format Error" }
+stderr = { empty = true }
+status = 0
+tags = [ "protocol", "madns" ]
+
+[[cmd]]
+name = "Running with ‘servfail.invalid’ displays the error code"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A servfail.invalid"
+stdout = { string = "Status: Server Failure" }
+stderr = { empty = true }
+status = 0
+tags = [ "protocol", "madns" ]
+
+[[cmd]]
+name = "Running with ‘nxdomain.invalid’ displays the error code"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A nxdomain.invalid"
+stdout = { string = "Status: NXDomain" }
+stderr = { empty = true }
+status = 0
+tags = [ "protocol", "madns" ]
+
+[[cmd]]
+name = "Running with ‘notimp.invalid’ displays the error code"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A notimp.invalid"
+stdout = { string = "Status: Not Implemented" }
+stderr = { empty = true }
+status = 0
+tags = [ "protocol", "madns" ]
+
+[[cmd]]
+name = "Running with ‘refused.invalid’ displays the error code"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A refused.invalid"
+stdout = { string = "Status: Query Refused" }
+stderr = { empty = true }
+status = 0
+tags = [ "protocol", "madns" ]

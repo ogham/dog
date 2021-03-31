@@ -8,28 +8,10 @@ use super::{Transport, Error};
 
 /// The **UDP transport**, which sends DNS wire data inside a UDP datagram.
 ///
-/// # Examples
+/// # References
 ///
-/// ```no_run
-/// use dns_transport::{Transport, UdpTransport};
-/// use dns::{Request, Flags, Query, Labels, QClass, qtype, record::NS};
-///
-/// let query = Query {
-///     qname: Labels::encode("dns.lookup.dog").unwrap(),
-///     qclass: QClass::IN,
-///     qtype: qtype!(NS),
-/// };
-///
-/// let request = Request {
-///     transaction_id: 0xABCD,
-///     flags: Flags::query(),
-///     query: query,
-///     additional: None,
-/// };
-///
-/// let transport = UdpTransport::new("8.8.8.8");
-/// transport.send(&request);
-/// ```
+/// - [RFC 1035 §4.2.1](https://tools.ietf.org/html/rfc1035) — Domain Names,
+///   Implementation and Specification (November 1987)
 pub struct UdpTransport {
     addr: String,
 }

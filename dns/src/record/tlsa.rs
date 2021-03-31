@@ -34,7 +34,7 @@ impl Wire for TLSA {
     const NAME: &'static str = "TLSA";
     const RR_TYPE: u16 = 52;
 
-    #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
+    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
 
         let certificate_usage = c.read_u8()?;
@@ -82,7 +82,7 @@ mod test {
             0x03,  // certificate usage
             0x01,  // selector
             0x01,  // matching type
-            0x05, 0x95, 0x98,  // data
+            0x05, 0x95, 0x98, 0x11, 0x22, 0x33 // data
         ];
 
         assert_eq!(TLSA::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
@@ -90,7 +90,25 @@ mod test {
                        certificate_usage: 3,
                        selector: 1,
                        matching_type: 1,
-                       certificate_data: vec![ 0x05, 0x95, 0x98 ],
+                       certificate_data: vec![ 0x05, 0x95, 0x98, 0x11, 0x22, 0x33 ],
+                   });
+    }
+
+    #[test]
+    fn one_byte_certificate() {
+        let buf = &[
+            0x03,  // certificate usage
+            0x01,  // selector
+            0x01,  // matching type
+            0x05,  // one byte of data
+        ];
+
+        assert_eq!(TLSA::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
+                   TLSA {
+                       certificate_usage: 3,
+                       selector: 1,
+                       matching_type: 1,
+                       certificate_data: vec![ 0x05 ],
                    });
     }
 

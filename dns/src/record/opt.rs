@@ -30,7 +30,7 @@ use crate::wire::*;
 ///
 /// - [RFC 6891](https://tools.ietf.org/html/rfc6891) — Extension Mechanisms
 ///   for DNS (April 2013)
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct OPT {
 
     /// The maximum size of a UDP packet that the client supports.
@@ -62,7 +62,7 @@ impl OPT {
     /// See §6.1.3 of the RFC, “OPT Record TTL Field Use”.
     ///
     /// Unlike the `Wire::read` function, this does not require a length.
-    #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
+    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     pub fn read(c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let udp_payload_size = c.read_u16::<BigEndian>()?;  // replaces the class field
         trace!("Parsed UDP payload size -> {:?}", udp_payload_size);

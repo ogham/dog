@@ -10,12 +10,15 @@
 #![warn(unused)]
 
 #![warn(clippy::all, clippy::pedantic)]
-#![allow(clippy::find_map)]
+#![allow(clippy::doc_markdown)]
+#![allow(clippy::len_without_is_empty)]
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::must_use_candidate)]
 #![allow(clippy::non_ascii_literal)]
+#![allow(clippy::redundant_else)]
 #![allow(clippy::struct_excessive_bools)]
+#![allow(clippy::upper_case_acronyms)]
 #![allow(clippy::wildcard_imports)]
 
 #![deny(clippy::cast_possible_truncation)]

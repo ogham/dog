@@ -1,0 +1,23 @@
+[[cmd]]
+name = "Running with ‘out-of-range.invalid’ displays a protocol error"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A out-of-range.invalid"
+stdout = { empty = true }
+stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
+status = 1
+tags = [ "protocol", "madns" ]
+
+[[cmd]]
+name = "Running with ‘recursive-1.invalid’ displays a recursion error"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A recursive-1.invalid"
+stdout = { empty = true }
+stderr = { string = "Error [protocol]: Malformed packet: too much recursion: [37]" }
+status = 1
+tags = [ "protocol", "madns" ]
+
+[[cmd]]
+name = "Running with ‘recursive-2.invalid’ displays a recursion error"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A recursive-2.invalid"
+stdout = { empty = true }
+stderr = { string = "Error [protocol]: Malformed packet: too much recursion: [53, 37]" }
+status = 1
+tags = [ "protocol", "madns" ]

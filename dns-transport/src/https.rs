@@ -11,29 +11,6 @@ use super::{Transport, Error};
 
 /// The **HTTPS transport**, which sends DNS wire data inside HTTP packets
 /// encrypted with TLS, using TCP.
-///
-/// # Examples
-///
-/// ```no_run
-/// use dns_transport::{Transport, HttpsTransport};
-/// use dns::{Request, Flags, Query, Labels, QClass, qtype, record::A};
-///
-/// let query = Query {
-///     qname: Labels::encode("dns.lookup.dog").unwrap(),
-///     qclass: QClass::IN,
-///     qtype: qtype!(A),
-/// };
-///
-/// let request = Request {
-///     transaction_id: 0xABCD,
-///     flags: Flags::query(),
-///     query: query,
-///     additional: None,
-/// };
-///
-/// let transport = HttpsTransport::new("https://cloudflare-dns.com/dns-query");
-/// transport.send(&request);
-/// ```
 pub struct HttpsTransport {
     url: String,
 }

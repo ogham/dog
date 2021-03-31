@@ -22,26 +22,21 @@ impl Wire for AAAA {
     const NAME: &'static str = "AAAA";
     const RR_TYPE: u16 = 28;
 
-    #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
+    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
-        let mut buf = Vec::new();
-        for _ in 0 .. stated_length {
-            buf.push(c.read_u8()?);
-        }
-
-        if let [a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p] = *buf {
-            let address = Ipv6Addr::from([a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p]);
-            // probably the best two lines of code I have ever written
-
-            trace!("Parsed IPv6 address -> {:?}", address);
-            Ok(Self { address })
-        }
-        else {
+        if stated_length != 16 {
             warn!("Length is incorrect (stated length {:?}, but should be sixteen)", stated_length);
-
             let mandated_length = MandatedLength::Exactly(16);
-            Err(WireError::WrongRecordLength { stated_length, mandated_length })
+            return Err(WireError::WrongRecordLength { stated_length, mandated_length });
         }
+
+        let mut buf = [0_u8; 16];
+        c.read_exact(&mut buf)?;
+
+        let address = Ipv6Addr::from(buf);
+        trace!("Parsed IPv6 address -> {:?}", address);
+
+        Ok(Self { address })
     }
 }
 

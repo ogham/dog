@@ -13,6 +13,12 @@ pub use self::caa::CAA;
 mod cname;
 pub use self::cname::CNAME;
 
+mod eui48;
+pub use self::eui48::EUI48;
+
+mod eui64;
+pub use self::eui64::EUI64;
+
 mod hinfo;
 pub use self::hinfo::HINFO;
 
@@ -27,6 +33,9 @@ pub use self::naptr::NAPTR;
 
 mod ns;
 pub use self::ns::NS;
+
+mod openpgpkey;
+pub use self::openpgpkey::OPENPGPKEY;
 
 mod opt;
 pub use self::opt::OPT;
@@ -49,6 +58,9 @@ pub use self::tlsa::TLSA;
 mod txt;
 pub use self::txt::TXT;
 
+mod uri;
+pub use self::uri::URI;
+
 
 mod others;
 pub use self::others::{UnknownQtype, find_other_qtype_number};
@@ -70,6 +82,12 @@ pub enum Record {
     /// A **CNAME** record.
     CNAME(CNAME),
 
+    /// An **EUI48** record.
+    EUI48(EUI48),
+
+    /// An **EUI64** record.
+    EUI64(EUI64),
+
     /// A **HINFO** record.
     HINFO(HINFO),
 
@@ -84,6 +102,9 @@ pub enum Record {
 
     /// A **NS** record.
     NS(NS),
+
+    /// An **OPENPGPKEY** record.
+    OPENPGPKEY(OPENPGPKEY),
 
     // OPT is not included here.
 
@@ -104,6 +125,9 @@ pub enum Record {
 
     /// A **TXT** record.
     TXT(TXT),
+
+    /// A **URI** record.
+    URI(URI),
 
     /// A record with a type that we don’t recognise.
     Other {

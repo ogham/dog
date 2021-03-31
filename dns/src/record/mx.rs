@@ -26,7 +26,7 @@ impl Wire for MX {
     const NAME: &'static str = "MX";
     const RR_TYPE: u16 = 15;
 
-    #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
+    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let preference = c.read_u16::<BigEndian>()?;
         trace!("Parsed preference -> {:?}", preference);

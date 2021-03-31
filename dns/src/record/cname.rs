@@ -21,7 +21,7 @@ impl Wire for CNAME {
     const NAME: &'static str = "CNAME";
     const RR_TYPE: u16 = 5;
 
-    #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
+    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let (domain, domain_length) = c.read_labels()?;
         trace!("Parsed domain -> {:?}", domain);

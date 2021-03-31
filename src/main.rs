@@ -18,6 +18,7 @@
 #![allow(clippy::too_many_lines)]
 #![allow(clippy::unit_arg)]
 #![allow(clippy::unused_self)]
+#![allow(clippy::upper_case_acronyms)]
 #![allow(clippy::useless_let_if_seq)]
 #![allow(clippy::wildcard_imports)]
 
@@ -107,22 +108,31 @@ fn run(Options { requests, format, measure_time }: Options) -> i32 {
     let timer = if measure_time { Some(Instant::now()) } else { None };
 
     let mut errored = false;
-    for (request, transport) in requests.generate() {
-        let result = transport.send(&request);
+    for (request_list, transport) in requests.generate() {
+        let request_list_len = request_list.len();
+        for (i, request) in request_list.into_iter().enumerate() {
+            let result = transport.send(&request);
 
-        match result {
-            Ok(mut response) => {
-                if ! should_show_opt {
-                    response.answers.retain(dns::Answer::is_standard);
-                    response.authorities.retain(dns::Answer::is_standard);
-                    response.additionals.retain(dns::Answer::is_standard);
+            match result {
+                Ok(mut response) => {
+                    if response.flags.error_code.is_some() && i != request_list_len - 1 {
+                        continue;
+                    }
+
+                    if ! should_show_opt {
+                        response.answers.retain(dns::Answer::is_standard);
+                        response.authorities.retain(dns::Answer::is_standard);
+                        response.additionals.retain(dns::Answer::is_standard);
+                    }
+
+                    responses.push(response);
+                    break;
                 }
-
-                responses.push(response);
-            }
-            Err(e) => {
-                format.print_error(e);
-                errored = true;
+                Err(e) => {
+                    format.print_error(e);
+                    errored = true;
+                    break;
+                }
             }
         }
     }

@@ -6,32 +6,9 @@ use super::{Transport, Error, UdpTransport, TcpTransport};
 
 /// The **automatic transport**, which sends DNS wire data using the UDP
 /// transport, then tries using the TCP transport if the first one fails
-/// because the response wouldn't fit in a single UDP packet.
+/// because the response wouldn’t fit in a single UDP packet.
 ///
 /// This is the default behaviour for many DNS clients.
-///
-/// # Examples
-///
-/// ```no_run
-/// use dns_transport::{Transport, AutoTransport};
-/// use dns::{Request, Flags, Query, Labels, QClass, qtype, record::NS};
-///
-/// let query = Query {
-///     qname: Labels::encode("dns.lookup.dog").unwrap(),
-///     qclass: QClass::IN,
-///     qtype: qtype!(NS),
-/// };
-///
-/// let request = Request {
-///     transaction_id: 0xABCD,
-///     flags: Flags::query(),
-///     query: query,
-///     additional: None,
-/// };
-///
-/// let transport = AutoTransport::new("8.8.8.8");
-/// transport.send(&request);
-/// ```
 pub struct AutoTransport {
     addr: String,
 }

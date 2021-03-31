@@ -25,7 +25,7 @@ impl Wire for TXT {
     const NAME: &'static str = "TXT";
     const RR_TYPE: u16 = 16;
 
-    #[cfg_attr(all(test, feature = "with_mutagen"), ::mutagen::mutate)]
+    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let mut messages = Vec::new();
         let mut total_length = 0_u16;
