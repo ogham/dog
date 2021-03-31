@@ -1,5 +1,7 @@
 //! All the DNS record types, as well as how to parse each type.
 
+use crate::wire::*;
+
 
 mod a;
 pub use self::a::A;
@@ -63,70 +65,32 @@ pub use self::uri::URI;
 
 
 mod others;
-pub use self::others::{UnknownQtype, find_other_qtype_number};
+pub use self::others::UnknownQtype;
 
 
 /// A record that’s been parsed from a byte buffer.
 #[derive(PartialEq, Debug)]
+#[allow(missing_docs)]
 pub enum Record {
-
-    /// An **A** record.
     A(A),
-
-    /// An **AAAA** record.
     AAAA(AAAA),
-
-    /// A **CAA** record.
     CAA(CAA),
-
-    /// A **CNAME** record.
     CNAME(CNAME),
-
-    /// An **EUI48** record.
     EUI48(EUI48),
-
-    /// An **EUI64** record.
     EUI64(EUI64),
-
-    /// A **HINFO** record.
     HINFO(HINFO),
-
-    /// A **LOC** record.
     LOC(LOC),
-
-    /// A **MX** record.
     MX(MX),
-
-    /// A **NAPTR** record.
     NAPTR(NAPTR),
-
-    /// A **NS** record.
     NS(NS),
-
-    /// An **OPENPGPKEY** record.
     OPENPGPKEY(OPENPGPKEY),
-
     // OPT is not included here.
-
-    /// A **PTR** record.
     PTR(PTR),
-
-    /// A **SSHFP** record.
     SSHFP(SSHFP),
-
-    /// A **SOA** record.
     SOA(SOA),
-
-    /// A **SRV** record.
     SRV(SRV),
-
-    /// A **TLSA** record.
     TLSA(TLSA),
-
-    /// A **TXT** record.
     TXT(TXT),
-
-    /// A **URI** record.
     URI(URI),
 
     /// A record with a type that we don’t recognise.
@@ -139,3 +103,135 @@ pub enum Record {
         bytes: Vec<u8>,
     },
 }
+
+
+/// The type of a record that may or may not be one of the known ones. Has no
+/// data associated with it other than what type of record it is.
+#[derive(PartialEq, Debug, Copy, Clone)]
+#[allow(missing_docs)]
+pub enum RecordType {
+    A,
+    AAAA,
+    CAA,
+    CNAME,
+    EUI48,
+    EUI64,
+    HINFO,
+    LOC,
+    MX,
+    NAPTR,
+    NS,
+    OPENPGPKEY,
+    PTR,
+    SSHFP,
+    SOA,
+    SRV,
+    TLSA,
+    TXT,
+    URI,
+
+    /// A record type we don’t recognise.
+    Other(UnknownQtype),
+}
+
+impl From<u16> for RecordType {
+    fn from(type_number: u16) -> Self {
+        macro_rules! try_record {
+            ($record:tt) => {
+                if $record::RR_TYPE == type_number {
+                    return RecordType::$record;
+                }
+            }
+        }
+
+        try_record!(A);
+        try_record!(AAAA);
+        try_record!(CAA);
+        try_record!(CNAME);
+        try_record!(EUI48);
+        try_record!(EUI64);
+        try_record!(HINFO);
+        try_record!(LOC);
+        try_record!(MX);
+        try_record!(NAPTR);
+        try_record!(NS);
+        try_record!(OPENPGPKEY);
+        // OPT is handled separately
+        try_record!(PTR);
+        try_record!(SSHFP);
+        try_record!(SOA);
+        try_record!(SRV);
+        try_record!(TLSA);
+        try_record!(TXT);
+        try_record!(URI);
+
+        RecordType::Other(UnknownQtype::from(type_number))
+    }
+}
+
+
+impl RecordType {
+
+    /// Determines the record type with a given name, or `None` if none is known.
+    pub fn from_type_name(type_name: &str) -> Option<Self> {
+        macro_rules! try_record {
+            ($record:tt) => {
+                if $record::NAME == type_name {
+                    return Some(Self::$record);
+                }
+            }
+        }
+
+        try_record!(A);
+        try_record!(AAAA);
+        try_record!(CAA);
+        try_record!(CNAME);
+        try_record!(EUI48);
+        try_record!(EUI64);
+        try_record!(HINFO);
+        try_record!(LOC);
+        try_record!(MX);
+        try_record!(NAPTR);
+        try_record!(NS);
+        try_record!(OPENPGPKEY);
+        // OPT is elsewhere
+        try_record!(PTR);
+        try_record!(SSHFP);
+        try_record!(SOA);
+        try_record!(SRV);
+        try_record!(TLSA);
+        try_record!(TXT);
+        try_record!(URI);
+
+        UnknownQtype::from_type_name(type_name).map(Self::Other)
+    }
+
+    /// Returns the record type number associated with this record type.
+    pub fn type_number(self) -> u16 {
+        match self {
+            Self::A           => A::RR_TYPE,
+            Self::AAAA        => AAAA::RR_TYPE,
+            Self::CAA         => CAA::RR_TYPE,
+            Self::CNAME       => CNAME::RR_TYPE,
+            Self::EUI48       => EUI48::RR_TYPE,
+            Self::EUI64       => EUI64::RR_TYPE,
+            Self::HINFO       => HINFO::RR_TYPE,
+            Self::LOC         => LOC::RR_TYPE,
+            Self::MX          => MX::RR_TYPE,
+            Self::NAPTR       => NAPTR::RR_TYPE,
+            Self::NS          => NS::RR_TYPE,
+            Self::OPENPGPKEY  => OPENPGPKEY::RR_TYPE,
+            // Wherefore art thou, OPT
+            Self::PTR         => PTR::RR_TYPE,
+            Self::SSHFP       => SSHFP::RR_TYPE,
+            Self::SOA         => SOA::RR_TYPE,
+            Self::SRV         => SRV::RR_TYPE,
+            Self::TLSA        => TLSA::RR_TYPE,
+            Self::TXT         => TXT::RR_TYPE,
+            Self::URI         => URI::RR_TYPE,
+            Self::Other(o)    => o.type_number(),
+        }
+    }
+}
+
+// This code is really repetitive, I know, I know

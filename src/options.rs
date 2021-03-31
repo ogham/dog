@@ -5,8 +5,8 @@ use std::fmt;
 
 use log::*;
 
-use dns::{QClass, Labels, find_qtype_number, qtype};
-use dns::record::{A, find_other_qtype_number};
+use dns::{QClass, Labels};
+use dns::record::RecordType;
 
 use crate::connect::TransportType;
 use crate::output::{OutputFormat, UseColours, TextFormat};
@@ -183,13 +183,16 @@ impl Inputs {
             return Err(OptionsError::QueryTypeOPT);
         }
 
-        let type_number = find_qtype_number(input)
-            .or_else(|| find_other_qtype_number(input))
-            .or_else(|| input.parse().ok());
-
-        match type_number {
-            Some(qtype)  => Ok(self.types.push(qtype)),
-            None         => Err(OptionsError::InvalidQueryType(input.into())),
+        if let Some(rt) = RecordType::from_type_name(input) {
+            self.types.push(rt);
+            Ok(())
+        }
+        else if let Ok(type_number) = input.parse::<u16>() {
+            self.types.push(RecordType::from(type_number));
+            Ok(())
+        }
+        else {
+            Err(OptionsError::InvalidQueryType(input.into()))
         }
     }
 
@@ -251,7 +254,7 @@ impl Inputs {
 
     fn load_fallbacks(&mut self) {
         if self.types.is_empty() {
-            self.types.push(qtype!(A));
+            self.types.push(RecordType::A);
         }
 
         if self.classes.is_empty() {
@@ -484,13 +487,12 @@ impl fmt::Display for OptionsError {
 mod test {
     use super::*;
     use pretty_assertions::assert_eq;
-    use dns::record::*;
 
     impl Inputs {
         fn fallbacks() -> Self {
             Inputs {
                 domains:         vec![ /* No domains by default */ ],
-                types:           vec![ qtype!(A) ],
+                types:           vec![ RecordType::A ],
                 classes:         vec![ QClass::IN ],
                 resolvers:       vec![ Resolver::system_default() ],
                 transport_types: vec![ TransportType::Automatic ],
@@ -577,7 +579,7 @@ mod test {
         let options = Options::getopts(&[ "lookup.dog", "SOA" ]).unwrap();
         assert_eq!(options.requests.inputs, Inputs {
             domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
-            types:      vec![ qtype!(SOA) ],
+            types:      vec![ RecordType::SOA ],
             .. Inputs::fallbacks()
         });
     }
@@ -608,7 +610,7 @@ mod test {
         assert_eq!(options.requests.inputs, Inputs {
             domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
             classes:    vec![ QClass::CH ],
-            types:      vec![ qtype!(NS) ],
+            types:      vec![ RecordType::NS ],
             resolvers:  vec![ Resolver::specified("1.1.1.1".into()) ],
             .. Inputs::fallbacks()
         });
@@ -620,7 +622,7 @@ mod test {
         assert_eq!(options.requests.inputs, Inputs {
             domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
             classes:    vec![ QClass::CH ],
-            types:      vec![ qtype!(SOA) ],
+            types:      vec![ RecordType::SOA ],
             resolvers:  vec![ Resolver::specified("1.1.1.1".into()) ],
             .. Inputs::fallbacks()
         });
@@ -631,7 +633,7 @@ mod test {
         let options = Options::getopts(&[ "-q", "lookup.dog", "--type", "SRV", "--type", "AAAA" ]).unwrap();
         assert_eq!(options.requests.inputs, Inputs {
             domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
-            types:      vec![ qtype!(SRV), qtype!(AAAA) ],
+            types:      vec![ RecordType::SRV, RecordType::AAAA ],
             .. Inputs::fallbacks()
         });
     }
@@ -652,7 +654,7 @@ mod test {
         assert_eq!(options.requests.inputs, Inputs {
             domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
             classes:    vec![ QClass::CH ],
-            types:      vec![ qtype!(SOA) ],
+            types:      vec![ RecordType::SOA ],
             resolvers:  vec![ Resolver::specified("1.1.1.1".into()) ],
             .. Inputs::fallbacks()
         });
@@ -664,7 +666,7 @@ mod test {
         assert_eq!(options.requests.inputs, Inputs {
             domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
             classes:    vec![ QClass::HS, QClass::CH, QClass::IN ],
-            types:      vec![ qtype!(SOA), qtype!(MX) ],
+            types:      vec![ RecordType::SOA, RecordType::MX ],
             .. Inputs::fallbacks()
         });
     }
@@ -686,7 +688,7 @@ mod test {
         assert_eq!(options.requests.inputs, Inputs {
             domains:    vec![ Labels::encode("11").unwrap() ],
             classes:    vec![ QClass::Other(22) ],
-            types:      vec![ 33 ],
+            types:      vec![ RecordType::from(33) ],
             .. Inputs::fallbacks()
         });
     }

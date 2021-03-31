@@ -3,7 +3,7 @@
 //! with the request packet having zero answer fields, and the response packet
 //! having at least one record in its answer fields.
 
-use crate::record::{Record, OPT};
+use crate::record::{Record, RecordType, OPT};
 use crate::strings::Labels;
 
 
@@ -63,7 +63,7 @@ pub struct Query {
     pub qclass: QClass,
 
     /// The type number.
-    pub qtype: TypeInt,
+    pub qtype: RecordType,
 }
 
 
@@ -117,11 +117,6 @@ pub enum QClass {
     /// A class number that does not map to any known class.
     Other(u16),
 }
-
-
-/// The number representing a record type, such as `1` for an **A** record, or
-/// `15` for an **MX** record.
-pub type TypeInt = u16;
 
 
 /// The flags that accompany every DNS packet.

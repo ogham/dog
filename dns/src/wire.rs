@@ -6,7 +6,7 @@ pub(crate) use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::io;
 use log::*;
 
-use crate::record::{Record, OPT};
+use crate::record::{Record, RecordType, OPT};
 use crate::strings::{Labels, ReadLabels, WriteLabels};
 use crate::types::*;
 
@@ -26,7 +26,7 @@ impl Request {
         bytes.write_u16::<BigEndian>(if self.additional.is_some() { 1 } else { 0 })?;  // additional RR count
 
         bytes.write_labels(&self.query.qname)?;
-        bytes.write_u16::<BigEndian>(self.query.qtype)?;
+        bytes.write_u16::<BigEndian>(self.query.qtype.type_number())?;
         bytes.write_u16::<BigEndian>(self.query.qclass.to_u16())?;
 
         if let Some(opt) = &self.additional {
@@ -110,8 +110,11 @@ impl Query {
     /// the given domain name.
     #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn from_bytes(qname: Labels, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
-        let qtype = c.read_u16::<BigEndian>()?;
-        trace!("Read qtype -> {:?}", qtype);
+        let qtype_number = c.read_u16::<BigEndian>()?;
+        trace!("Read qtype number -> {:?}", qtype_number );
+
+        let qtype = RecordType::from(qtype_number);
+        trace!("Found qtype -> {:?}", qtype );
 
         let qclass = QClass::from_u16(c.read_u16::<BigEndian>()?);
         trace!("Read qclass -> {:?}", qtype);
@@ -127,14 +130,17 @@ impl Answer {
     /// the given domain name.
     #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn from_bytes(qname: Labels, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
-        let qtype = c.read_u16::<BigEndian>()?;
-        trace!("Read qtype -> {:?}", qtype);
+        let qtype_number = c.read_u16::<BigEndian>()?;
+        trace!("Read qtype number -> {:?}", qtype_number );
 
-        if qtype == OPT::RR_TYPE {
+        if qtype_number == OPT::RR_TYPE {
             let opt = OPT::read(c)?;
             Ok(Self::Pseudo { qname, opt })
         }
         else {
+            let qtype = RecordType::from(qtype_number);
+            trace!("Found qtype -> {:?}", qtype );
+
             let qclass = QClass::from_u16(c.read_u16::<BigEndian>()?);
             trace!("Read qclass -> {:?}", qtype);
 
@@ -147,7 +153,6 @@ impl Answer {
             let record = Record::from_bytes(qtype, record_length, c)?;
             Ok(Self::Standard { qclass, qname, record, ttl })
         }
-
     }
 }
 
@@ -157,54 +162,48 @@ impl Record {
     /// Reads at most `len` bytes from the given curser, and parses them into
     /// a record structure depending on the type number, which has already been read.
     #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
-    fn from_bytes(qtype: TypeInt, len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
-        use crate::record::*;
-
+    fn from_bytes(record_type: RecordType, len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         if cfg!(feature = "with_mutagen") {
             warn!("Mutation is enabled!");
         }
 
-        macro_rules! try_record {
-            ($record:tt) => {
-                if $record::RR_TYPE == qtype {
-                    info!("Parsing {} record (type {}, len {})", $record::NAME, qtype, len);
-                    return Wire::read(len, c).map(Self::$record)
+        macro_rules! read_record {
+            ($record:tt) => { {
+                info!("Parsing {} record (type {}, len {})", crate::record::$record::NAME, record_type.type_number(), len);
+                Wire::read(len, c).map(Self::$record)
+            } }
+        }
+
+        match record_type {
+            RecordType::A           => read_record!(A),
+            RecordType::AAAA        => read_record!(AAAA),
+            RecordType::CAA         => read_record!(CAA),
+            RecordType::CNAME       => read_record!(CNAME),
+            RecordType::EUI48       => read_record!(EUI48),
+            RecordType::EUI64       => read_record!(EUI64),
+            RecordType::HINFO       => read_record!(HINFO),
+            RecordType::LOC         => read_record!(LOC),
+            RecordType::MX          => read_record!(MX),
+            RecordType::NAPTR       => read_record!(NAPTR),
+            RecordType::NS          => read_record!(NS),
+            RecordType::OPENPGPKEY  => read_record!(OPENPGPKEY),
+            RecordType::PTR         => read_record!(PTR),
+            RecordType::SSHFP       => read_record!(SSHFP),
+            RecordType::SOA         => read_record!(SOA),
+            RecordType::SRV         => read_record!(SRV),
+            RecordType::TLSA        => read_record!(TLSA),
+            RecordType::TXT         => read_record!(TXT),
+            RecordType::URI         => read_record!(URI),
+
+            RecordType::Other(type_number) => {
+                let mut bytes = Vec::new();
+                for _ in 0 .. len {
+                    bytes.push(c.read_u8()?);
                 }
+
+                Ok(Self::Other { type_number, bytes })
             }
         }
-
-        // Try all the records, one type at a time, returning early if the
-        // type number matches.
-        try_record!(A);
-        try_record!(AAAA);
-        try_record!(CAA);
-        try_record!(CNAME);
-        try_record!(EUI48);
-        try_record!(EUI64);
-        try_record!(HINFO);
-        try_record!(LOC);
-        try_record!(MX);
-        try_record!(NAPTR);
-        try_record!(NS);
-        try_record!(OPENPGPKEY);
-        // OPT is handled separately
-        try_record!(PTR);
-        try_record!(SSHFP);
-        try_record!(SOA);
-        try_record!(SRV);
-        try_record!(TLSA);
-        try_record!(TXT);
-        try_record!(URI);
-
-        // Otherwise, collect the bytes into a vector and return an unknown
-        // record type.
-        let mut bytes = Vec::new();
-        for _ in 0 .. len {
-            bytes.push(c.read_u8()?);
-        }
-
-        let type_number = UnknownQtype::from(qtype);
-        Ok(Self::Other { type_number, bytes })
     }
 }
 
@@ -227,43 +226,6 @@ impl QClass {
             Self::Other(uu) => uu,
         }
     }
-}
-
-
-/// Determines the record type number to signify a record with the given name.
-pub fn find_qtype_number(record_type: &str) -> Option<TypeInt> {
-    use crate::record::*;
-
-    macro_rules! try_record {
-        ($record:tt) => {
-            if $record::NAME == record_type {
-                return Some($record::RR_TYPE);
-            }
-        }
-    }
-
-    try_record!(A);
-    try_record!(AAAA);
-    try_record!(CAA);
-    try_record!(CNAME);
-    try_record!(EUI48);
-    try_record!(EUI64);
-    try_record!(HINFO);
-    try_record!(LOC);
-    try_record!(MX);
-    try_record!(NAPTR);
-    try_record!(NS);
-    try_record!(OPENPGPKEY);
-    // OPT is elsewhere
-    try_record!(PTR);
-    try_record!(SSHFP);
-    try_record!(SOA);
-    try_record!(SRV);
-    try_record!(TLSA);
-    try_record!(TXT);
-    try_record!(URI);
-
-    None
 }
 
 
@@ -369,23 +331,6 @@ pub trait Wire: Sized {
     /// throughout the complete data — by this point, we have read the entire
     /// response into a buffer.
     fn read(len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError>;
-}
-
-
-/// Helper macro to get the qtype number of a record type at compile-time.
-///
-/// # Examples
-///
-/// ```
-/// use dns::{qtype, record::MX};
-///
-/// assert_eq!(15, qtype!(MX));
-/// ```
-#[macro_export]
-macro_rules! qtype {
-    ($type:ty) => {
-        <$type as $crate::Wire>::RR_TYPE
-    }
 }
 
 

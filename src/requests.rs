@@ -1,7 +1,5 @@
 //! Request generation based on the user’s input arguments.
 
-use dns::Labels;
-
 use crate::connect::TransportType;
 use crate::resolve::Resolver;
 use crate::txid::TxidGenerator;
@@ -30,10 +28,10 @@ pub struct RequestGenerator {
 pub struct Inputs {
 
     /// The list of domain names to query.
-    pub domains: Vec<Labels>,
+    pub domains: Vec<dns::Labels>,
 
     /// The list of DNS record types to query for.
-    pub types: Vec<u16>,
+    pub types: Vec<dns::record::RecordType>,
 
     /// The list of DNS classes to query for.
     pub classes: Vec<dns::QClass>,

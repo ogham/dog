@@ -1,4 +1,5 @@
 use dns::{Request, Flags, Query, Labels, QClass};
+use dns::record::RecordType;
 
 use pretty_assertions::assert_eq;
 
@@ -11,7 +12,7 @@ fn build_request() {
         query: Query {
             qname: Labels::encode("rfcs.io").unwrap(),
             qclass: QClass::Other(0x42),
-            qtype: 0x1234,
+            qtype: RecordType::from(0x1234),
         },
         additional: Some(Request::additional_record()),
     };

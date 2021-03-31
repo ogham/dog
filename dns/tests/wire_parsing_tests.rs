@@ -1,7 +1,7 @@
 use std::net::Ipv4Addr;
 
-use dns::{Response, Query, Answer, Labels, Flags, Opcode, QClass, qtype};
-use dns::record::{Record, A, CNAME, OPT, SOA, UnknownQtype};
+use dns::{Response, Query, Answer, Labels, Flags, Opcode, QClass};
+use dns::record::{Record, A, CNAME, OPT, SOA, UnknownQtype, RecordType};
 
 use pretty_assertions::assert_eq;
 
@@ -60,7 +60,7 @@ fn parse_response_standard() {
             Query {
                 qname: Labels::encode("dns.lookup.dog").unwrap(),
                 qclass: QClass::IN,
-                qtype: qtype!(A),
+                qtype: RecordType::A,
             },
         ],
         answers: vec![
@@ -133,7 +133,7 @@ fn parse_response_with_mixed_string() {
             Query {
                 qname: Labels::encode("cname-example.lookup.dog").unwrap(),
                 qclass: QClass::IN,
-                qtype: qtype!(CNAME),
+                qtype: RecordType::CNAME,
             },
         ],
         answers: vec![
@@ -215,7 +215,7 @@ fn parse_response_with_multiple_additionals() {
             Query {
                 qname: Labels::encode("bsago.me").unwrap(),
                 qclass: QClass::IN,
-                qtype: qtype!(A),
+                qtype: RecordType::A,
             },
         ],
         answers: vec![

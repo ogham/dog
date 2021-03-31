@@ -2,8 +2,8 @@
 
 use std::time::Duration;
 
-use dns::{Response, Query, Answer, ErrorCode, WireError, MandatedLength};
-use dns::record::{Record, OPT, UnknownQtype};
+use dns::{Response, Query, Answer, QClass, ErrorCode, WireError, MandatedLength};
+use dns::record::{Record, RecordType, UnknownQtype, OPT};
 use dns_transport::Error as TransportError;
 use serde_json::{json, Value as JsonValue};
 
@@ -103,21 +103,31 @@ impl OutputFormat {
 
                 for response in responses {
                     let json = json!({
-                        "queries": json_queries(&response.queries),
-                        "answers": json_answers(&response.answers),
-                        "authorities": json_answers(&response.authorities),
-                        "additionals": json_answers(&response.additionals),
+                        "queries": json_queries(response.queries),
+                        "answers": json_answers(response.answers),
+                        "authorities": json_answers(response.authorities),
+                        "additionals": json_answers(response.additionals),
                     });
 
                     rs.push(json);
                 }
 
                 if let Some(duration) = duration {
-                    let object = json!({ "responses": rs, "duration": duration });
+                    let object = json!({
+                        "responses": rs,
+                        "duration": {
+                            "secs": duration.as_secs(),
+                            "millis": duration.subsec_millis(),
+                        },
+                    });
+
                     println!("{}", object);
                 }
                 else {
-                    let object = json!({ "responses": rs });
+                    let object = json!({
+                        "responses": rs,
+                    });
+
                     println!("{}", object);
                 }
             }
@@ -327,64 +337,136 @@ fn format_duration_hms(seconds: u32) -> String {
 }
 
 /// Serialises multiple DNS queries as a JSON value.
-fn json_queries(queries: &[Query]) -> JsonValue {
+fn json_queries(queries: Vec<Query>) -> JsonValue {
     let queries = queries.iter().map(|q| {
         json!({
             "name": q.qname.to_string(),
-            "class": format!("{:?}", q.qclass),
-            "type": q.qtype,
+            "class": json_class(q.qclass),
+            "type": json_record_type_name(q.qtype),
         })
     }).collect::<Vec<_>>();
 
-    json!(queries)
+    queries.into()
 }
 
 /// Serialises multiple received DNS answers as a JSON value.
-fn json_answers(answers: &[Answer]) -> JsonValue {
-    let answers = answers.iter().map(|a| {
+fn json_answers(answers: Vec<Answer>) -> JsonValue {
+    let answers = answers.into_iter().map(|a| {
         match a {
             Answer::Standard { qname, qclass, ttl, record } => {
-                let mut object = json_record(record);
-                let omut = object.as_object_mut().unwrap();
-                omut.insert("name".into(), qname.to_string().into());
-                omut.insert("class".into(), format!("{:?}", qclass).into());
-                omut.insert("ttl".into(), (*ttl).into());
-                json!(object)
+                json!({
+                    "name": qname.to_string(),
+                    "class": json_class(qclass),
+                    "ttl": ttl,
+                    "type": json_record_name(&record),
+                    "data": json_record_data(record),
+                })
             }
             Answer::Pseudo { qname, opt } => {
-                let object = json!({
+                json!({
                     "name": qname.to_string(),
                     "type": "OPT",
-                    "version": opt.edns0_version,
-                    "data": opt.data,
-                });
-
-                object
+                    "data": {
+                        "version": opt.edns0_version,
+                        "data": opt.data,
+                    },
+                })
             }
         }
     }).collect::<Vec<_>>();
 
-    json!(answers)
+    answers.into()
 }
 
+
+fn json_class(class: QClass) -> JsonValue {
+    match class {
+        QClass::IN        => "IN".into(),
+        QClass::CH        => "CH".into(),
+        QClass::HS        => "HS".into(),
+        QClass::Other(n)  => n.into(),
+    }
+}
+
+
+/// Serialises a DNS record type name.
+fn json_record_type_name(record: RecordType) -> JsonValue {
+    match record {
+        RecordType::A           => "A".into(),
+        RecordType::AAAA        => "AAAA".into(),
+        RecordType::CAA         => "CAA".into(),
+        RecordType::CNAME       => "CNAME".into(),
+        RecordType::EUI48       => "EUI48".into(),
+        RecordType::EUI64       => "EUI64".into(),
+        RecordType::HINFO       => "HINFO".into(),
+        RecordType::LOC         => "LOC".into(),
+        RecordType::MX          => "MX".into(),
+        RecordType::NAPTR       => "NAPTR".into(),
+        RecordType::NS          => "NS".into(),
+        RecordType::OPENPGPKEY  => "OPENPGPKEY".into(),
+        RecordType::PTR         => "PTR".into(),
+        RecordType::SOA         => "SOA".into(),
+        RecordType::SRV         => "SRV".into(),
+        RecordType::SSHFP       => "SSHFP".into(),
+        RecordType::TLSA        => "TLSA".into(),
+        RecordType::TXT         => "TXT".into(),
+        RecordType::URI         => "URI".into(),
+        RecordType::Other(unknown) => {
+            match unknown {
+                UnknownQtype::HeardOf(name, _)  => (*name).into(),
+                UnknownQtype::UnheardOf(num)    => (num).into(),
+            }
+        }
+    }
+}
+
+/// Serialises a DNS record type name.
+fn json_record_name(record: &Record) -> JsonValue {
+    match record {
+        Record::A(_)           => "A".into(),
+        Record::AAAA(_)        => "AAAA".into(),
+        Record::CAA(_)         => "CAA".into(),
+        Record::CNAME(_)       => "CNAME".into(),
+        Record::EUI48(_)       => "EUI48".into(),
+        Record::EUI64(_)       => "EUI64".into(),
+        Record::HINFO(_)       => "HINFO".into(),
+        Record::LOC(_)         => "LOC".into(),
+        Record::MX(_)          => "MX".into(),
+        Record::NAPTR(_)       => "NAPTR".into(),
+        Record::NS(_)          => "NS".into(),
+        Record::OPENPGPKEY(_)  => "OPENPGPKEY".into(),
+        Record::PTR(_)         => "PTR".into(),
+        Record::SOA(_)         => "SOA".into(),
+        Record::SRV(_)         => "SRV".into(),
+        Record::SSHFP(_)       => "SSHFP".into(),
+        Record::TLSA(_)        => "TLSA".into(),
+        Record::TXT(_)         => "TXT".into(),
+        Record::URI(_)         => "URI".into(),
+        Record::Other { type_number, .. } => {
+            match type_number {
+                UnknownQtype::HeardOf(name, _)  => (*name).into(),
+                UnknownQtype::UnheardOf(num)    => (*num).into(),
+            }
+        }
+    }
+}
+
+
 /// Serialises a received DNS record as a JSON value.
-fn json_record(record: &Record) -> JsonValue {
+fn json_record_data(record: Record) -> JsonValue {
     match record {
         Record::A(a) => {
             json!({
-                "type": "A",
                 "address": a.address.to_string(),
             })
         }
         Record::AAAA(aaaa) => {
             json!({
-                "type": "AAAA",
                 "address": aaaa.address.to_string(),
             })
         }
         Record::CAA(caa) => {
             json!({
-                "type": "CAA",
                 "critical": caa.critical,
                 "tag": caa.tag,
                 "value": caa.value,
@@ -392,32 +474,27 @@ fn json_record(record: &Record) -> JsonValue {
         }
         Record::CNAME(cname) => {
             json!({
-                "type": "CNAME",
                 "domain": cname.domain.to_string(),
             })
         }
         Record::EUI48(eui48) => {
             json!({
-                "type": "EUI48",
                 "identifier": eui48.formatted_address(),
             })
         }
         Record::EUI64(eui64) => {
             json!({
-                "type": "EUI64",
                 "identifier": eui64.formatted_address(),
             })
         }
         Record::HINFO(hinfo) => {
             json!({
-                "type": "HINFO",
                 "cpu": hinfo.cpu,
                 "os": hinfo.os,
             })
         }
         Record::LOC(loc) => {
             json!({
-                "type": "LOC",
                 "size": loc.size.to_string(),
                 "precision": {
                     "horizontal": loc.horizontal_precision,
@@ -432,42 +509,36 @@ fn json_record(record: &Record) -> JsonValue {
         }
         Record::MX(mx) => {
             json!({
-                "type": "MX",
                 "preference": mx.preference,
                 "exchange": mx.exchange.to_string(),
             })
         }
         Record::NAPTR(naptr) => {
             json!({
-                "type": "NAPTR",
                 "order": naptr.order,
                 "flags": naptr.flags,
                 "service": naptr.service,
-                "regex": naptr.service,
+                "regex": naptr.regex,
                 "replacement": naptr.replacement.to_string(),
             })
         }
         Record::NS(ns) => {
             json!({
-                "type": "NS",
                 "nameserver": ns.nameserver.to_string(),
             })
         }
         Record::OPENPGPKEY(opgp) => {
             json!({
-                "type": "OPENPGPKEY",
                 "key": opgp.base64_key(),
             })
         }
         Record::PTR(ptr) => {
             json!({
-                "type": "PTR",
                 "cname": ptr.cname.to_string(),
             })
         }
         Record::SSHFP(sshfp) => {
             json!({
-                "type": "SSHFP",
                 "algorithm": sshfp.algorithm,
                 "fingerprint_type": sshfp.fingerprint_type,
                 "fingerprint": sshfp.hex_fingerprint(),
@@ -475,13 +546,11 @@ fn json_record(record: &Record) -> JsonValue {
         }
         Record::SOA(soa) => {
             json!({
-                "type": "SOA",
                 "mname": soa.mname.to_string(),
             })
         }
         Record::SRV(srv) => {
             json!({
-                "type": "SRV",
                 "priority": srv.priority,
                 "weight": srv.weight,
                 "port": srv.port,
@@ -490,7 +559,6 @@ fn json_record(record: &Record) -> JsonValue {
         }
         Record::TLSA(tlsa) => {
             json!({
-                "type": "TLSA",
                 "certificate_usage": tlsa.certificate_usage,
                 "selector": tlsa.selector,
                 "matching_type": tlsa.matching_type,
@@ -499,32 +567,24 @@ fn json_record(record: &Record) -> JsonValue {
         }
         Record::TXT(txt) => {
             json!({
-                "type": "TXT",
                 "messages": txt.messages,
             })
         }
         Record::URI(uri) => {
             json!({
-                "type": "URI",
                 "priority": uri.priority,
                 "weight": uri.weight,
                 "target": uri.target,
             })
         }
-        Record::Other { type_number, bytes } => {
-            let type_name = match type_number {
-                UnknownQtype::HeardOf(name) => json!(name),
-                UnknownQtype::UnheardOf(num) => json!(num),
-            };
-
+        Record::Other { bytes, .. } => {
             json!({
-                "unknown": true,
-                "type": type_name,
                 "bytes": bytes,
             })
         }
     }
 }
+
 
 /// Prints a message describing the “error code” field of a DNS packet. This
 /// happens when the packet was received correctly, but the server indicated
