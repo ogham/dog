@@ -19,14 +19,16 @@ byteorder = "1.3"
 # packet printing
 base64 = "0.13"
 
+# idna encoding
+unic-idna = { version = "0.9.0", optional = true }
+
 # testing
 mutagen = { git = "https://github.com/llogiq/mutagen", optional = true }
-
-# idna encoding
-unic-idna = "0.9.0"
 
 [dev-dependencies]
 pretty_assertions = "0.7"
 
 [features]
+default = []  # these are enabled in the main dog crate
+idna = ["unic-idna"]
 with_mutagen = ["mutagen"]  # needs nightly

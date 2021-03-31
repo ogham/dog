@@ -69,6 +69,7 @@ datetime = { version = "0.5.1", default_features = false }
 pretty_assertions = "0.7"
 
 [features]
-default = ["tls", "https"]
+default = ["idna", "tls", "https"]
+idna = ["dns/idna"]
 tls = ["dns-transport/tls"]
 https = ["dns-transport/https"]
