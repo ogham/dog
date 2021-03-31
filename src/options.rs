@@ -767,9 +767,21 @@ mod test {
     }
 
     #[test]
+    fn invalid_named_class_too_big() {
+        assert_eq!(Options::getopts(&[ "lookup.dog", "--class", "999999" ]),
+                   OptionsResult::InvalidOptions(OptionsError::InvalidQueryClass("999999".into())));
+    }
+
+    #[test]
     fn invalid_named_type() {
         assert_eq!(Options::getopts(&[ "lookup.dog", "--type", "tubes" ]),
                    OptionsResult::InvalidOptions(OptionsError::InvalidQueryType("tubes".into())));
+    }
+
+    #[test]
+    fn invalid_named_type_too_big() {
+        assert_eq!(Options::getopts(&[ "lookup.dog", "--type", "999999" ]),
+                   OptionsResult::InvalidOptions(OptionsError::InvalidQueryType("999999".into())));
     }
 
     #[test]
