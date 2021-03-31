@@ -1,0 +1,29 @@
+{
+  "responses": [
+    {
+      "queries": [
+        {
+          "name": "tlsa.example.",
+          "class": "IN",
+          "type": "TLSA"
+        }
+      ],
+      "answers": [
+        {
+          "name": "tlsa.example.",
+          "class": "IN",
+          "ttl": 600,
+          "type": "TLSA",
+          "data": {
+            "certificate_usage": 3,
+            "selector": 1,
+            "matching_type": 1,
+            "certificate_data": "112233445566"
+          }
+        }
+      ],
+      "authorities": [],
+      "additionals": []
+    }
+  ]
+}

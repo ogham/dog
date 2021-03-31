@@ -1,0 +1,35 @@
+{
+  "responses": [
+    {
+      "queries": [
+        {
+          "name": "far-negative-latitude.loc.invalid.",
+          "class": "IN",
+          "type": "LOC"
+        }
+      ],
+      "answers": [
+        {
+          "name": "far-negative-latitude.loc.invalid.",
+          "class": "IN",
+          "ttl": 600,
+          "type": "LOC",
+          "data": {
+            "size": "3e2",
+            "precision": {
+              "horizontal": 0,
+              "vertical": 0
+            },
+            "point": {
+              "latitude": null,
+              "longitude": "0°0′0″ E",
+              "altitude": "0m"
+            }
+          }
+        }
+      ],
+      "authorities": [],
+      "additionals": []
+    }
+  ]
+}

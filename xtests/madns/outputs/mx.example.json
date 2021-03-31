@@ -1,0 +1,27 @@
+{
+  "responses": [
+    {
+      "queries": [
+        {
+          "name": "mx.example.",
+          "class": "IN",
+          "type": "MX"
+        }
+      ],
+      "answers": [
+        {
+          "name": "mx.example.",
+          "class": "IN",
+          "ttl": 600,
+          "type": "MX",
+          "data": {
+            "preference": 10,
+            "exchange": "exchange.example."
+          }
+        }
+      ],
+      "authorities": [],
+      "additionals": []
+    }
+  ]
+}

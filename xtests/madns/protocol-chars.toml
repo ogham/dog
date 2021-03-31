@@ -1,3 +1,5 @@
+# Character escaping
+
 [[cmd]]
 name = "Running with ‘ansi.str.example’ properly escapes the codes"
 shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 CNAME ansi.str.example"
@@ -37,3 +39,46 @@ stdout = { file = "outputs/upperbit.str.example.ansitxt" }
 stderr = { empty = true }
 status = 0
 tags = [ "protocol", "madns" ]
+
+
+# Character escaping (JSON)
+
+[[cmd]]
+name = "Running with ‘ansi.str.example’ properly escapes the codes in the JSON string"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 CNAME ansi.str.example --json | jq"
+stdout = { file = "outputs/ansi.str.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "protocol", "madns", "json" ]
+
+[[cmd]]
+name = "Running with ‘newline.str.example’ properly escapes the newlines in the JSON string"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 CNAME newline.str.example --json | jq"
+stdout = { file = "outputs/newline.str.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "protocol", "madns", "json" ]
+
+[[cmd]]
+name = "Running with ‘null.str.example’ properly handles the null bytes in the JSON string"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 CNAME null.str.example --json | jq"
+stdout = { file = "outputs/null.str.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "protocol", "madns", "json" ]
+
+[[cmd]]
+name = "Running with ‘tab.str.example’ properly escapes the tabs in the JSON string"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 CNAME tab.str.example --json | jq"
+stdout = { file = "outputs/tab.str.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "protocol", "madns", "json" ]
+
+[[cmd]]
+name = "Running with ‘upperbit.str.example’ properly escapes the upper-bit characters in the JSON string"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 CNAME upperbit.str.example --json | jq"
+stdout = { file = "outputs/upperbit.str.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "protocol", "madns", "json" ]

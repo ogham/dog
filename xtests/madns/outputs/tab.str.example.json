@@ -1,0 +1,26 @@
+{
+  "responses": [
+    {
+      "queries": [
+        {
+          "name": "tab.str.example.",
+          "class": "IN",
+          "type": "CNAME"
+        }
+      ],
+      "answers": [
+        {
+          "name": "tab.str.example.",
+          "class": "IN",
+          "ttl": 600,
+          "type": "CNAME",
+          "data": {
+            "domain": "some\ttab\t\tchars\t.example."
+          }
+        }
+      ],
+      "authorities": [],
+      "additionals": []
+    }
+  ]
+}

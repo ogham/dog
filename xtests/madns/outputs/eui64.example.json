@@ -1,0 +1,26 @@
+{
+  "responses": [
+    {
+      "queries": [
+        {
+          "name": "eui64.example.",
+          "class": "IN",
+          "type": "EUI64"
+        }
+      ],
+      "answers": [
+        {
+          "name": "eui64.example.",
+          "class": "IN",
+          "ttl": 600,
+          "type": "EUI64",
+          "data": {
+            "identifier": "12-34-56-ff-fe-78-90-ab"
+          }
+        }
+      ],
+      "authorities": [],
+      "additionals": []
+    }
+  ]
+}

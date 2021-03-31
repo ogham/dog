@@ -1,0 +1,35 @@
+{
+  "responses": [
+    {
+      "queries": [
+        {
+          "name": "named.opt.invalid.",
+          "class": "IN",
+          "type": "A"
+        }
+      ],
+      "answers": [
+        {
+          "name": "named.opt.invalid.",
+          "class": "IN",
+          "ttl": 600,
+          "type": "A",
+          "data": {
+            "address": "127.0.0.1"
+          }
+        }
+      ],
+      "authorities": [],
+      "additionals": [
+        {
+          "name": "bingle.bongle.dingle.dangle.",
+          "type": "OPT",
+          "data": {
+            "version": 0,
+            "data": []
+          }
+        }
+      ]
+    }
+  ]
+}

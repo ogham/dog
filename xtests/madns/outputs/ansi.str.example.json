@@ -1,0 +1,26 @@
+{
+  "responses": [
+    {
+      "queries": [
+        {
+          "name": "ansi.str.example.",
+          "class": "IN",
+          "type": "CNAME"
+        }
+      ],
+      "answers": [
+        {
+          "name": "ansi.str.example.",
+          "class": "IN",
+          "ttl": 600,
+          "type": "CNAME",
+          "data": {
+            "domain": "\u001b[32mgreen.\u001b[34mblue.\u001b[31mred.\u001b[0m."
+          }
+        }
+      ],
+      "authorities": [],
+      "additionals": []
+    }
+  ]
+}

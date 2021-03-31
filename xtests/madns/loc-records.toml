@@ -9,6 +9,17 @@ status = 0
 tags = [ "loc", "madns" ]
 
 
+# LOC record successes (JSON)
+
+[[cmd]]
+name = "Running with ‘loc.example’ prints the correct LOC record structure"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 LOC loc.example --json | jq"
+stdout = { file = "outputs/loc.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "loc", "madns", "json" ]
+
+
 # LOC record out-of-range positions
 
 [[cmd]]
@@ -20,7 +31,7 @@ status = 0
 tags = [ "loc", "madns" ]
 
 [[cmd]]
-name = "Running with ‘far-positive-longitude.loc.invalid’ displays a record length error"
+name = "Running with ‘far-positive-longitude.loc.invalid’ displays a record with an out-of-range field"
 shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 LOC far-positive-longitude.loc.invalid"
 stdout = { file = "outputs/far-positive-longitude.loc.invalid.ansitxt" }
 stderr = { empty = true }
@@ -28,7 +39,7 @@ status = 0
 tags = [ "loc", "madns" ]
 
 [[cmd]]
-name = "Running with ‘far-negative-latitude.loc.invalid’ displays a record length error"
+name = "Running with ‘far-negative-latitude.loc.invalid’ displays a record with an out-of-range field"
 shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 LOC far-negative-latitude.loc.invalid"
 stdout = { file = "outputs/far-negative-latitude.loc.invalid.ansitxt" }
 stderr = { empty = true }
@@ -36,12 +47,47 @@ status = 0
 tags = [ "loc", "madns" ]
 
 [[cmd]]
-name = "Running with ‘far-positive-latitude.loc.invalid’ displays a record length error"
+name = "Running with ‘far-positive-latitude.loc.invalid’ displays a record with an out-of-range field"
 shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 LOC far-positive-latitude.loc.invalid"
 stdout = { file = "outputs/far-positive-latitude.loc.invalid.ansitxt" }
 stderr = { empty = true }
 status = 0
 tags = [ "loc", "madns" ]
+
+
+# LOC record out-of-range positions (JSON)
+
+[[cmd]]
+name = "Running with ‘far-negative-longitude.loc.invalid’ displays a record structure with an out-of-range field"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 LOC far-negative-longitude.loc.invalid --json | jq"
+stdout = { file = "outputs/far-negative-longitude.loc.invalid.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "loc", "madns", "json" ]
+
+[[cmd]]
+name = "Running with ‘far-positive-longitude.loc.invalid’ displays a record structure with an out-of-range field"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 LOC far-positive-longitude.loc.invalid --json | jq"
+stdout = { file = "outputs/far-positive-longitude.loc.invalid.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "loc", "madns", "json" ]
+
+[[cmd]]
+name = "Running with ‘far-negative-latitude.loc.invalid’ displays a record structure with an out-of-range field"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 LOC far-negative-latitude.loc.invalid --json | jq"
+stdout = { file = "outputs/far-negative-latitude.loc.invalid.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "loc", "madns", "json" ]
+
+[[cmd]]
+name = "Running with ‘far-positive-latitude.loc.invalid’ displays a record structure with an out-of-range field"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 LOC far-positive-latitude.loc.invalid --json | jq"
+stdout = { file = "outputs/far-positive-latitude.loc.invalid.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "loc", "madns", "json" ]
 
 
 # LOC record version 1

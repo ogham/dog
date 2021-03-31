@@ -52,9 +52,8 @@ getopts = "0.2"
 # transaction ID generation
 rand = "0.8"
 
-# json
-serde = "1.0"
-serde_json = "1.0"
+# json output
+json = "0.12"
 
 # logging
 log = "0.4"

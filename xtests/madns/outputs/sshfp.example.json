@@ -1,0 +1,28 @@
+{
+  "responses": [
+    {
+      "queries": [
+        {
+          "name": "sshfp.example.",
+          "class": "IN",
+          "type": "SSHFP"
+        }
+      ],
+      "answers": [
+        {
+          "name": "sshfp.example.",
+          "class": "IN",
+          "ttl": 600,
+          "type": "SSHFP",
+          "data": {
+            "algorithm": 1,
+            "fingerprint_type": 1,
+            "fingerprint": "212223242526"
+          }
+        }
+      ],
+      "authorities": [],
+      "additionals": []
+    }
+  ]
+}

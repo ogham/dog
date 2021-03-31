@@ -1,0 +1,28 @@
+{
+  "responses": [
+    {
+      "queries": [
+        {
+          "name": "uri.example.",
+          "class": "IN",
+          "type": "URI"
+        }
+      ],
+      "answers": [
+        {
+          "name": "uri.example.",
+          "class": "IN",
+          "ttl": 600,
+          "type": "URI",
+          "data": {
+            "priority": 10,
+            "weight": 16,
+            "target": "https://rfcs.io/"
+          }
+        }
+      ],
+      "authorities": [],
+      "additionals": []
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 
 This is dog’s extended test suite. The checks herein form a complete end-to-end set of tests, covering things like network connections, DNS protocol parsing, command-line options, error handling, and edge case behaviour.
 
-The checks are written as [Specsheet] documents, which you’ll need to have installed.
+The checks are written as [Specsheet] documents, which you’ll need to have installed. For the JSON tests, you’ll also need [jq].
 
 Because these tests make connections over the network, the outcome of the test suite will depend on your own machine‘s Internet connection! It also means that your own IP address will be recorded as making the requests.
 
@@ -30,5 +30,6 @@ To run a subset of the checks, you can filter with the following tags:
 You can also use a DNS record type as a tag to only run the checks for that particular type.
 
 [Specsheet]: https://specsheet.software/
+[jq]: https://stedolan.github.io/jq/
 [public Cloudflare DNS resolver]: https://developers.cloudflare.com/1.1.1.1/
 [madns resolver]: https://madns.binarystar.systems/

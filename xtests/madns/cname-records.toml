@@ -9,6 +9,17 @@ status = 0
 tags = [ "cname", "madns" ]
 
 
+# CNAME record successes (JSON)
+
+[[cmd]]
+name = "Running with ‘cname.example’ prints the correct CNAME record structure"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 CNAME cname.example --json | jq"
+stdout = { file = "outputs/cname.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "cname", "madns", "json" ]
+
+
 # CNAME record invalid packets
 
 [[cmd]]

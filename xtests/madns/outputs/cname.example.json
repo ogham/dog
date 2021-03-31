@@ -1,0 +1,26 @@
+{
+  "responses": [
+    {
+      "queries": [
+        {
+          "name": "cname.example.",
+          "class": "IN",
+          "type": "CNAME"
+        }
+      ],
+      "answers": [
+        {
+          "name": "cname.example.",
+          "class": "IN",
+          "ttl": 600,
+          "type": "CNAME",
+          "data": {
+            "domain": "dns.lookup.dog."
+          }
+        }
+      ],
+      "authorities": [],
+      "additionals": []
+    }
+  ]
+}

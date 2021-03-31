@@ -17,6 +17,17 @@ status = 0
 tags = [ "naptr", "madns" ]
 
 
+# NAPTR record successes (JSON)
+
+[[cmd]]
+name = "Running with ‘naptr.example’ prints the correct NAPTR record structure"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 NAPTR naptr.example --json | jq"
+stdout = { file = "outputs/naptr.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "naptr", "madns", "json" ]
+
+
 # NAPTR record invalid packets
 
 [[cmd]]

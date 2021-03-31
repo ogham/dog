@@ -9,6 +9,17 @@ status = 0
 tags = [ "soa", "madns" ]
 
 
+# SOA record successes (JSON)
+
+[[cmd]]
+name = "Running with ‘soa.example’ prints the correct SOA record structure"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 SOA soa.example --json | jq"
+stdout = { file = "outputs/soa.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "soa", "madns", "json" ]
+
+
 # SOA record invalid packets
 
 [[cmd]]

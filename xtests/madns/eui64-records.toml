@@ -9,6 +9,17 @@ status = 0
 tags = [ "eui64", "madns" ]
 
 
+# EUI64 record successes (JSON)
+
+[[cmd]]
+name = "Running with ‘eui64.example’ prints the correct EUI64 record structure"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 EUI64 eui64.example --json | jq"
+stdout = { file = "outputs/eui64.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "eui64", "madns", "json" ]
+
+
 # EUI64 record invalid packets
 
 [[cmd]]

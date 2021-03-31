@@ -5,7 +5,7 @@ use std::time::Duration;
 use dns::{Response, Query, Answer, QClass, ErrorCode, WireError, MandatedLength};
 use dns::record::{Record, RecordType, UnknownQtype, OPT};
 use dns_transport::Error as TransportError;
-use serde_json::{json, Value as JsonValue};
+use json::{object, JsonValue};
 
 use crate::colours::Colours;
 use crate::table::{Table, Section};
@@ -102,31 +102,31 @@ impl OutputFormat {
                 let mut rs = Vec::new();
 
                 for response in responses {
-                    let json = json!({
+                    let json = object! {
                         "queries": json_queries(response.queries),
                         "answers": json_answers(response.answers),
                         "authorities": json_answers(response.authorities),
                         "additionals": json_answers(response.additionals),
-                    });
+                    };
 
                     rs.push(json);
                 }
 
                 if let Some(duration) = duration {
-                    let object = json!({
+                    let object = object! {
                         "responses": rs,
                         "duration": {
                             "secs": duration.as_secs(),
                             "millis": duration.subsec_millis(),
                         },
-                    });
+                    };
 
                     println!("{}", object);
                 }
                 else {
-                    let object = json!({
+                    let object = object! {
                         "responses": rs,
-                    });
+                    };
 
                     println!("{}", object);
                 }
@@ -168,11 +168,11 @@ impl OutputFormat {
             }
 
             Self::JSON => {
-                let object = json!({
+                let object = object! {
                     "error": true,
                     "error_phase": erroneous_phase(&error),
                     "error_message": error_message(error),
-                });
+                };
 
                 eprintln!("{}", object);
             }
@@ -339,11 +339,11 @@ fn format_duration_hms(seconds: u32) -> String {
 /// Serialises multiple DNS queries as a JSON value.
 fn json_queries(queries: Vec<Query>) -> JsonValue {
     let queries = queries.iter().map(|q| {
-        json!({
+        object! {
             "name": q.qname.to_string(),
             "class": json_class(q.qclass),
             "type": json_record_type_name(q.qtype),
-        })
+        }
     }).collect::<Vec<_>>();
 
     queries.into()
@@ -354,23 +354,23 @@ fn json_answers(answers: Vec<Answer>) -> JsonValue {
     let answers = answers.into_iter().map(|a| {
         match a {
             Answer::Standard { qname, qclass, ttl, record } => {
-                json!({
+                object! {
                     "name": qname.to_string(),
                     "class": json_class(qclass),
                     "ttl": ttl,
                     "type": json_record_name(&record),
                     "data": json_record_data(record),
-                })
+                }
             }
             Answer::Pseudo { qname, opt } => {
-                json!({
+                object! {
                     "name": qname.to_string(),
                     "type": "OPT",
                     "data": {
                         "version": opt.edns0_version,
                         "data": opt.data,
                     },
-                })
+                }
             }
         }
     }).collect::<Vec<_>>();
@@ -456,45 +456,45 @@ fn json_record_name(record: &Record) -> JsonValue {
 fn json_record_data(record: Record) -> JsonValue {
     match record {
         Record::A(a) => {
-            json!({
+            object! {
                 "address": a.address.to_string(),
-            })
+            }
         }
         Record::AAAA(aaaa) => {
-            json!({
+            object! {
                 "address": aaaa.address.to_string(),
-            })
+            }
         }
         Record::CAA(caa) => {
-            json!({
+            object! {
                 "critical": caa.critical,
                 "tag": caa.tag,
                 "value": caa.value,
-            })
+            }
         }
         Record::CNAME(cname) => {
-            json!({
+            object! {
                 "domain": cname.domain.to_string(),
-            })
+            }
         }
         Record::EUI48(eui48) => {
-            json!({
+            object! {
                 "identifier": eui48.formatted_address(),
-            })
+            }
         }
         Record::EUI64(eui64) => {
-            json!({
+            object! {
                 "identifier": eui64.formatted_address(),
-            })
+            }
         }
         Record::HINFO(hinfo) => {
-            json!({
+            object! {
                 "cpu": hinfo.cpu,
                 "os": hinfo.os,
-            })
+            }
         }
         Record::LOC(loc) => {
-            json!({
+            object! {
                 "size": loc.size.to_string(),
                 "precision": {
                     "horizontal": loc.horizontal_precision,
@@ -505,82 +505,82 @@ fn json_record_data(record: Record) -> JsonValue {
                     "longitude": loc.longitude.map(|e| e.to_string()),
                     "altitude": loc.altitude.to_string(),
                 },
-            })
+            }
         }
         Record::MX(mx) => {
-            json!({
+            object! {
                 "preference": mx.preference,
                 "exchange": mx.exchange.to_string(),
-            })
+            }
         }
         Record::NAPTR(naptr) => {
-            json!({
+            object! {
                 "order": naptr.order,
                 "flags": naptr.flags,
                 "service": naptr.service,
                 "regex": naptr.regex,
                 "replacement": naptr.replacement.to_string(),
-            })
+            }
         }
         Record::NS(ns) => {
-            json!({
+            object! {
                 "nameserver": ns.nameserver.to_string(),
-            })
+            }
         }
         Record::OPENPGPKEY(opgp) => {
-            json!({
+            object! {
                 "key": opgp.base64_key(),
-            })
+            }
         }
         Record::PTR(ptr) => {
-            json!({
+            object! {
                 "cname": ptr.cname.to_string(),
-            })
+            }
         }
         Record::SSHFP(sshfp) => {
-            json!({
+            object! {
                 "algorithm": sshfp.algorithm,
                 "fingerprint_type": sshfp.fingerprint_type,
                 "fingerprint": sshfp.hex_fingerprint(),
-            })
+            }
         }
         Record::SOA(soa) => {
-            json!({
+            object! {
                 "mname": soa.mname.to_string(),
-            })
+            }
         }
         Record::SRV(srv) => {
-            json!({
+            object! {
                 "priority": srv.priority,
                 "weight": srv.weight,
                 "port": srv.port,
                 "target": srv.target.to_string(),
-            })
+            }
         }
         Record::TLSA(tlsa) => {
-            json!({
+            object! {
                 "certificate_usage": tlsa.certificate_usage,
                 "selector": tlsa.selector,
                 "matching_type": tlsa.matching_type,
                 "certificate_data": tlsa.hex_certificate_data(),
-            })
+            }
         }
         Record::TXT(txt) => {
-            json!({
+            object! {
                 "messages": txt.messages,
-            })
+            }
         }
         Record::URI(uri) => {
-            json!({
+            object! {
                 "priority": uri.priority,
                 "weight": uri.weight,
                 "target": uri.target,
-            })
+            }
         }
         Record::Other { bytes, .. } => {
-            json!({
+            object! {
                 "bytes": bytes,
-            })
+            }
         }
     }
 }

@@ -9,6 +9,17 @@ status = 0
 tags = [ "hinfo", "madns" ]
 
 
+# HINFO record successes (JSON)
+
+[[cmd]]
+name = "Running with ‘hinfo.example’ prints the correct HINFO record structure"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 HINFO hinfo.example --json | jq"
+stdout = { file = "outputs/hinfo.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "hinfo", "madns", "json" ]
+
+
 # HINFO record invalid packets
 
 [[cmd]]

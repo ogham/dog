@@ -1,0 +1,26 @@
+{
+  "responses": [
+    {
+      "queries": [
+        {
+          "name": "ns.example.",
+          "class": "IN",
+          "type": "NS"
+        }
+      ],
+      "answers": [
+        {
+          "name": "ns.example.",
+          "class": "IN",
+          "ttl": 600,
+          "type": "NS",
+          "data": {
+            "nameserver": "a.gtld-servers.net."
+          }
+        }
+      ],
+      "authorities": [],
+      "additionals": []
+    }
+  ]
+}

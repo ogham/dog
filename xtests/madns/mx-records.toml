@@ -9,6 +9,17 @@ status = 0
 tags = [ "mx", "madns" ]
 
 
+# MX record successes (JSON)
+
+[[cmd]]
+name = "Running with ‘mx.example’ prints the correct MX record structure"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 MX mx.example --json | jq"
+stdout = { file = "outputs/mx.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "mx", "madns", "json" ]
+
+
 # MX record invalid packets
 
 [[cmd]]

@@ -1,0 +1,26 @@
+{
+  "responses": [
+    {
+      "queries": [
+        {
+          "name": "eui48.example.",
+          "class": "IN",
+          "type": "EUI48"
+        }
+      ],
+      "answers": [
+        {
+          "name": "eui48.example.",
+          "class": "IN",
+          "ttl": 600,
+          "type": "EUI48",
+          "data": {
+            "identifier": "12-34-56-78-90-ab"
+          }
+        }
+      ],
+      "authorities": [],
+      "additionals": []
+    }
+  ]
+}

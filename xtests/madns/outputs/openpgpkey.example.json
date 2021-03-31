@@ -1,0 +1,26 @@
+{
+  "responses": [
+    {
+      "queries": [
+        {
+          "name": "openpgpkey.example.",
+          "class": "IN",
+          "type": "OPENPGPKEY"
+        }
+      ],
+      "answers": [
+        {
+          "name": "openpgpkey.example.",
+          "class": "IN",
+          "ttl": 600,
+          "type": "OPENPGPKEY",
+          "data": {
+            "key": "EjRWeA=="
+          }
+        }
+      ],
+      "authorities": [],
+      "additionals": []
+    }
+  ]
+}

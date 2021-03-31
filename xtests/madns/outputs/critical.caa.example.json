@@ -1,0 +1,28 @@
+{
+  "responses": [
+    {
+      "queries": [
+        {
+          "name": "critical.caa.example.",
+          "class": "IN",
+          "type": "CAA"
+        }
+      ],
+      "answers": [
+        {
+          "name": "critical.caa.example.",
+          "class": "IN",
+          "ttl": 600,
+          "type": "CAA",
+          "data": {
+            "critical": true,
+            "tag": "issuewild",
+            "value": "trustworthy.example"
+          }
+        }
+      ],
+      "authorities": [],
+      "additionals": []
+    }
+  ]
+}

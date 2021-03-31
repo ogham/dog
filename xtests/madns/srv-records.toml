@@ -9,6 +9,17 @@ status = 0
 tags = [ "soa", "madns" ]
 
 
+# SRV record successes (JSON)
+
+[[cmd]]
+name = "Running with ‘srv.example’ prints the correct SRV record structure"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 SRV srv.example --json | jq"
+stdout = { file = "outputs/srv.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "soa", "madns", "json" ]
+
+
 # SRV record invalid packets
 
 [[cmd]]

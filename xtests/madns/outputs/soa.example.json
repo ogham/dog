@@ -1,0 +1,26 @@
+{
+  "responses": [
+    {
+      "queries": [
+        {
+          "name": "soa.example.",
+          "class": "IN",
+          "type": "SOA"
+        }
+      ],
+      "answers": [
+        {
+          "name": "soa.example.",
+          "class": "IN",
+          "ttl": 600,
+          "type": "SOA",
+          "data": {
+            "mname": "mname.example."
+          }
+        }
+      ],
+      "authorities": [],
+      "additionals": []
+    }
+  ]
+}

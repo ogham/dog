@@ -17,6 +17,17 @@ status = 0
 tags = [ "uri", "madns" ]
 
 
+# URI record successes (JSON)
+
+[[cmd]]
+name = "Running with ‘uri.example’ prints the correct URI record structure"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 URI uri.example --json | jq"
+stdout = { file = "outputs/uri.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "uri", "madns", "json" ]
+
+
 # URI record invalid packets
 
 [[cmd]]

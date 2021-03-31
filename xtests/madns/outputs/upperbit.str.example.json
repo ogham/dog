@@ -1,0 +1,26 @@
+{
+  "responses": [
+    {
+      "queries": [
+        {
+          "name": "upperbit.str.example.",
+          "class": "IN",
+          "type": "CNAME"
+        }
+      ],
+      "answers": [
+        {
+          "name": "upperbit.str.example.",
+          "class": "IN",
+          "ttl": 600,
+          "type": "CNAME",
+          "data": {
+            "domain": "\u007f�����.example."
+          }
+        }
+      ],
+      "authorities": [],
+      "additionals": []
+    }
+  ]
+}

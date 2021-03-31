@@ -9,6 +9,17 @@ status = 0
 tags = [ "aaaa", "madns" ]
 
 
+# AAAA record successes (JSON)
+
+[[cmd]]
+name = "Running with ‘aaaa.example’ prints the correct AAAA record structure"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 AAAA aaaa.example --json | jq"
+stdout = { file = "outputs/aaaa.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "aaaa", "madns", "json" ]
+
+
 # AAAA record invalid packets
 
 [[cmd]]

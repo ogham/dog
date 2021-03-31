@@ -9,6 +9,17 @@ status = 0
 tags = [ "tlsa", "madns" ]
 
 
+# TLSA record successes (JSON)
+
+[[cmd]]
+name = "Running with ‘tlsa.example’ prints the correct TLSA record structure"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 TLSA tlsa.example --json | jq"
+stdout = { file = "outputs/tlsa.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "tlsa", "madns", "json" ]
+
+
 # TLSA record invalid packets
 
 [[cmd]]

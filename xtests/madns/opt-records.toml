@@ -33,6 +33,41 @@ status = 0
 tags = [ "opt", "madns" ]
 
 
+# OPT record successes (JSON)
+
+[[cmd]]
+name = "Running with ‘opt.example’ prints the correct OPT record structure"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A opt.example --edns=show --json | jq"
+stdout = { file = "outputs/opt.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "opt", "madns", "json" ]
+
+[[cmd]]
+name = "Running with ‘do-flag.opt.example’ prints the correct OPT record structure"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A do-flag.opt.example --edns=show --json | jq"
+stdout = { file = "outputs/do-flag.opt.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "opt", "madns", "json" ]
+
+[[cmd]]
+name = "Running with ‘other-flags.opt.example’ prints the correct OPT record structure"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A other-flags.opt.example --edns=show --json | jq"
+stdout = { file = "outputs/other-flags.opt.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "opt", "madns", "json" ]
+
+[[cmd]]
+name = "Running with ‘named.opt.invalid’ prints the correct OPT record structure"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A named.opt.invalid --edns=show --json | jq"
+stdout = { file = "outputs/named.opt.invalid.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "opt", "madns", "json" ]
+
+
 # OPT record invalid packets
 
 [[cmd]]

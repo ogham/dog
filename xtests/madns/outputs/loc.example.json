@@ -1,0 +1,35 @@
+{
+  "responses": [
+    {
+      "queries": [
+        {
+          "name": "loc.example.",
+          "class": "IN",
+          "type": "LOC"
+        }
+      ],
+      "answers": [
+        {
+          "name": "loc.example.",
+          "class": "IN",
+          "ttl": 600,
+          "type": "LOC",
+          "data": {
+            "size": "3e2",
+            "precision": {
+              "horizontal": 0,
+              "vertical": 0
+            },
+            "point": {
+              "latitude": "51°30′12.748″ N",
+              "longitude": "0°7′39.611″ W",
+              "altitude": "0m"
+            }
+          }
+        }
+      ],
+      "authorities": [],
+      "additionals": []
+    }
+  ]
+}

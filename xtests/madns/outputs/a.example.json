@@ -1,0 +1,26 @@
+{
+  "responses": [
+    {
+      "queries": [
+        {
+          "name": "a.example.",
+          "class": "IN",
+          "type": "A"
+        }
+      ],
+      "answers": [
+        {
+          "name": "a.example.",
+          "class": "IN",
+          "ttl": 600,
+          "type": "A",
+          "data": {
+            "address": "127.0.0.1"
+          }
+        }
+      ],
+      "authorities": [],
+      "additionals": []
+    }
+  ]
+}

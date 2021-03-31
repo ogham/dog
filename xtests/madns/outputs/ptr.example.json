@@ -1,0 +1,26 @@
+{
+  "responses": [
+    {
+      "queries": [
+        {
+          "name": "ptr.example.",
+          "class": "IN",
+          "type": "PTR"
+        }
+      ],
+      "answers": [
+        {
+          "name": "ptr.example.",
+          "class": "IN",
+          "ttl": 600,
+          "type": "PTR",
+          "data": {
+            "cname": "dns.example."
+          }
+        }
+      ],
+      "authorities": [],
+      "additionals": []
+    }
+  ]
+}

@@ -9,6 +9,17 @@ status = 0
 tags = [ "txt", "madns" ]
 
 
+# TXT record successes (JSON)
+
+[[cmd]]
+name = "Running with ‘txt.example’ prints the correct TXT record structure"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 TXT txt.example --json | jq"
+stdout = { file = "outputs/txt.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "txt", "madns", "json" ]
+
+
 # TXT record invalid packets
 
 [[cmd]]

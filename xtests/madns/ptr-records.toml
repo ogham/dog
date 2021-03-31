@@ -9,6 +9,17 @@ status = 0
 tags = [ "ptr", "madns" ]
 
 
+# PTR record successes (JSON)
+
+[[cmd]]
+name = "Running with ‘ptr.example’ prints the correct PTR record structure"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 PTR ptr.example --json | jq"
+stdout = { file = "outputs/ptr.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "ptr", "madns", "json" ]
+
+
 # PTR record invalid packets
 
 [[cmd]]

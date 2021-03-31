@@ -9,6 +9,17 @@ status = 0
 tags = [ "a", "madns" ]
 
 
+# A record successes (JSON)
+
+[[cmd]]
+name = "Running with ‘a.example’ prints the correct A record structure"
+shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A a.example --json | jq"
+stdout = { file = "outputs/a.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "a", "madns", "json" ]
+
+
 # A record invalid packets
 
 [[cmd]]

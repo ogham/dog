@@ -1,0 +1,29 @@
+{
+  "responses": [
+    {
+      "queries": [
+        {
+          "name": "srv.example.",
+          "class": "IN",
+          "type": "SRV"
+        }
+      ],
+      "answers": [
+        {
+          "name": "srv.example.",
+          "class": "IN",
+          "ttl": 600,
+          "type": "SRV",
+          "data": {
+            "priority": 1,
+            "weight": 1,
+            "port": 37500,
+            "target": "service.example."
+          }
+        }
+      ],
+      "authorities": [],
+      "additionals": []
+    }
+  ]
+}
