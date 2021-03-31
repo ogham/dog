@@ -27,6 +27,10 @@ export DOG_DEBUG := ""
 @build-quick:
     cargo build --no-default-features
 
+# check that the dog binary can compile
+@check:
+    cargo check
+
 
 #---------------#
 # running tests #
@@ -55,18 +59,18 @@ export DOG_DEBUG := ""
 #------------------------#
 
 # run extended tests
-@xtests:
-    specsheet xtests/*/*.toml -shide \
+@xtests *args:
+    specsheet xtests/*/*.toml -shide {{args}} \
         -O cmd.target.dog="${CARGO_TARGET_DIR:-../../target}/debug/dog"
 
 # run extended tests (in release mode)
-@xtests-release:
-    specsheet xtests/*/*.toml \
+@xtests-release *args:
+    specsheet xtests/*/*.toml {{args}} \
         -O cmd.target.dog="${CARGO_TARGET_DIR:-../../target}/release/dog"
 
 # run extended tests (omitting certain feature tests)
-@xtests-quick:
-    specsheet xtests/options/*.toml xtests/live/{basics,tcp}.toml -shide \
+@xtests-quick *args:
+    specsheet xtests/options/*.toml xtests/live/{basics,tcp}.toml -shide {{args}} \
         -O cmd.target.dog="${CARGO_TARGET_DIR:-../../target}/debug/dog"
 
 # display the number of extended tests that get run
