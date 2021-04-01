@@ -18,8 +18,7 @@ pub struct TlsTransport {
 impl TlsTransport {
 
     /// Creates a new TLS transport that connects to the given host.
-    pub fn new(sa: impl Into<String>) -> Self {
-        let addr = sa.into();
+    pub fn new(addr: String) -> Self {
         Self { addr }
     }
 }

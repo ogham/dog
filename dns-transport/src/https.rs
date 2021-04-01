@@ -18,8 +18,8 @@ pub struct HttpsTransport {
 impl HttpsTransport {
 
     /// Creates a new HTTPS transport that connects to the given URL.
-    pub fn new(url: impl Into<String>) -> Self {
-        Self { url: url.into() }
+    pub fn new(url: String) -> Self {
+        Self { url }
     }
 }
 

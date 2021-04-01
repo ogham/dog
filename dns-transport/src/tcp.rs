@@ -23,8 +23,8 @@ pub struct TcpTransport {
 impl TcpTransport {
 
     /// Creates a new TCP transport that connects to the given host.
-    pub fn new(sa: impl Into<String>) -> Self {
-        Self { addr: sa.into() }
+    pub fn new(addr: String) -> Self {
+        Self { addr }
     }
 }
 

@@ -31,14 +31,16 @@ pub enum TransportType {
 
 impl TransportType {
 
-    /// Creates a boxed `Transport` depending on the transport type.
-    pub fn make_transport(self, ns: String) -> Box<dyn Transport> {
+    /// Creates a boxed `Transport` depending on the transport type. The
+    /// parameter will be a URL for the HTTPS transport type, and a
+    /// stringified address for the others.
+    pub fn make_transport(self, param: String) -> Box<dyn Transport> {
         match self {
-            Self::Automatic  => Box::new(AutoTransport::new(ns)),
-            Self::UDP        => Box::new(UdpTransport::new(ns)),
-            Self::TCP        => Box::new(TcpTransport::new(ns)),
-            Self::TLS        => Box::new(TlsTransport::new(ns)),
-            Self::HTTPS      => Box::new(HttpsTransport::new(ns)),
+            Self::Automatic  => Box::new(AutoTransport::new(param)),
+            Self::UDP        => Box::new(UdpTransport::new(param)),
+            Self::TCP        => Box::new(TcpTransport::new(param)),
+            Self::TLS        => Box::new(TlsTransport::new(param)),
+            Self::HTTPS      => Box::new(HttpsTransport::new(param)),
         }
     }
 }
