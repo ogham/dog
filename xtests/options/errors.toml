@@ -23,6 +23,14 @@ status = 3
 tags = [ 'options' ]
 
 [[cmd]]
+name = "Running dog with ‘opt’ also warns that OPT requests are sent by default"
+shell = "dog opt dns.google"
+stdout = { empty = true }
+stderr = { string = "OPT request is sent by default" }
+status = 3
+tags = [ 'options' ]
+
+[[cmd]]
 name = "Running dog with a domain longer than 255 bytes warns about it being too long"
 shell = "dog 12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"
 stdout = { empty = true }

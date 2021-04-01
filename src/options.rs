@@ -179,11 +179,12 @@ impl Inputs {
     }
 
     fn add_type(&mut self, input: &str) -> Result<(), OptionsError> {
-        if input == "OPT" {
+        if input.eq_ignore_ascii_case("OPT") {
             return Err(OptionsError::QueryTypeOPT);
         }
 
-        if let Some(rt) = RecordType::from_type_name(input) {
+        let input_uppercase = input.to_ascii_uppercase();
+        if let Some(rt) = RecordType::from_type_name(&input_uppercase) {
             self.types.push(rt);
             Ok(())
         }
@@ -202,11 +203,17 @@ impl Inputs {
     }
 
     fn parse_class_name(&self, input: &str) -> Option<QClass> {
-        match input {
-            "IN"  => Some(QClass::IN),
-            "CH"  => Some(QClass::CH),
-            "HS"  => Some(QClass::HS),
-            _     => None,
+        if input.eq_ignore_ascii_case("IN") {
+            Some(QClass::IN)
+        }
+        else if input.eq_ignore_ascii_case("CH") {
+            Some(QClass::CH)
+        }
+        else if input.eq_ignore_ascii_case("HS") {
+            Some(QClass::HS)
+        }
+        else {
+            None
         }
     }
 
@@ -221,24 +228,24 @@ impl Inputs {
     }
 
     fn load_free_args(&mut self, matches: getopts::Matches) -> Result<(), OptionsError> {
-        for a in matches.free {
-            if let Some(nameserver) = a.strip_prefix('@') {
+        for argument in matches.free {
+            if let Some(nameserver) = argument.strip_prefix('@') {
                 trace!("Got nameserver -> {:?}", nameserver);
                 self.add_nameserver(nameserver)?;
             }
-            else if Self::is_constant_name(&a) {
-                if let Some(class) = self.parse_class_name(&a) {
-                    trace!("Got qclass -> {:?}", &a);
+            else if Self::is_constant_name(&argument) {
+                if let Some(class) = self.parse_class_name(&argument) {
+                    trace!("Got qclass -> {:?}", &argument);
                     self.classes.push(class);
                 }
                 else {
-                    trace!("Got qtype -> {:?}", &a);
-                    self.add_type(&a)?;
+                    trace!("Got qtype -> {:?}", &argument);
+                    self.add_type(&argument)?;
                 }
             }
             else {
-                trace!("Got domain -> {:?}", &a);
-                match Labels::encode(&a) {
+                trace!("Got domain -> {:?}", &argument);
+                match Labels::encode(&argument) {
                     Ok(d)   => self.domains.push(d),
                     Err(e)  => return Err(OptionsError::InvalidDomain(e.into())),
                 }
@@ -248,8 +255,17 @@ impl Inputs {
         Ok(())
     }
 
-    fn is_constant_name(a: &str) -> bool {
-        a.chars().all(char::is_uppercase) || a == "EUI48" || a == "EUI64"
+    fn is_constant_name(argument: &str) -> bool {
+        let first_char = match argument.chars().next() {
+            Some(c)  => c,
+            None     => return false,
+        };
+
+        if ! first_char.is_ascii_alphabetic() {
+            return false;
+        }
+
+        argument.chars().all(|c| c.is_ascii_alphanumeric())
     }
 
     fn load_fallbacks(&mut self) {
@@ -585,6 +601,16 @@ mod test {
     }
 
     #[test]
+    fn domain_and_type_lowercase() {
+        let options = Options::getopts(&[ "lookup.dog", "soa" ]).unwrap();
+        assert_eq!(options.requests.inputs, Inputs {
+            domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
+            types:      vec![ RecordType::SOA ],
+            .. Inputs::fallbacks()
+        });
+    }
+
+    #[test]
     fn domain_and_nameserver() {
         let options = Options::getopts(&[ "lookup.dog", "@1.1.1.1" ]).unwrap();
         assert_eq!(options.requests.inputs, Inputs {
@@ -597,6 +623,16 @@ mod test {
     #[test]
     fn domain_and_class() {
         let options = Options::getopts(&[ "lookup.dog", "CH" ]).unwrap();
+        assert_eq!(options.requests.inputs, Inputs {
+            domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
+            classes:    vec![ QClass::CH ],
+            .. Inputs::fallbacks()
+        });
+    }
+
+    #[test]
+    fn domain_and_class_lowercase() {
+        let options = Options::getopts(&[ "lookup.dog", "ch" ]).unwrap();
         assert_eq!(options.requests.inputs, Inputs {
             domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
             classes:    vec![ QClass::CH ],
@@ -619,6 +655,18 @@ mod test {
     #[test]
     fn all_parameters() {
         let options = Options::getopts(&[ "-q", "lookup.dog", "--class", "CH", "--type", "SOA", "--nameserver", "1.1.1.1" ]).unwrap();
+        assert_eq!(options.requests.inputs, Inputs {
+            domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
+            classes:    vec![ QClass::CH ],
+            types:      vec![ RecordType::SOA ],
+            resolvers:  vec![ Resolver::specified("1.1.1.1".into()) ],
+            .. Inputs::fallbacks()
+        });
+    }
+
+    #[test]
+    fn all_parameters_lowercase() {
+        let options = Options::getopts(&[ "-q", "lookup.dog", "--class", "ch", "--type", "soa", "--nameserver", "1.1.1.1" ]).unwrap();
         assert_eq!(options.requests.inputs, Inputs {
             domains:    vec![ Labels::encode("lookup.dog").unwrap() ],
             classes:    vec![ QClass::CH ],
@@ -811,6 +859,12 @@ mod test {
     #[test]
     fn opt() {
         assert_eq!(Options::getopts(&[ "OPT", "lookup.dog" ]),
+                   OptionsResult::InvalidOptions(OptionsError::QueryTypeOPT));
+    }
+
+    #[test]
+    fn opt_lowercase() {
+        assert_eq!(Options::getopts(&[ "opt", "lookup.dog" ]),
                    OptionsResult::InvalidOptions(OptionsError::QueryTypeOPT));
     }
 
