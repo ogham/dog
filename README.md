@@ -104,6 +104,7 @@ The `just man` command will compile the Markdown into manual pages, which it wil
 To use them, copy them into a directory that `man` will read.
 `/usr/local/share/man` is usually a good choice.
 
+
 ### Container image
 
 To build the container image of dog, you can use Docker or Kaniko. Here an example using Docker:
@@ -118,16 +119,35 @@ To run dog directly, you can then define the following alias:
 
     $ alias dog="docker run -it --rm dog"
 
-### Testing
+
+### End-to-end testing
 
 dog has an integration test suite written as [Specsheet](https://specsheet.software/) check documents.
 If you have a copy installed, you can run:
 
-    just xtests
+    $ just xtests
 
 Specsheet will test the compiled binary by making DNS requests over the network, checking that dog returns the correct results and does not crash.
 Note that this will expose your IP address.
 For more information, read [the xtests README](xtests/README.md).
+
+
+### Feature toggles
+
+dog has three Cargo features that can be switched off to remove functionality.
+While doing so makes dog less useful, it results in a smaller binary that takes less time to build.
+
+There are three feature toggles available, all of which are active by default:
+
+- `with_idna`, which enables [IDNA](https://en.wikipedia.org/wiki/Internationalized_domain_name) processing
+- `with_tls`, which enables DNS-over-TLS
+- `with_https`, which enables DNS-over-HTTPS (requires `with_tls`)
+
+Use `cargo` to build a binary that uses feature toggles. For example, to disable TLS and HTTPS support but keep IDNA support enabled, you can run:
+
+    $ cargo build --no-default-features --features=with_idna
+
+The list of features that have been disabled can be checked at runtime as part of the `--version` string.
 
 
 ---

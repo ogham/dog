@@ -31,13 +31,13 @@ fn main() -> io::Result<()> {
 
     let ver =
         if is_debug_build() {
-            format!("{}\nv{} \\1;31m(pre-release debug build!)\\0m\n\\1;4;34m{}\\0m", tagline, cargo_version(), url)
+            format!("{}\nv{} \\1;31m(pre-release debug build!)\\0m\n\\1;4;34m{}\\0m", tagline, version_string(), url)
         }
         else if is_development_version() {
-            format!("{}\nv{} [{}] built on {} \\1;31m(pre-release!)\\0m\n\\1;4;34m{}\\0m", tagline, cargo_version(), git_hash(), build_date(), url)
+            format!("{}\nv{} [{}] built on {} \\1;31m(pre-release!)\\0m\n\\1;4;34m{}\\0m", tagline, version_string(), git_hash(), build_date(), url)
         }
         else {
-            format!("{}\nv{}\n\\1;4;34m{}\\0m", tagline, cargo_version(), url)
+            format!("{}\nv{}\n\\1;4;34m{}\\0m", tagline, version_string(), url)
         };
 
     // We need to create these files in the Cargo output directory.
@@ -112,6 +112,45 @@ fn is_debug_build() -> bool {
 fn cargo_version() -> String {
     env::var("CARGO_PKG_VERSION").unwrap()
 }
+
+/// Returns the version and build parameters string.
+fn version_string() -> String {
+    let mut ver = cargo_version();
+
+    let feats = nonstandard_features_string();
+    if ! feats.is_empty() {
+        ver.push_str(&format!(" [{}]", &feats));
+    }
+
+    ver
+}
+
+/// Finds whether a feature is enabled by examining the Cargo variable.
+fn feature_enabled(name: &str) -> bool {
+    env::var(&format!("CARGO_FEATURE_{}", name))
+        .map(|e| ! e.is_empty())
+        .unwrap_or(false)
+}
+
+/// A comma-separated list of non-standard feature choices.
+fn nonstandard_features_string() -> String {
+    let mut s = Vec::new();
+
+    if ! feature_enabled("WITH_IDNA") {
+        s.push("-idna");
+    }
+
+    if ! feature_enabled("WITH_TLS") {
+        s.push("-tls");
+    }
+
+    if ! feature_enabled("WITH_HTTPS") {
+        s.push("-https");
+    }
+
+    s.join(", ")
+}
+
 
 /// Formats the current date as an ISO 8601 string.
 fn build_date() -> String {

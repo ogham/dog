@@ -1,0 +1,11 @@
+# These tests are meant to be run against a dog binary compiled with
+# `--no-default-features`. They will fail otherwise.
+
+
+[[cmd]]
+name = "The missing features are documented in the version"
+shell = "dog --version"
+stdout = { string = "[-idna, -tls, -https]" }
+stderr = { empty = true }
+status = 0
+tags = [ 'features' ]

@@ -7,15 +7,19 @@ The checks are written as [Specsheet] documents, which you’ll need to have ins
 Because these tests make connections over the network, the outcome of the test suite will depend on your own machine‘s Internet connection! It also means that your own IP address will be recorded as making the requests.
 
 
-### Test hierarchy
+### Test layout
 
-The tests have been divided into three sections:
+The tests have been divided into four sections:
 
-1. **live**, which uses both your computer’s default resolver and the [public Cloudflare DNS resolver] to access records that have been created using a public-facing DNS host. This checks that dog works using whatever software is on the Internet right now. Because these are _live_ records, the output will vary as things like the TTL vary, so we cannot assert on the _exact_ output; nevertheless, it’s a good check to see if the basic functionality is working.
+1. **live**, which uses both your computer’s default resolver and the [public Cloudflare DNS resolver] to access records that have been created using a public-facing DNS host. This checks that dog works using whatever software is between you and those nameservers on the Internet right now. Because these are _live_ records, the output will vary as things like the TTL vary, so we cannot assert on the _exact_ output; nevertheless, it’s a good check to see if the basic functionality is working.
+
 2. **madns**, which sends requests to the [madns resolver]. This resolver has been pre-programmed with deliberately incorrect responses to see how dog handles edge cases in the DNS specification. These are not live records, so things like the TTLs of the responses are fixed, meaning the output should never change over time; however, it does not mean dog will hold up against the network infrastructure of the real world.
+
 3. **options**, which runs dog using various command-line options and checks that the correct output is returned. These tests should not make network requests when behaving correctly.
 
-All three categories of check are needed to ensure dog is working correctly.
+4. **features**, which checks dog does the right thing when certain features have been enabled or disabled at compile-time. These tests also should not make network requests when behaving correctly.
+
+All four categories of check are needed to ensure dog is working correctly.
 
 
 ### Tags

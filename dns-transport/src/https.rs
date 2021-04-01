@@ -1,4 +1,4 @@
-#![cfg_attr(not(feature="https"), allow(unused))]
+#![cfg_attr(not(feature = "https"), allow(unused))]
 
 use std::io::{Read, Write};
 use std::net::TcpStream;
@@ -25,7 +25,7 @@ impl HttpsTransport {
 
 impl Transport for HttpsTransport {
 
-    #[cfg(feature="https")]
+    #[cfg(feature = "with_https")]
     fn send(&self, request: &Request) -> Result<Response, Error> {
         let connector = native_tls::TlsConnector::new()?;
 
@@ -75,7 +75,7 @@ impl Transport for HttpsTransport {
         Ok(response)
     }
 
-    #[cfg(not(feature="https"))]
+    #[cfg(not(feature = "with_https"))]
     fn send(&self, request: &Request) -> Result<Response, Error> {
         unimplemented!("HTTPS feature disabled")
     }

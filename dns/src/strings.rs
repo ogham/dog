@@ -20,13 +20,13 @@ pub struct Labels {
     segments: Vec<(u8, String)>,
 }
 
-#[cfg(feature = "idna")]
+#[cfg(feature = "with_idna")]
 fn label_to_ascii(label: &str) -> Result<String, unic_idna::Errors> {
     let flags = unic_idna::Flags{use_std3_ascii_rules: true, transitional_processing: false, verify_dns_length: true};
     unic_idna::to_ascii(label, flags)
 }
 
-#[cfg(not(feature = "idna"))]
+#[cfg(not(feature = "with_idna"))]
 fn label_to_ascii(label: &str) -> Result<String, ()> {
     Ok(label.to_owned())
 }

@@ -14,20 +14,20 @@ pub enum Error {
     TruncatedResponse,
 
     /// There was a problem making a TLS request.
-    #[cfg(feature="tls")]
+    #[cfg(feature = "with_tls")]
     TlsError(native_tls::Error),
 
     /// There was a problem _establishing_ a TLS request.
-    #[cfg(feature="tls")]
+    #[cfg(feature = "with_tls")]
     TlsHandshakeError(native_tls::HandshakeError<std::net::TcpStream>),
 
     /// There was a problem decoding the response HTTP headers or body.
-    #[cfg(feature="https")]
+    #[cfg(feature = "with_https")]
     HttpError(httparse::Error),
 
     /// The HTTP response code was something other than 200 OK, along with the
     /// response code text, if present.
-    #[cfg(feature="https")]
+    #[cfg(feature = "with_https")]
     WrongHttpStatus(u16, Option<String>),
 }
 
@@ -46,21 +46,21 @@ impl From<std::io::Error> for Error {
     }
 }
 
-#[cfg(feature="tls")]
+#[cfg(feature = "with_tls")]
 impl From<native_tls::Error> for Error {
     fn from(inner: native_tls::Error) -> Self {
         Self::TlsError(inner)
     }
 }
 
-#[cfg(feature="tls")]
+#[cfg(feature = "with_tls")]
 impl From<native_tls::HandshakeError<std::net::TcpStream>> for Error {
     fn from(inner: native_tls::HandshakeError<std::net::TcpStream>) -> Self {
         Self::TlsHandshakeError(inner)
     }
 }
 
-#[cfg(feature="https")]
+#[cfg(feature = "with_https")]
 impl From<httparse::Error> for Error {
     fn from(inner: httparse::Error) -> Self {
         Self::HttpError(inner)

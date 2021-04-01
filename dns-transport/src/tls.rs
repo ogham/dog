@@ -1,4 +1,4 @@
-#![cfg_attr(not(feature="tls"), allow(unused))]
+#![cfg_attr(not(feature = "tls"), allow(unused))]
 
 use std::net::TcpStream;
 use std::io::Write;
@@ -26,7 +26,7 @@ impl TlsTransport {
 
 impl Transport for TlsTransport {
 
-    #[cfg(feature="tls")]
+    #[cfg(feature = "with_tls")]
     fn send(&self, request: &Request) -> Result<Response, Error> {
         let connector = native_tls::TlsConnector::new()?;
 
@@ -58,7 +58,7 @@ impl Transport for TlsTransport {
         Ok(response)
     }
 
-    #[cfg(not(feature="tls"))]
+    #[cfg(not(feature = "with_tls"))]
     fn send(&self, request: &Request) -> Result<Response, Error> {
         unimplemented!("TLS feature disabled")
     }

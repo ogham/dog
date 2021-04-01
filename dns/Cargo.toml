@@ -13,22 +13,22 @@ doctest = false
 # logging
 log = "0.4"
 
-# protocol parsing
+# protocol parsing helper
 byteorder = "1.3"
 
-# packet printing
+# printing of certain packets
 base64 = "0.13"
 
 # idna encoding
 unic-idna = { version = "0.9.0", optional = true }
 
-# testing
+# mutation testing
 mutagen = { git = "https://github.com/llogiq/mutagen", optional = true }
 
 [dev-dependencies]
 pretty_assertions = "0.7"
 
 [features]
-default = []  # these are enabled in the main dog crate
-idna = ["unic-idna"]
+default = []  # idna is enabled in the main dog crate
+with_idna = ["unic-idna"]
 with_mutagen = ["mutagen"]  # needs nightly

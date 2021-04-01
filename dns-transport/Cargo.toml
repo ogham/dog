@@ -25,5 +25,5 @@ httparse = { version = "1.3", optional = true }
 
 [features]
 default = []  # these are enabled in the main dog crate
-tls   = ["native-tls"]
-https = ["native-tls", "httparse"]
+with_tls   = ["native-tls"]
+with_https = ["native-tls", "httparse"]

@@ -60,12 +60,12 @@ export DOG_DEBUG := ""
 
 # run extended tests
 @xtests *args:
-    specsheet xtests/*/*.toml -shide {{args}} \
+    specsheet xtests/{live,madns,options}/*.toml -shide {{args}} \
         -O cmd.target.dog="${CARGO_TARGET_DIR:-../../target}/debug/dog"
 
 # run extended tests (in release mode)
 @xtests-release *args:
-    specsheet xtests/*/*.toml {{args}} \
+    specsheet xtests/{live,madns,options}/*.toml {{args}} \
         -O cmd.target.dog="${CARGO_TARGET_DIR:-../../target}/release/dog"
 
 # run extended tests (omitting certain feature tests)
@@ -119,6 +119,12 @@ export DOG_DEBUG := ""
 @unused-deps:
     command -v cargo-udeps >/dev/null || (echo "cargo-udeps not installed" && exit 1)
     cargo +nightly udeps
+
+# builds dog and runs extended tests with features disabled
+@feature-checks *args:
+    cargo build --no-default-features
+    specsheet xtests/features/none.toml -shide {{args}} \
+        -O cmd.target.dog="${CARGO_TARGET_DIR:-../../target}/debug/dog"
 
 # print versions of the necessary build tools
 @versions:

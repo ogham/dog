@@ -609,10 +609,10 @@ fn erroneous_phase(error: &TransportError) -> &'static str {
         TransportError::WireError(_)          => "protocol",
         TransportError::TruncatedResponse     |
         TransportError::NetworkError(_)       => "network",
-        #[cfg(feature="tls")]
+        #[cfg(feature = "with_tls")]
         TransportError::TlsError(_)           |
         TransportError::TlsHandshakeError(_)  => "tls",
-        #[cfg(feature="https")]
+        #[cfg(feature = "with_https")]
         TransportError::HttpError(_)          |
         TransportError::WrongHttpStatus(_,_)  => "http",
     }
@@ -624,13 +624,13 @@ fn error_message(error: TransportError) -> String {
         TransportError::WireError(e)          => wire_error_message(e),
         TransportError::TruncatedResponse     => "Truncated response".into(),
         TransportError::NetworkError(e)       => e.to_string(),
-        #[cfg(feature="tls")]
+        #[cfg(feature = "with_tls")]
         TransportError::TlsError(e)           => e.to_string(),
-        #[cfg(feature="tls")]
+        #[cfg(feature = "with_tls")]
         TransportError::TlsHandshakeError(e)  => e.to_string(),
-        #[cfg(feature="https")]
+        #[cfg(feature = "with_https")]
         TransportError::HttpError(e)          => e.to_string(),
-        #[cfg(feature="https")]
+        #[cfg(feature = "with_https")]
         TransportError::WrongHttpStatus(t,r)  => format!("Nameserver returned HTTP {} ({})", t, r.unwrap_or_else(|| "No reason".into()))
     }
 }
