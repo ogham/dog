@@ -1,0 +1,1 @@
+dog: Invalid options: You must pass a URL as a nameserver when using --https

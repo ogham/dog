@@ -2,7 +2,15 @@
 name = "Running dog with ‘--wibble’ warns about the invalid argument"
 shell = "dog --wibble"
 stdout = { empty = true }
-stderr = { string = "wibble" }
+stderr = { file = "outputs/invalid-argument.txt" }
+status = 3
+tags = [ 'options' ]
+
+[[cmd]]
+name = "Running dog with ‘--class’ warns about the missing argument parameter"
+shell = "dog --class"
+stdout = { empty = true }
+stderr = { file = "outputs/missing-parameter.txt" }
 status = 3
 tags = [ 'options' ]
 
@@ -10,7 +18,31 @@ tags = [ 'options' ]
 name = "Running dog with ‘XYZZY’ warns about the invalid record type"
 shell = "dog XYZZY dns.google"
 stdout = { empty = true }
-stderr = { string = "XYZZY" }
+stderr = { file = "outputs/invalid-query-type.txt" }
+status = 3
+tags = [ 'options' ]
+
+[[cmd]]
+name = "Running dog with ‘--type XYZZY’ warns about the invalid record type"
+shell = "dog --type XYZZY dns.google"
+stdout = { empty = true }
+stderr = { file = "outputs/invalid-query-type.txt" }
+status = 3
+tags = [ 'options' ]
+
+[[cmd]]
+name = "Running dog with ‘--class XYZZY’ warns about the invalid class"
+shell = "dog --class XYZZY dns.google"
+stdout = { empty = true }
+stderr = { file = "outputs/invalid-query-class.txt" }
+status = 3
+tags = [ 'options' ]
+
+[[cmd]]
+name = "Running dog with ‘-Z aoeu’ warns about the invalid protocol tweak"
+shell = "dog -Z aoeu dns.google"
+stdout = { empty = true }
+stderr = { file = "outputs/invalid-protocol-tweak.txt" }
 status = 3
 tags = [ 'options' ]
 
@@ -18,7 +50,7 @@ tags = [ 'options' ]
 name = "Running dog with ‘OPT’ warns that OPT requests are sent by default"
 shell = "dog OPT dns.google"
 stdout = { empty = true }
-stderr = { string = "OPT request is sent by default" }
+stderr = { file = "outputs/opt-query.txt" }
 status = 3
 tags = [ 'options' ]
 
@@ -26,7 +58,7 @@ tags = [ 'options' ]
 name = "Running dog with ‘opt’ also warns that OPT requests are sent by default"
 shell = "dog opt dns.google"
 stdout = { empty = true }
-stderr = { string = "OPT request is sent by default" }
+stderr = { file = "outputs/opt-query.txt" }
 status = 3
 tags = [ 'options' ]
 
@@ -34,7 +66,7 @@ tags = [ 'options' ]
 name = "Running dog with a domain longer than 255 bytes warns about it being too long"
 shell = "dog 12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"
 stdout = { empty = true }
-stderr = { string = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890" }
+stderr = { file = "outputs/huge-domain.txt" }
 status = 3
 tags = [ 'options' ]
 
@@ -42,6 +74,6 @@ tags = [ 'options' ]
 name = "Running dog with ‘--https’ and no nameserver warns that one is missing"
 shell = "dog --https dns.google"
 stdout = { empty = true }
-stderr = { string = "You must pass a URL as a nameserver when using --https" }
+stderr = { file = "outputs/missing-nameserver.txt" }
 status = 3
 tags = [ 'options' ]
