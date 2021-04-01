@@ -24,8 +24,8 @@ impl UnknownQtype {
     /// Returns the type number behind this unknown type.
     pub fn type_number(self) -> u16 {
         match self {
-            Self::HeardOf(_, num)  => num,
-            Self::UnheardOf(num)   => num,
+            Self::HeardOf(_, num) |
+            Self::UnheardOf(num)  => num,
         }
     }
 }

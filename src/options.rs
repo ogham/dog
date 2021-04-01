@@ -471,7 +471,6 @@ pub enum HelpReason {
 /// Something wrong with the combination of options the user has picked.
 #[derive(PartialEq, Debug)]
 pub enum OptionsError {
-    TooManyProtocols,
     InvalidDomain(String),
     InvalidEDNS(String),
     InvalidQueryType(String),
@@ -485,7 +484,6 @@ pub enum OptionsError {
 impl fmt::Display for OptionsError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::TooManyProtocols       => write!(f, "Too many protocols"),
             Self::InvalidDomain(domain)  => write!(f, "Invalid domain {:?}", domain),
             Self::InvalidEDNS(edns)      => write!(f, "Invalid EDNS setting {:?}", edns),
             Self::InvalidQueryType(qt)   => write!(f, "Invalid query type {:?}", qt),
