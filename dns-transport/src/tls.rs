@@ -60,7 +60,7 @@ impl Transport for TlsTransport {
 
     #[cfg(not(feature = "with_tls"))]
     fn send(&self, request: &Request) -> Result<Response, Error> {
-        unimplemented!("TLS feature disabled")
+        unreachable!("TLS feature disabled")
     }
 }
 

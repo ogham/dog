@@ -9,3 +9,19 @@ stdout = { string = "[-idna, -tls, -https]" }
 stderr = { empty = true }
 status = 0
 tags = [ 'features' ]
+
+[[cmd]]
+name = "The ‘--tls’ option is not accepted when the feature is disabled"
+shell = "dog --tls a.b.c.d"
+stdout = { empty = true }
+stderr = { file = "outputs/disabled_tls.txt" }
+status = 3
+tags = [ 'features' ]
+
+[[cmd]]
+name = "The ‘--https option is not accepted when the feature is disabled"
+shell = "dog --https a.b.c.d @name.server"
+stdout = { empty = true }
+stderr = { file = "outputs/disabled_https.txt" }
+status = 3
+tags = [ 'features' ]

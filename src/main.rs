@@ -55,6 +55,7 @@ fn main() {
     match Options::getopts(env::args_os().skip(1)) {
         OptionsResult::Ok(options) => {
             info!("Running with options -> {:#?}", options);
+            disabled_feature_check(&options);
             exit(run(options));
         }
 
@@ -148,6 +149,27 @@ fn run(Options { requests, format, measure_time }: Options) -> i32 {
     }
     else {
         exits::NO_SHORT_RESULTS
+    }
+}
+
+
+/// Checks whether the options contain parameters that will cause dog to fail
+/// because the feature is disabled by exiting if so.
+#[allow(unused)]
+fn disabled_feature_check(options: &Options) {
+    use std::process::exit;
+    use crate::connect::TransportType;
+
+    #[cfg(not(feature = "with_tls"))]
+    if options.requests.inputs.transport_types.contains(&TransportType::TLS) {
+        eprintln!("dog: Cannot use '--tls': This version of dog has been compiled without TLS support");
+        exit(exits::OPTIONS_ERROR);
+    }
+
+    #[cfg(not(feature = "with_https"))]
+    if options.requests.inputs.transport_types.contains(&TransportType::HTTPS) {
+        eprintln!("dog: Cannot use '--https': This version of dog has been compiled without HTTPS support");
+        exit(exits::OPTIONS_ERROR);
     }
 }
 

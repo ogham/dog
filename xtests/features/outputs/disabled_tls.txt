@@ -1,0 +1,1 @@
+dog: Cannot use '--tls': This version of dog has been compiled without TLS support

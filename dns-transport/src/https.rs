@@ -77,7 +77,7 @@ impl Transport for HttpsTransport {
 
     #[cfg(not(feature = "with_https"))]
     fn send(&self, request: &Request) -> Result<Response, Error> {
-        unimplemented!("HTTPS feature disabled")
+        unreachable!("HTTPS feature disabled")
     }
 }
 

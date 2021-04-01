@@ -60,12 +60,12 @@ export DOG_DEBUG := ""
 
 # run extended tests
 @xtests *args:
-    specsheet xtests/{live,madns,options}/*.toml -shide {{args}} \
+    specsheet xtests/{options,live,madns}/*.toml -shide {{args}} \
         -O cmd.target.dog="${CARGO_TARGET_DIR:-../../target}/debug/dog"
 
 # run extended tests (in release mode)
 @xtests-release *args:
-    specsheet xtests/{live,madns,options}/*.toml {{args}} \
+    specsheet xtests/{options,live,madns}/*.toml {{args}} \
         -O cmd.target.dog="${CARGO_TARGET_DIR:-../../target}/release/dog"
 
 # run extended tests (omitting certain feature tests)
