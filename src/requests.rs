@@ -1,7 +1,9 @@
 //! Request generation based on the user’s input arguments.
 
+use std::io;
+
 use crate::connect::TransportType;
-use crate::resolve::Resolver;
+use crate::resolve::ResolverType;
 use crate::txid::TxidGenerator;
 
 
@@ -31,13 +33,13 @@ pub struct Inputs {
     pub domains: Vec<dns::Labels>,
 
     /// The list of DNS record types to query for.
-    pub types: Vec<dns::record::RecordType>,
+    pub record_types: Vec<dns::record::RecordType>,
 
     /// The list of DNS classes to query for.
     pub classes: Vec<dns::QClass>,
 
     /// The list of resolvers to send queries to.
-    pub resolvers: Vec<Resolver>,
+    pub resolver_types: Vec<ResolverType>,
 
     /// The list of transport types to send queries over.
     pub transport_types: Vec<TransportType>,
@@ -81,12 +83,17 @@ impl RequestGenerator {
 
     /// Iterate through the inputs matrix, returning pairs of DNS request list
     /// and the details of the transport to send them down.
-    pub fn generate(self) -> Vec<(Vec<dns::Request>, Box<dyn dns_transport::Transport>)> {
+    pub fn generate(self) -> io::Result<Vec<(Vec<dns::Request>, Box<dyn dns_transport::Transport>)>> {
         let mut requests = Vec::new();
+
+        let resolvers = self.inputs.resolver_types.into_iter()
+            .map(ResolverType::obtain)
+            .collect::<Result<Vec<_>, _>>()?;
+
         for domain in &self.inputs.domains {
-            for qtype in self.inputs.types.iter().copied() {
+            for qtype in self.inputs.record_types.iter().copied() {
                 for qclass in self.inputs.classes.iter().copied() {
-                    for resolver in &self.inputs.resolvers {
+                    for resolver in &resolvers {
                         for transport_type in &self.inputs.transport_types {
 
                             let mut flags = dns::Flags::query();
@@ -116,7 +123,7 @@ impl RequestGenerator {
             }
         }
 
-        requests
+        Ok(requests)
     }
 }
 

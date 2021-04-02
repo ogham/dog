@@ -7,12 +7,42 @@ use log::*;
 use dns::Labels;
 
 
+/// A **resolver type** is the source of a `Resolver`.
+#[derive(PartialEq, Debug)]
+pub enum ResolverType {
+
+    /// Obtain a resolver by consulting the system in order to find a
+    /// nameserver and a search list.
+    SystemDefault,
+
+    /// Obtain a resolver by using the given user-submitted string.
+    Specific(String),
+}
+
+impl ResolverType {
+
+    /// Obtains a resolver by the means specified in this type. Returns an
+    /// error if there was a problem looking up system information.
+    pub fn obtain(self) -> io::Result<Resolver> {
+        match self {
+            Self::SystemDefault => {
+                system_nameservers()
+            }
+            Self::Specific(nameserver) => {
+                let search_list = Vec::new();
+                Ok(Resolver { nameserver, search_list })
+            }
+        }
+    }
+}
+
+
 /// A **resolver** knows the address of the server we should
 /// send DNS requests to, and the search list for name lookup.
-#[derive(PartialEq, Debug)]
+#[derive(Debug)]
 pub struct Resolver {
 
-    /// The address of the name server.
+    /// The address of the nameserver.
     pub nameserver: String,
 
     /// The search list for name lookup.
@@ -21,27 +51,13 @@ pub struct Resolver {
 
 impl Resolver {
 
-    /// Returns a resolver with the specified nameserver and an empty
-    /// search list.
-    pub fn specified(nameserver: String) -> Self {
-        let search_list = Vec::new();
-        Self { nameserver, search_list }
-    }
-
-    /// Returns a resolver that is default for the system.
-    pub fn system_default() -> Self {
-        let (nameserver_opt, search_list) = system_nameservers().expect("Failed to get nameserver");
-        let nameserver = nameserver_opt.expect("No nameserver found");
-        Self { nameserver, search_list }
-    }
-
     /// Returns a nameserver that queries should be sent to.
     pub fn nameserver(&self) -> String {
         self.nameserver.clone()
     }
 
     /// Returns a sequence of names to be queried, taking into account
-    /// of the search list.
+    /// the search list.
     pub fn name_list(&self, name: &Labels) -> Vec<Labels> {
         let mut list = Vec::new();
 
@@ -64,13 +80,17 @@ impl Resolver {
 
 
 /// Looks up the system default nameserver on Unix, by querying
-/// `/etc/resolv.conf` and returning the first line that specifies one.
+/// `/etc/resolv.conf` and using the first line that specifies one.
 /// Returns an error if there’s a problem reading the file, or `None` if no
 /// nameserver is specified in the file.
 #[cfg(unix)]
-fn system_nameservers() -> io::Result<(Option<String>, Vec<String>)> {
+fn system_nameservers() -> io::Result<Resolver> {
     use std::fs::File;
     use std::io::{BufRead, BufReader};
+
+    if cfg!(test) {
+        panic!("system_nameservers() called from test code");
+    }
 
     let f = File::open("/etc/resolv.conf")?;
     let reader = BufReader::new(f);
@@ -96,7 +116,8 @@ fn system_nameservers() -> io::Result<(Option<String>, Vec<String>)> {
         }
     }
 
-    Ok((nameservers.first().cloned(), search_list))
+    let nameserver = nameservers.into_iter().next().unwrap();
+    Ok(Resolver { nameserver, search_list })
 }
 
 
@@ -104,8 +125,12 @@ fn system_nameservers() -> io::Result<(Option<String>, Vec<String>)> {
 /// the list of network adapters and returning the first nameserver it finds.
 #[cfg(windows)]
 #[allow(unused)]  // todo: Remove this when the time is right
-fn system_nameservers() -> io::Result<(Option<String>, Vec<String>)> {
+fn system_nameservers() -> io::Result<Resolver> {
     use std::net::{IpAddr, UdpSocket};
+
+    if cfg!(test) {
+        panic!("system_nameservers() called from test code");
+    }
 
     let adapters = match ipconfig::get_adapters() {
         Ok(a) => a,
@@ -147,6 +172,8 @@ fn system_nameservers() -> io::Result<(Option<String>, Vec<String>)> {
         ForceIPFamily::None => get_ipv6().or(get_ipv4()).ok(),
     };
 
+    let search_path = Vec::new();  // todo: implement this
+
     let active_adapters = adapters.iter().filter(|a| {
         a.oper_status() == ipconfig::OperStatus::IfOperStatusUp && !a.gateways().is_empty()
     });
@@ -158,21 +185,23 @@ fn system_nameservers() -> io::Result<(Option<String>, Vec<String>)> {
         .flatten()
     {
         debug!("Found first nameserver {:?}", dns_server);
-        // TODO: Implement dns suffix search list on Windows
-        return Ok((Some(dns_server.to_string()), Vec::new()));
+        let nameserver = dns_server.to_string();
+        Ok(Resolver { nameserver, search_path })
     }
 
     // Fallback
-    if let Some(dns_server) = active_adapters
+    else if let Some(dns_server) = active_adapters
         .flat_map(|a| a.dns_servers())
         .find(|d| (d.is_ipv4() && force_ip_family != ForceIPFamily::V6) || d.is_ipv6())
     {
         debug!("Found first fallback nameserver {:?}", dns_server);
-        return Ok((Some(dns_server.to_string()), Vec::new()));
+        let nameserver = dns_server.to_string();
+        Ok(Resolver { nameserver, search_path })
     }
 
-    warn!("No nameservers available");
-    return Ok((None, Vec::new()));
+    else {
+        panic!("No nameservers available");
+    }
 }
 
 

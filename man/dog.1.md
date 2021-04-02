@@ -232,6 +232,9 @@ EXIT STATUSES
 3
 : If there was a problem with the command-line arguments.
 
+4
+: If there was a problem obtaining the system nameserver information.
+
 
 AUTHOR
 ======

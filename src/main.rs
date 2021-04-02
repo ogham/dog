@@ -16,10 +16,7 @@
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::option_if_let_else)]
 #![allow(clippy::too_many_lines)]
-#![allow(clippy::unit_arg)]
-#![allow(clippy::unused_self)]
 #![allow(clippy::upper_case_acronyms)]
-#![allow(clippy::useless_let_if_seq)]
 #![allow(clippy::wildcard_imports)]
 
 #![deny(unsafe_code)]
@@ -109,7 +106,16 @@ fn run(Options { requests, format, measure_time }: Options) -> i32 {
     let timer = if measure_time { Some(Instant::now()) } else { None };
 
     let mut errored = false;
-    for (request_list, transport) in requests.generate() {
+
+    let request_tuples = match requests.generate() {
+        Ok(rt) => rt,
+        Err(e) => {
+            eprintln!("Unable to obtain resolver: {}", e);
+            return exits::SYSTEM_ERROR;
+        }
+    };
+
+    for (request_list, transport) in request_tuples {
         let request_list_len = request_list.len();
         for (i, request) in request_list.into_iter().enumerate() {
             let result = transport.send(&request);
@@ -189,4 +195,7 @@ mod exits {
 
     /// Exit code for when the command-line options are invalid.
     pub const OPTIONS_ERROR: i32 = 3;
+
+    /// Exit code for when the system network configuration could not be determined.
+    pub const SYSTEM_ERROR: i32 = 4;
 }
