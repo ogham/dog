@@ -172,11 +172,12 @@ impl From<u16> for RecordType {
 
 impl RecordType {
 
-    /// Determines the record type with a given name, or `None` if none is known.
+    /// Determines the record type with a given name, or `None` if none is
+    /// known. Matches names case-insensitively.
     pub fn from_type_name(type_name: &str) -> Option<Self> {
         macro_rules! try_record {
             ($record:tt) => {
-                if $record::NAME == type_name {
+                if $record::NAME.eq_ignore_ascii_case(type_name) {
                     return Some(Self::$record);
                 }
             }

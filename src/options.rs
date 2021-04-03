@@ -157,63 +157,41 @@ impl Inputs {
 
     fn load_named_args(&mut self, matches: &getopts::Matches) -> Result<(), OptionsError> {
         for domain in matches.opt_strs("query") {
-            match Labels::encode(&domain) {
-                Ok(d)   => self.domains.push(d),
-                Err(e)  => return Err(OptionsError::InvalidDomain(e.into())),
-            }
+            self.add_domain(&domain)?;
         }
 
-        for qtype in matches.opt_strs("type") {
-            self.add_type(&qtype)?;
+        for record_name in matches.opt_strs("type") {
+            if record_name.eq_ignore_ascii_case("OPT") {
+                return Err(OptionsError::QueryTypeOPT);
+            }
+            else if let Some(record_type) = RecordType::from_type_name(&record_name) {
+                self.add_type(record_type);
+            }
+            else if let Ok(type_number) = record_name.parse::<u16>() {
+                self.record_types.push(RecordType::from(type_number));
+            }
+            else {
+                return Err(OptionsError::InvalidQueryType(record_name));
+            }
         }
 
         for ns in matches.opt_strs("nameserver") {
             self.add_nameserver(&ns);
         }
 
-        for qclass in matches.opt_strs("class") {
-            self.add_class(&qclass)?;
+        for class_name in matches.opt_strs("class") {
+            if let Some(class) = parse_class_name(&class_name) {
+                self.add_class(class);
+            }
+            else if let Ok(class_number) = class_name.parse() {
+                self.add_class(QClass::Other(class_number));
+            }
+            else {
+                return Err(OptionsError::InvalidQueryClass(class_name));
+            }
         }
 
         Ok(())
-    }
-
-    fn add_type(&mut self, input: &str) -> Result<(), OptionsError> {
-        if input.eq_ignore_ascii_case("OPT") {
-            return Err(OptionsError::QueryTypeOPT);
-        }
-
-        let input_uppercase = input.to_ascii_uppercase();
-        if let Some(rt) = RecordType::from_type_name(&input_uppercase) {
-            self.record_types.push(rt);
-            Ok(())
-        }
-        else if let Ok(type_number) = input.parse::<u16>() {
-            self.record_types.push(RecordType::from(type_number));
-            Ok(())
-        }
-        else {
-            Err(OptionsError::InvalidQueryType(input.into()))
-        }
-    }
-
-    fn add_nameserver(&mut self, input: &str) {
-        self.resolver_types.push(ResolverType::Specific(input.into()));
-    }
-
-    fn add_class(&mut self, input: &str) -> Result<(), OptionsError> {
-        let qclass = parse_class_name(input)
-            .or_else(|| input.parse().ok().map(QClass::Other));
-
-        match qclass {
-            Some(c) => {
-                self.classes.push(c);
-                Ok(())
-            }
-            None => {
-                Err(OptionsError::InvalidQueryClass(input.into()))
-            }
-        }
     }
 
     fn load_free_args(&mut self, matches: getopts::Matches) -> Result<(), OptionsError> {
@@ -223,25 +201,38 @@ impl Inputs {
                 self.add_nameserver(nameserver);
             }
             else if is_constant_name(&argument) {
-                if let Some(class) = parse_class_name(&argument) {
+                if argument.eq_ignore_ascii_case("OPT") {
+                    return Err(OptionsError::QueryTypeOPT);
+                }
+                else if let Some(class) = parse_class_name(&argument) {
                     trace!("Got qclass -> {:?}", &argument);
-                    self.classes.push(class);
+                    self.add_class(class);
+                }
+                else if let Some(record_type) = RecordType::from_type_name(&argument) {
+                    trace!("Got qtype -> {:?}", &argument);
+                    self.add_type(record_type);
                 }
                 else {
-                    trace!("Got qtype -> {:?}", &argument);
-                    self.add_type(&argument)?;
+                    trace!("Got single-word domain -> {:?}", &argument);
+                    self.add_domain(&argument)?;
                 }
             }
             else {
                 trace!("Got domain -> {:?}", &argument);
-                match Labels::encode(&argument) {
-                    Ok(d)   => self.domains.push(d),
-                    Err(e)  => return Err(OptionsError::InvalidDomain(e.into())),
-                }
+                self.add_domain(&argument)?;
             }
         }
 
         Ok(())
+    }
+
+    fn check_for_missing_nameserver(&self) -> Result<(), OptionsError> {
+        if self.resolver_types.is_empty() && self.transport_types == [TransportType::HTTPS] {
+            Err(OptionsError::MissingHttpsUrl)
+        }
+        else {
+            Ok(())
+        }
     }
 
     fn load_fallbacks(&mut self) {
@@ -262,13 +253,26 @@ impl Inputs {
         }
     }
 
-    fn check_for_missing_nameserver(&self) -> Result<(), OptionsError> {
-        if self.resolver_types.is_empty() && self.transport_types == [TransportType::HTTPS] {
-            Err(OptionsError::MissingHttpsUrl)
-        }
-        else {
+    fn add_domain(&mut self, input: &str) -> Result<(), OptionsError> {
+        if let Ok(domain) = Labels::encode(input) {
+            self.domains.push(domain);
             Ok(())
         }
+        else {
+            Err(OptionsError::InvalidDomain(input.into()))
+        }
+    }
+
+    fn add_type(&mut self, rt: RecordType) {
+        self.record_types.push(rt);
+    }
+
+    fn add_nameserver(&mut self, input: &str) {
+        self.resolver_types.push(ResolverType::Specific(input.into()));
+    }
+
+    fn add_class(&mut self, class: QClass) {
+        self.classes.push(class);
     }
 }
 
@@ -505,6 +509,7 @@ impl fmt::Display for OptionsError {
 mod test {
     use super::*;
     use pretty_assertions::assert_eq;
+    use dns::record::UnknownQtype;
 
     impl Inputs {
         fn fallbacks() -> Self {
@@ -608,6 +613,26 @@ mod test {
         assert_eq!(options.requests.inputs, Inputs {
             domains:      vec![ Labels::encode("lookup.dog").unwrap() ],
             record_types: vec![ RecordType::SOA ],
+            .. Inputs::fallbacks()
+        });
+    }
+
+    #[test]
+    fn domain_and_other_type() {
+        let options = Options::getopts(&[ "lookup.dog", "any" ]).unwrap();
+        assert_eq!(options.requests.inputs, Inputs {
+            domains:      vec![ Labels::encode("lookup.dog").unwrap() ],
+            record_types: vec![ RecordType::Other(UnknownQtype::from_type_name("ANY").unwrap()) ],
+            .. Inputs::fallbacks()
+        });
+    }
+
+    #[test]
+    fn domain_and_single_domain() {
+        let options = Options::getopts(&[ "lookup.dog", "mixes" ]).unwrap();
+        assert_eq!(options.requests.inputs, Inputs {
+            domains:      vec![ Labels::encode("lookup.dog").unwrap(),
+                                Labels::encode("mixes").unwrap() ],
             .. Inputs::fallbacks()
         });
     }
@@ -764,23 +789,14 @@ mod test {
     }
 
     #[test]
-    fn udp_size_invalid() {
-        assert_eq!(Options::getopts(&[ "-Z", "bufsize=null" ]),
-                   OptionsResult::InvalidOptions(OptionsError::InvalidTweak("bufsize=null".into())));
-    }
-
-    #[test]
-    fn udp_size_too_big() {
-        assert_eq!(Options::getopts(&[ "-Z", "bufsize=999999999" ]),
-                   OptionsResult::InvalidOptions(OptionsError::InvalidTweak("bufsize=999999999".into())));
-    }
-
-    #[test]
     fn short_mode() {
         let tf = TextFormat { format_durations: true };
         let options = Options::getopts(&[ "dom.ain", "--short" ]).unwrap();
         assert_eq!(options.format, OutputFormat::Short(tf));
+    }
 
+    #[test]
+    fn short_mode_seconds() {
         let tf = TextFormat { format_durations: false };
         let options = Options::getopts(&[ "dom.ain", "--short", "--seconds" ]).unwrap();
         assert_eq!(options.format, OutputFormat::Short(tf));
@@ -835,12 +851,6 @@ mod test {
     }
 
     #[test]
-    fn invalid_capsword() {
-        assert_eq!(Options::getopts(&[ "SMH", "lookup.dog" ]),
-                   OptionsResult::InvalidOptions(OptionsError::InvalidQueryType("SMH".into())));
-    }
-
-    #[test]
     fn invalid_txid() {
         assert_eq!(Options::getopts(&[ "lookup.dog", "--txid=0x10000" ]),
                    OptionsResult::InvalidOptions(OptionsError::InvalidTxid("0x10000".into())));
@@ -859,6 +869,32 @@ mod test {
     }
 
     #[test]
+    fn invalid_udp_size() {
+        assert_eq!(Options::getopts(&[ "-Z", "bufsize=null" ]),
+                   OptionsResult::InvalidOptions(OptionsError::InvalidTweak("bufsize=null".into())));
+    }
+
+    #[test]
+    fn invalid_udp_size_size() {
+        assert_eq!(Options::getopts(&[ "-Z", "bufsize=999999999" ]),
+                   OptionsResult::InvalidOptions(OptionsError::InvalidTweak("bufsize=999999999".into())));
+    }
+
+    #[test]
+    fn invalid_udp_size_missing() {
+        assert_eq!(Options::getopts(&[ "-Z", "bufsize=" ]),
+                   OptionsResult::InvalidOptions(OptionsError::InvalidTweak("bufsize=".into())));
+    }
+
+    #[test]
+    fn missing_https_url() {
+        assert_eq!(Options::getopts(&[ "--https", "lookup.dog" ]),
+                   OptionsResult::InvalidOptions(OptionsError::MissingHttpsUrl));
+    }
+
+    // opt tests
+
+    #[test]
     fn opt() {
         assert_eq!(Options::getopts(&[ "OPT", "lookup.dog" ]),
                    OptionsResult::InvalidOptions(OptionsError::QueryTypeOPT));
@@ -871,9 +907,15 @@ mod test {
     }
 
     #[test]
-    fn missing_https_url() {
-        assert_eq!(Options::getopts(&[ "--https", "lookup.dog" ]),
-                   OptionsResult::InvalidOptions(OptionsError::MissingHttpsUrl));
+    fn opt_arg() {
+        assert_eq!(Options::getopts(&[ "-t", "OPT", "lookup.dog" ]),
+                   OptionsResult::InvalidOptions(OptionsError::QueryTypeOPT));
+    }
+
+    #[test]
+    fn opt_arg_lowercase() {
+        assert_eq!(Options::getopts(&[ "-t", "opt", "lookup.dog" ]),
+                   OptionsResult::InvalidOptions(OptionsError::QueryTypeOPT));
     }
 
     // txid tests

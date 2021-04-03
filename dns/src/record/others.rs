@@ -17,7 +17,7 @@ impl UnknownQtype {
     /// Searches the list for an unknown type with the given name, returning a
     /// `HeardOf` variant if one is found, and `None` otherwise.
     pub fn from_type_name(type_name: &str) -> Option<Self> {
-        let (name, num) = TYPES.iter().find(|t| t.0 == type_name)?;
+        let (name, num) = TYPES.iter().find(|t| t.0.eq_ignore_ascii_case(type_name))?;
         Some(Self::HeardOf(name, *num))
     }
 

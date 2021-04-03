@@ -15,14 +15,6 @@ status = 3
 tags = [ 'options' ]
 
 [[cmd]]
-name = "Running dog with ‘XYZZY’ warns about the invalid record type"
-shell = "dog XYZZY dns.google"
-stdout = { empty = true }
-stderr = { file = "outputs/invalid-query-type.txt" }
-status = 3
-tags = [ 'options' ]
-
-[[cmd]]
 name = "Running dog with ‘--type XYZZY’ warns about the invalid record type"
 shell = "dog --type XYZZY dns.google"
 stdout = { empty = true }
@@ -57,6 +49,22 @@ tags = [ 'options' ]
 [[cmd]]
 name = "Running dog with ‘opt’ also warns that OPT requests are sent by default"
 shell = "dog opt dns.google"
+stdout = { empty = true }
+stderr = { file = "outputs/opt-query.txt" }
+status = 3
+tags = [ 'options' ]
+
+[[cmd]]
+name = "Running dog with ‘--type OPT’ warns that OPT requests are sent by default"
+shell = "dog --type OPT dns.google"
+stdout = { empty = true }
+stderr = { file = "outputs/opt-query.txt" }
+status = 3
+tags = [ 'options' ]
+
+[[cmd]]
+name = "Running dog with ‘--type opt’ also warns that OPT requests are sent by default"
+shell = "dog --type opt dns.google"
 stdout = { empty = true }
 stderr = { file = "outputs/opt-query.txt" }
 status = 3
