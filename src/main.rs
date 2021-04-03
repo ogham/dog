@@ -115,7 +115,7 @@ fn run(Options { requests, format, measure_time }: Options) -> i32 {
         }
     };
 
-    for (request_list, transport) in request_tuples {
+    for (transport, request_list) in request_tuples {
         let request_list_len = request_list.len();
         for (i, request) in request_list.into_iter().enumerate() {
             let result = transport.send(&request);

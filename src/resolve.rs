@@ -1,5 +1,6 @@
 //! Specifying the address of the DNS server to send requests to.
 
+use std::fmt;
 use std::io;
 
 use log::*;
@@ -22,8 +23,9 @@ pub enum ResolverType {
 impl ResolverType {
 
     /// Obtains a resolver by the means specified in this type. Returns an
-    /// error if there was a problem looking up system information.
-    pub fn obtain(self) -> io::Result<Resolver> {
+    /// error if there was a problem looking up system information, or if
+    /// there is no suitable nameserver available.
+    pub fn obtain(self) -> Result<Resolver, ResolverLookupError> {
         match self {
             Self::SystemDefault => {
                 system_nameservers()
@@ -69,7 +71,7 @@ impl Resolver {
         for search in &self.search_list {
             match Labels::encode(search) {
                 Ok(suffix)  => list.push(name.extend(&suffix)),
-                Err(_)      => panic!("Invalid search list {}", search),
+                Err(_)      => warn!("Invalid search list: {}", search),
             }
         }
 
@@ -84,7 +86,7 @@ impl Resolver {
 /// Returns an error if there’s a problem reading the file, or `None` if no
 /// nameserver is specified in the file.
 #[cfg(unix)]
-fn system_nameservers() -> io::Result<Resolver> {
+fn system_nameservers() -> Result<Resolver, ResolverLookupError> {
     use std::fs::File;
     use std::io::{BufRead, BufReader};
 
@@ -116,8 +118,12 @@ fn system_nameservers() -> io::Result<Resolver> {
         }
     }
 
-    let nameserver = nameservers.into_iter().next().unwrap();
-    Ok(Resolver { nameserver, search_list })
+    if let Some(nameserver) = nameservers.into_iter().next() {
+        Ok(Resolver { nameserver, search_list })
+    }
+    else {
+        Err(ResolverLookupError::NoNameserver)
+    }
 }
 
 
@@ -125,7 +131,7 @@ fn system_nameservers() -> io::Result<Resolver> {
 /// the list of network adapters and returning the first nameserver it finds.
 #[cfg(windows)]
 #[allow(unused)]  // todo: Remove this when the time is right
-fn system_nameservers() -> io::Result<Resolver> {
+fn system_nameservers() -> Result<Resolver, ResolverLookupError> {
     use std::net::{IpAddr, UdpSocket};
 
     if cfg!(test) {
@@ -200,7 +206,7 @@ fn system_nameservers() -> io::Result<Resolver> {
     }
 
     else {
-        panic!("No nameservers available");
+        Err(ResolverLookupError::NoNameserver)
     }
 }
 
@@ -208,7 +214,63 @@ fn system_nameservers() -> io::Result<Resolver> {
 /// The fall-back system default nameserver determinator that is not very
 /// determined as it returns nothing without actually checking anything.
 #[cfg(all(not(unix), not(windows)))]
-fn system_nameservers() -> io::Result<(Option<String>, Vec<String>)> {
+fn system_nameservers() -> Result<Resolver, ResolverLookupError> {
     warn!("Unable to fetch default nameservers on this platform.");
-    Ok((None, Vec::new()))
+    Err(ResolverLookupError::UnsupportedPlatform)
+}
+
+
+/// Something that can go wrong while obtaining a `Resolver`.
+pub enum ResolverLookupError {
+
+    /// The system information was successfully read, but there was no adapter
+    /// suitable to use.
+    NoNameserver,
+
+    /// There was an error accessing the network configuration.
+    IO(io::Error),
+
+    /// There was an error accessing the network configuration (extra errors
+    /// that can only happen on Windows).
+    #[cfg(windows)]
+    Windows(ipconfig::error::Error),
+
+    /// dog is running on a platform where it doesn’t know how to get the
+    /// network configuration, so the user must supply one instead.
+    #[cfg(all(not(unix), not(windows)))]
+    UnsupportedPlatform,
+}
+
+impl From<io::Error> for ResolverLookupError {
+    fn from(error: io::Error) -> ResolverLookupError {
+        Self::IO(error)
+    }
+}
+
+#[cfg(windows)]
+impl From<ipconfig::error::Error> for ResolverLookupError {
+    fn from(error: ipconfig::error::Error) -> ResolverLookupError {
+        Self::Windows(error)
+    }
+}
+
+impl fmt::Display for ResolverLookupError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::NoNameserver => {
+                write!(f, "No nameserver found")
+            }
+            Self::IO(ioe) => {
+                write!(f, "Error reading network configuration: {}", ioe)
+            }
+            #[cfg(windows)]
+            Self::Windows(ipe) => {
+                write!(f, "Error reading network configuration: {}", ipe)
+            }
+            #[cfg(all(not(unix), not(windows)))]
+            Self::UnsupportedPlatform => {
+                write!(f, "dog cannot automatically detect nameservers on this platform; you will have to provide one explicitly")
+            }
+        }
+    }
 }

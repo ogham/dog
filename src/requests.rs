@@ -1,9 +1,7 @@
 //! Request generation based on the user’s input arguments.
 
-use std::io;
-
 use crate::connect::TransportType;
-use crate::resolve::ResolverType;
+use crate::resolve::{ResolverType, ResolverLookupError};
 use crate::txid::TxidGenerator;
 
 
@@ -79,11 +77,16 @@ pub enum UseEDNS {
 }
 
 
+/// The entry type for `RequestGenerator`: a transport to send a request, and
+/// a list of one or more DNS queries to send over it, as determined by the
+/// search path in the resolver.
+pub type RequestSet = (Box<dyn dns_transport::Transport>, Vec<dns::Request>);
+
 impl RequestGenerator {
 
     /// Iterate through the inputs matrix, returning pairs of DNS request list
     /// and the details of the transport to send them down.
-    pub fn generate(self) -> io::Result<Vec<(Vec<dns::Request>, Box<dyn dns_transport::Transport>)>> {
+    pub fn generate(self) -> Result<Vec<RequestSet>, ResolverLookupError> {
         let mut requests = Vec::new();
 
         let resolvers = self.inputs.resolver_types.into_iter()
@@ -116,7 +119,7 @@ impl RequestGenerator {
                                 let request = dns::Request { transaction_id, flags, query, additional: additional.clone() };
                                 request_list.push(request);
                             }
-                            requests.push((request_list, transport));
+                            requests.push((transport, request_list));
                         }
                     }
                 }
@@ -141,6 +144,8 @@ impl UseEDNS {
 }
 
 impl ProtocolTweaks {
+
+    /// Sets fields in the DNS flags based on the user’s requested tweaks.
     pub fn set_request_flags(self, flags: &mut dns::Flags) {
         if self.set_authoritative_flag {
             flags.authoritative = true;
@@ -155,6 +160,8 @@ impl ProtocolTweaks {
         }
     }
 
+    /// Set the payload size field in the outgoing OPT record, if the user has
+    /// requested to do so.
     pub fn set_request_opt_fields(self, opt: &mut dns::record::OPT) {
         if let Some(bufsize) = self.udp_payload_size {
             opt.udp_payload_size = bufsize;
