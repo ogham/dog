@@ -138,14 +138,6 @@ fn system_nameservers() -> Result<Resolver, ResolverLookupError> {
         panic!("system_nameservers() called from test code");
     }
 
-    let adapters = match ipconfig::get_adapters() {
-        Ok(a) => a,
-        Err(e) => {
-            warn!("Error getting network adapters: {}", e);
-            return Ok((None, Vec::new()));
-        }
-    };
-
     // According to the specification, prefer ipv6 by default.
     // TODO: add control flag to select an ip family.
     #[derive(Debug, PartialEq)]
@@ -178,8 +170,9 @@ fn system_nameservers() -> Result<Resolver, ResolverLookupError> {
         ForceIPFamily::None => get_ipv6().or(get_ipv4()).ok(),
     };
 
-    let search_path = Vec::new();  // todo: implement this
+    let search_list = Vec::new();  // todo: implement this
 
+    let adapters = ipconfig::get_adapters()?;
     let active_adapters = adapters.iter().filter(|a| {
         a.oper_status() == ipconfig::OperStatus::IfOperStatusUp && !a.gateways().is_empty()
     });
@@ -192,7 +185,7 @@ fn system_nameservers() -> Result<Resolver, ResolverLookupError> {
     {
         debug!("Found first nameserver {:?}", dns_server);
         let nameserver = dns_server.to_string();
-        Ok(Resolver { nameserver, search_path })
+        Ok(Resolver { nameserver, search_list })
     }
 
     // Fallback
@@ -202,7 +195,7 @@ fn system_nameservers() -> Result<Resolver, ResolverLookupError> {
     {
         debug!("Found first fallback nameserver {:?}", dns_server);
         let nameserver = dns_server.to_string();
-        Ok(Resolver { nameserver, search_path })
+        Ok(Resolver { nameserver, search_list })
     }
 
     else {
