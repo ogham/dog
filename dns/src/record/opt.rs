@@ -79,10 +79,8 @@ impl OPT {
         let data_length = c.read_u16::<BigEndian>()?;
         trace!("Parsed data length -> {:?}", data_length);
 
-        let mut data = Vec::new();
-        for _ in 0 .. data_length {
-            data.push(c.read_u8()?);
-        }
+        let mut data = vec![0_u8; usize::from(data_length)];
+        c.read_exact(&mut data)?;
         trace!("Parsed data -> {:#x?}", data);
 
         Ok(Self { udp_payload_size, higher_bits, edns0_version, flags, data })

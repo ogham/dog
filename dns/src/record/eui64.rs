@@ -31,6 +31,7 @@ impl Wire for EUI64 {
 
         let mut octets = [0_u8; 8];
         c.read_exact(&mut octets)?;
+        trace!("Parsed 8-byte address -> {:#x?}", octets);
 
         Ok(Self { octets })
     }

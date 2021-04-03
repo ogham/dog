@@ -45,42 +45,41 @@ impl Wire for NAPTR {
         let order = c.read_u16::<BigEndian>()?;
         trace!("Parsed order -> {:?}", order);
 
+        // preference
         let preference = c.read_u16::<BigEndian>()?;
         trace!("Parsed preference -> {:?}", preference);
 
+        // flags
         let flags_length = c.read_u8()?;
         trace!("Parsed flags length -> {:?}", flags_length);
 
-        let mut flags_buffer = Vec::with_capacity(flags_length.into());
-        for _ in 0 .. flags_length {
-            flags_buffer.push(c.read_u8()?);
-        }
+        let mut flags_buffer = vec![0_u8; usize::from(flags_length)];
+        c.read_exact(&mut flags_buffer)?;
 
         let flags = String::from_utf8_lossy(&flags_buffer).to_string();
         trace!("Parsed flags -> {:?}", flags);
 
+        // service
         let service_length = c.read_u8()?;
         trace!("Parsed service length -> {:?}", service_length);
 
-        let mut service_buffer = Vec::with_capacity(service_length.into());
-        for _ in 0 .. service_length {
-            service_buffer.push(c.read_u8()?);
-        }
+        let mut service_buffer = vec![0_u8; usize::from(service_length)];
+        c.read_exact(&mut service_buffer)?;
 
         let service = String::from_utf8_lossy(&service_buffer).to_string();
         trace!("Parsed service -> {:?}", service);
 
+        // regex
         let regex_length = c.read_u8()?;
         trace!("Parsed regex length -> {:?}", regex_length);
 
-        let mut regex_buffer = Vec::with_capacity(regex_length.into());
-        for _ in 0 .. regex_length {
-            regex_buffer.push(c.read_u8()?);
-        }
+        let mut regex_buffer = vec![0_u8; usize::from(regex_length)];
+        c.read_exact(&mut regex_buffer)?;
 
         let regex = String::from_utf8_lossy(&regex_buffer).to_string();
         trace!("Parsed regex -> {:?}", regex);
 
+        // replacement
         let (replacement, replacement_length) = c.read_labels()?;
         trace!("Parsed replacement -> {:?}", replacement);
 

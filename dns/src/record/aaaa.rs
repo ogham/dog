@@ -34,7 +34,7 @@ impl Wire for AAAA {
         c.read_exact(&mut buf)?;
 
         let address = Ipv6Addr::from(buf);
-        trace!("Parsed IPv6 address -> {:?}", address);
+        trace!("Parsed IPv6 address -> {:#x?}", address);
 
         Ok(Self { address })
     }

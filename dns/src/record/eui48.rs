@@ -31,6 +31,7 @@ impl Wire for EUI48 {
 
         let mut octets = [0_u8; 6];
         c.read_exact(&mut octets)?;
+        trace!("Parsed 6-byte address -> {:#x?}", octets);
 
         Ok(Self { octets })
     }

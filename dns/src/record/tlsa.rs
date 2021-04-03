@@ -52,10 +52,9 @@ impl Wire for TLSA {
         }
 
         let certificate_data_length = stated_length - 1 - 1 - 1;
-        let mut certificate_data = Vec::new();
-        for _ in 0 .. certificate_data_length {
-            certificate_data.push(c.read_u8()?);
-        }
+        let mut certificate_data = vec![0_u8; usize::from(certificate_data_length)];
+        c.read_exact(&mut certificate_data)?;
+        trace!("Parsed fingerprint -> {:#x?}", certificate_data);
 
         Ok(Self { certificate_usage, selector, matching_type, certificate_data })
     }

@@ -47,13 +47,10 @@ impl Wire for URI {
         }
 
         let remaining_length = stated_length - 4;
-        let mut buf = Vec::with_capacity(remaining_length.into());
+        let mut target_buffer = vec![0_u8; usize::from(remaining_length)];
+        c.read_exact(&mut target_buffer)?;
 
-        for _ in 0 .. remaining_length {
-            buf.push(c.read_u8()?);
-        }
-
-        let target = String::from_utf8_lossy(&buf).to_string();
+        let target = String::from_utf8_lossy(&target_buffer).to_string();
         trace!("Parsed target -> {:?}", target);
 
         Ok(Self { priority, weight, target })

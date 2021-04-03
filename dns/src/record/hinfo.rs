@@ -34,10 +34,8 @@ impl Wire for HINFO {
         let cpu_length = c.read_u8()?;
         trace!("Parsed CPU length -> {:?}", cpu_length);
 
-        let mut cpu_buffer = Vec::with_capacity(cpu_length.into());
-        for _ in 0 .. cpu_length {
-            cpu_buffer.push(c.read_u8()?);
-        }
+        let mut cpu_buffer = vec![0_u8; usize::from(cpu_length)];
+        c.read_exact(&mut cpu_buffer)?;
 
         let cpu = String::from_utf8_lossy(&cpu_buffer).to_string();
         trace!("Parsed CPU -> {:?}", cpu);
@@ -45,10 +43,8 @@ impl Wire for HINFO {
         let os_length = c.read_u8()?;
         trace!("Parsed OS length -> {:?}", os_length);
 
-        let mut os_buffer = Vec::with_capacity(os_length.into());
-        for _ in 0 .. os_length {
-            os_buffer.push(c.read_u8()?);
-        }
+        let mut os_buffer = vec![0_u8; usize::from(os_length)];
+        c.read_exact(&mut os_buffer)?;
 
         let os = String::from_utf8_lossy(&os_buffer).to_string();
         trace!("Parsed OS -> {:?}", cpu);

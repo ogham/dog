@@ -30,6 +30,8 @@ impl Wire for CAA {
 
     #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
+
+        // flags
         let flags = c.read_u8()?;
         trace!("Parsed flags -> {:#08b}", flags);
 
@@ -37,26 +39,24 @@ impl Wire for CAA {
         let critical = has_bit(0b_1000_0000);
         trace!("Parsed critical flag -> {:?}", critical);
 
+        // tag
         let tag_length = c.read_u8()?;
         trace!("Parsed tag length -> {:?}", tag_length);
 
-        let mut tag_buf = Vec::new();
-        for _ in 0 .. tag_length {
-            tag_buf.push(c.read_u8()?);
-        }
+        let mut tag_buffer = vec![0_u8; usize::from(tag_length)];
+        c.read_exact(&mut tag_buffer)?;
 
-        let tag = String::from_utf8_lossy(&tag_buf).to_string();
+        let tag = String::from_utf8_lossy(&tag_buffer).to_string();
         trace!("Parsed tag -> {:?}", tag);
 
+        // value
         let remaining_length = stated_length.saturating_sub(u16::from(tag_length)).saturating_sub(2);
         trace!("Remaining length -> {:?}", remaining_length);
 
-        let mut value_buf = Vec::new();
-        for _ in 0 .. remaining_length {
-            value_buf.push(c.read_u8()?);
-        }
+        let mut value_buffer = vec![0_u8; usize::from(remaining_length)];
+        c.read_exact(&mut value_buffer)?;
 
-        let value = String::from_utf8_lossy(&value_buf).to_string();
+        let value = String::from_utf8_lossy(&value_buffer).to_string();
         trace!("Parsed value -> {:?}", value);
 
         Ok(Self { critical, tag, value })

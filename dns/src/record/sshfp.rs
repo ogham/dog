@@ -44,10 +44,9 @@ impl Wire for SSHFP {
         }
 
         let fingerprint_length = stated_length - 1 - 1;
-        let mut fingerprint = Vec::new();
-        for _ in 0 .. fingerprint_length {
-            fingerprint.push(c.read_u8()?);
-        }
+        let mut fingerprint = vec![0_u8; usize::from(fingerprint_length)];
+        c.read_exact(&mut fingerprint)?;
+        trace!("Parsed fingerprint -> {:#x?}", fingerprint);
 
         Ok(Self { algorithm, fingerprint_type, fingerprint })
     }

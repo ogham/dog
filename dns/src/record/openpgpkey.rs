@@ -1,3 +1,5 @@
+use log::*;
+
 use crate::wire::*;
 
 
@@ -27,6 +29,8 @@ impl Wire for OPENPGPKEY {
 
         let mut key = vec![0_u8; usize::from(stated_length)];
         c.read_exact(&mut key)?;
+        trace!("Parsed key -> {:#x?}", key);
+
         Ok(Self { key })
     }
 }
