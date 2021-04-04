@@ -15,7 +15,7 @@ use crate::wire::*;
 /// each segment is followed by a dot.
 ///
 /// The maximum length of a segment is 255 characters.
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
 pub struct Labels {
     segments: Vec<(u8, String)>,
 }

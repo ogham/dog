@@ -25,6 +25,7 @@ use log::*;
 
 mod colours;
 mod connect;
+mod hints;
 mod logger;
 mod output;
 mod requests;
@@ -106,6 +107,20 @@ fn run(Options { requests, format, measure_time }: Options) -> i32 {
     let timer = if measure_time { Some(Instant::now()) } else { None };
 
     let mut errored = false;
+
+    let local_host_hints = match hints::LocalHosts::load() {
+        Ok(lh) => lh,
+        Err(e) => {
+            warn!("Error loading local host hints: {}", e);
+            hints::LocalHosts::default()
+        }
+    };
+
+    for hostname_in_query in &requests.inputs.domains {
+        if local_host_hints.contains(hostname_in_query) {
+            eprintln!("warning: domain '{}' also exists in hosts file", hostname_in_query);
+        }
+    }
 
     let request_tuples = match requests.generate() {
         Ok(rt) => rt,
