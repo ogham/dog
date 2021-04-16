@@ -89,10 +89,10 @@ impl OutputFormat {
                 for answer in all_answers {
                     match answer {
                         Answer::Standard { record, .. } => {
-                            println!("{}", tf.record_payload_summary(&record))
+                            println!("{}", tf.record_payload_summary(record))
                         }
                         Answer::Pseudo { opt, .. } => {
-                            println!("{}", tf.pseudo_record_payload_summary(&opt))
+                            println!("{}", tf.pseudo_record_payload_summary(opt))
                         }
                     }
 
@@ -185,15 +185,15 @@ impl TextFormat {
     /// Formats a summary of a record in a received DNS response. Each record
     /// type contains wildly different data, so the format of the summary
     /// depends on what record it’s for.
-    pub fn record_payload_summary(self, record: &Record) -> String {
-        match *record {
-            Record::A(ref a) => {
+    pub fn record_payload_summary(self, record: Record) -> String {
+        match record {
+            Record::A(a) => {
                 format!("{}", a.address)
             }
-            Record::AAAA(ref aaaa) => {
+            Record::AAAA(aaaa) => {
                 format!("{}", aaaa.address)
             }
-            Record::CAA(ref caa) => {
+            Record::CAA(caa) => {
                 if caa.critical {
                     format!("{:?} {:?} (critical)", caa.tag, caa.value)
                 }
@@ -201,19 +201,19 @@ impl TextFormat {
                     format!("{:?} {:?} (non-critical)", caa.tag, caa.value)
                 }
             }
-            Record::CNAME(ref cname) => {
+            Record::CNAME(cname) => {
                 format!("{:?}", cname.domain.to_string())
             }
-            Record::EUI48(ref eui48) => {
+            Record::EUI48(eui48) => {
                 format!("{:?}", eui48.formatted_address())
             }
-            Record::EUI64(ref eui64) => {
+            Record::EUI64(eui64) => {
                 format!("{:?}", eui64.formatted_address())
             }
-            Record::HINFO(ref hinfo) => {
+            Record::HINFO(hinfo) => {
                 format!("{:?} {:?}", hinfo.cpu, hinfo.os)
             }
-            Record::LOC(ref loc) => {
+            Record::LOC(loc) => {
                 format!("{} ({}, {}) ({}, {}, {})",
                     loc.size,
                     loc.horizontal_precision,
@@ -223,10 +223,10 @@ impl TextFormat {
                     loc.altitude,
                 )
             }
-            Record::MX(ref mx) => {
+            Record::MX(mx) => {
                 format!("{} {:?}", mx.preference, mx.exchange.to_string())
             }
-            Record::NAPTR(ref naptr) => {
+            Record::NAPTR(naptr) => {
                 format!("{} {} {} {:?} /{}/ {:?}",
                     naptr.order,
                     naptr.preference,
@@ -236,23 +236,23 @@ impl TextFormat {
                     naptr.replacement.to_string(),
                 )
             }
-            Record::NS(ref ns) => {
+            Record::NS(ns) => {
                 format!("{:?}", ns.nameserver.to_string())
             }
-            Record::OPENPGPKEY(ref opgp) => {
+            Record::OPENPGPKEY(opgp) => {
                 format!("{:?}", opgp.base64_key())
             }
-            Record::PTR(ref ptr) => {
+            Record::PTR(ptr) => {
                 format!("{:?}", ptr.cname.to_string())
             }
-            Record::SSHFP(ref sshfp) => {
+            Record::SSHFP(sshfp) => {
                 format!("{} {} {}",
                     sshfp.algorithm,
                     sshfp.fingerprint_type,
                     sshfp.hex_fingerprint(),
                 )
             }
-            Record::SOA(ref soa) => {
+            Record::SOA(soa) => {
                 format!("{:?} {:?} {} {} {} {} {}",
                     soa.mname.to_string(),
                     soa.rname.to_string(),
@@ -263,10 +263,10 @@ impl TextFormat {
                     self.format_duration(soa.minimum_ttl),
                 )
             }
-            Record::SRV(ref srv) => {
+            Record::SRV(srv) => {
                 format!("{} {} {:?}:{}", srv.priority, srv.weight, srv.target.to_string(), srv.port)
             }
-            Record::TLSA(ref tlsa) => {
+            Record::TLSA(tlsa) => {
                 format!("{} {} {} {:?}",
                     tlsa.certificate_usage,
                     tlsa.selector,
@@ -274,14 +274,14 @@ impl TextFormat {
                     tlsa.hex_certificate_data(),
                 )
             }
-            Record::TXT(ref txt) => {
+            Record::TXT(txt) => {
                 let messages = txt.messages.iter().map(|t| format!("{:?}", t)).collect::<Vec<_>>();
                 messages.join(", ")
             }
-            Record::URI(ref uri) => {
+            Record::URI(uri) => {
                 format!("{} {} {:?}", uri.priority, uri.weight, uri.target)
             }
-            Record::Other { ref bytes, .. } => {
+            Record::Other { bytes, .. } => {
                 format!("{:?}", bytes)
             }
         }
@@ -289,7 +289,7 @@ impl TextFormat {
 
     /// Formats a summary of an OPT pseudo-record. Pseudo-records have a different
     /// structure than standard ones.
-    pub fn pseudo_record_payload_summary(self, opt: &OPT) -> String {
+    pub fn pseudo_record_payload_summary(self, opt: OPT) -> String {
         format!("{} {} {} {} {:?}",
             opt.udp_payload_size,
             opt.higher_bits,
