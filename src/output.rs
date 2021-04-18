@@ -1,5 +1,6 @@
 //! Text and JSON output.
 
+use std::fmt;
 use std::time::Duration;
 
 use dns::{Response, Query, Answer, QClass, ErrorCode, WireError, MandatedLength};
@@ -586,6 +587,37 @@ fn json_record_data(record: Record) -> JsonValue {
 }
 
 
+/// A wrapper around displaying characters that escapes quotes and
+/// backslashes, and writes control and upper-bit bytes as their number rather
+/// than their character. This is needed because even though such characters
+/// are not allowed in domain names, packets can contain anything, and we need
+/// a way to display the response, whatever it is.
+struct Ascii<'a>(&'a [u8]);
+
+impl fmt::Display for Ascii<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "\"")?;
+
+        for byte in self.0.iter().copied() {
+            if byte < 32 || byte >= 128 {
+                write!(f, "\\{}", byte)?;
+            }
+            else if byte == b'"' {
+                write!(f, "\\\"")?;
+            }
+            else if byte == b'\\' {
+                write!(f, "\\\\")?;
+            }
+            else {
+                write!(f, "{}", byte as char)?;
+            }
+        }
+
+        write!(f, "\"")
+    }
+}
+
+
 /// Prints a message describing the “error code” field of a DNS packet. This
 /// happens when the packet was received correctly, but the server indicated
 /// an error.
@@ -660,5 +692,35 @@ fn wire_error_message(error: WireError) -> String {
         WireError::WrongVersion { stated_version, maximum_supported_version } => {
             format!("Malformed packet: record specifies version {}, expected up to {}", stated_version, maximum_supported_version)
         }
+    }
+}
+
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn escape_quotes() {
+        assert_eq!(Ascii(b"Mallard \"The Duck\" Fillmore").to_string(),
+                   "\"Mallard \\\"The Duck\\\" Fillmore\"");
+    }
+
+    #[test]
+    fn escape_backslashes() {
+        assert_eq!(Ascii(b"\\").to_string(),
+                   "\"\\\\\"");
+    }
+
+    #[test]
+    fn escape_lows() {
+        assert_eq!(Ascii(b"\n\r\t").to_string(),
+                   "\"\\10\\13\\9\"");
+    }
+
+    #[test]
+    fn escape_highs() {
+        assert_eq!(Ascii("pâté".as_bytes()).to_string(),
+                   "\"p\\195\\162t\\195\\169\"");
     }
 }
