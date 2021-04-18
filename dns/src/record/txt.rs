@@ -18,7 +18,7 @@ use crate::wire::*;
 pub struct TXT {
 
     /// The messages contained in the record.
-    pub messages: Vec<String>,
+    pub messages: Vec<Box<[u8]>>,
 }
 
 impl Wire for TXT {
@@ -50,8 +50,8 @@ impl Wire for TXT {
                 }
             }
 
-            let message = String::from_utf8_lossy(&buf).to_string();
-            trace!("Parsed message -> {:?}", message);
+            let message = buf.into_boxed_slice();
+            trace!("Parsed message -> {:?}", String::from_utf8_lossy(&message));
             messages.push(message);
 
             if total_length >= stated_length {
@@ -85,7 +85,7 @@ mod test {
 
         assert_eq!(TXT::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
                    TXT {
-                       messages: vec![ String::from("txt me") ],
+                       messages: vec![ Box::new(*b"txt me") ],
                    });
     }
 
@@ -124,15 +124,15 @@ mod test {
         assert_eq!(TXT::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
                    TXT {
                        messages: vec![
-                           String::from("AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
-                                         AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
-                                         AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
-                                         AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
-                                         AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
-                                         AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
-                                         AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
-                                         AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
-                                         AAAAAAAAAAAAAAAAAAAAAAAAAAA"),
+                           Box::new(*b"AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
+                                       AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
+                                       AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
+                                       AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
+                                       AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
+                                       AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
+                                       AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
+                                       AAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
+                                       AAAAAAAAAAAAAAAAAAAAAAAAAAA"),
                        ],
                    });
         // did you know you can just _write_ code like this, and nobody will stop you?
@@ -171,15 +171,15 @@ mod test {
         assert_eq!(TXT::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
                    TXT {
                        messages: vec![
-                           String::from("BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
-                                         BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
-                                         BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
-                                         BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
-                                         BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
-                                         BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
-                                         BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
-                                         BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
-                                         BBBBBBBBBBBBBBBBBBBBBB"),
+                           Box::new(*b"BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
+                                       BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
+                                       BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
+                                       BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
+                                       BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
+                                       BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
+                                       BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
+                                       BBBBBBBBBBBBBBBBBBBBBBBBBBBBB\
+                                       BBBBBBBBBBBBBBBBBBBBBB"),
                        ],
                    });
     }
@@ -196,8 +196,8 @@ mod test {
         assert_eq!(TXT::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
                    TXT {
                        messages: vec![
-                           String::from("txt me"),
-                           String::from("ya beb"),
+                           Box::new(*b"txt me"),
+                           Box::new(*b"ya beb"),
                        ],
                    });
     }

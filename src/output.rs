@@ -276,7 +276,7 @@ impl TextFormat {
                 )
             }
             Record::TXT(txt) => {
-                let messages = txt.messages.iter().map(|t| format!("{:?}", t)).collect::<Vec<_>>();
+                let messages = txt.messages.iter().map(|t| Ascii(t).to_string()).collect::<Vec<_>>();
                 messages.join(", ")
             }
             Record::URI(uri) => {
@@ -570,8 +570,11 @@ fn json_record_data(record: Record) -> JsonValue {
             }
         }
         Record::TXT(txt) => {
+            let ms = txt.messages.into_iter()
+                        .map(|txt| String::from_utf8_lossy(&txt).to_string())
+                        .collect::<Vec<_>>();
             object! {
-                "messages": txt.messages,
+                "messages": ms,
             }
         }
         Record::URI(uri) => {

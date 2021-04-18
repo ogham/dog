@@ -1,0 +1,28 @@
+{
+  "responses": [
+    {
+      "queries": [
+        {
+          "name": "bad-utf8.txt.example.",
+          "class": "IN",
+          "type": "TXT"
+        }
+      ],
+      "answers": [
+        {
+          "name": "bad-utf8.txt.example.",
+          "class": "IN",
+          "ttl": 600,
+          "type": "TXT",
+          "data": {
+            "messages": [
+              "�Р�"
+            ]
+          }
+        }
+      ],
+      "authorities": [],
+      "additionals": []
+    }
+  ]
+}

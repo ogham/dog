@@ -1,0 +1,28 @@
+{
+  "responses": [
+    {
+      "queries": [
+        {
+          "name": "utf8.txt.example.",
+          "class": "IN",
+          "type": "TXT"
+        }
+      ],
+      "answers": [
+        {
+          "name": "utf8.txt.example.",
+          "class": "IN",
+          "ttl": 600,
+          "type": "TXT",
+          "data": {
+            "messages": [
+              "💰Cache 🙅‍️Invalidation ⅋and 📛Naming 🎳Things"
+            ]
+          }
+        }
+      ],
+      "authorities": [],
+      "additionals": []
+    }
+  ]
+}
