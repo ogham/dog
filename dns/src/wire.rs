@@ -71,28 +71,34 @@ impl Response {
         let authority_count  = c.read_u16::<BigEndian>()?;
         let additional_count = c.read_u16::<BigEndian>()?;
 
-        let mut queries = Vec::new();
+        // We can pre-allocate these vectors by giving them an initial
+        // capacity based on the count fields. But because the count fields
+        // are user-controlled (with a maximum of 2^16 - 1) we cannot trust
+        // them _entirely_, so cap the pre-allocation if the count looks
+        // arbitrarily large (9 seems about right).
+
+        let mut queries = Vec::with_capacity(usize::from(query_count.min(9)));
         debug!("Reading {}x query from response", query_count);
         for _ in 0 .. query_count {
             let (qname, _) = c.read_labels()?;
             queries.push(Query::from_bytes(qname, &mut c)?);
         }
 
-        let mut answers = Vec::new();
+        let mut answers = Vec::with_capacity(usize::from(answer_count.min(9)));
         debug!("Reading {}x answer from response", answer_count);
         for _ in 0 .. answer_count {
             let (qname, _) = c.read_labels()?;
             answers.push(Answer::from_bytes(qname, &mut c)?);
         }
 
-        let mut authorities = Vec::new();
+        let mut authorities = Vec::with_capacity(usize::from(authority_count.min(9)));
         debug!("Reading {}x authority from response", authority_count);
         for _ in 0 .. authority_count {
             let (qname, _) = c.read_labels()?;
             authorities.push(Answer::from_bytes(qname, &mut c)?);
         }
 
-        let mut additionals = Vec::new();
+        let mut additionals = Vec::with_capacity(usize::from(additional_count.min(9)));
         debug!("Reading {}x additional answer from response", additional_count);
         for _ in 0 .. additional_count {
             let (qname, _) = c.read_labels()?;
