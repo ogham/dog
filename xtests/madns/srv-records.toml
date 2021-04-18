@@ -12,7 +12,7 @@ tags = [ "soa", "madns" ]
 # SRV record successes (JSON)
 
 [[cmd]]
-name = "Running with ‘srv.example’ prints the correct SRV record structure"
+name = "Running with ‘srv.example --json’ prints the correct SRV record structure"
 shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} SRV srv.example --json | jq"
 stdout = { file = "outputs/srv.example.json" }
 stderr = { empty = true }

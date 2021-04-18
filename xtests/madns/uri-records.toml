@@ -20,7 +20,7 @@ tags = [ "uri", "madns" ]
 # URI record successes (JSON)
 
 [[cmd]]
-name = "Running with ‘uri.example’ prints the correct URI record structure"
+name = "Running with ‘uri.example --json’ prints the correct URI record structure"
 shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} URI uri.example --json | jq"
 stdout = { file = "outputs/uri.example.json" }
 stderr = { empty = true }

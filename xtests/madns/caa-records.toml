@@ -28,7 +28,7 @@ tags = [ "caa", "madns" ]
 # CAA record successes (JSON)
 
 [[cmd]]
-name = "Running with ‘caa.example’ prints the correct CAA record structure"
+name = "Running with ‘caa.example --json’ prints the correct CAA record structure"
 shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} CAA caa.example --json | jq"
 stdout = { file = "outputs/caa.example.json" }
 stderr = { empty = true }
@@ -36,7 +36,7 @@ status = 0
 tags = [ "caa", "madns", "json" ]
 
 [[cmd]]
-name = "Running with ‘critical.caa.example’ prints the correct CAA record structurewith the flag"
+name = "Running with ‘critical.caa.example --json’ prints the correct CAA record structurewith the flag"
 shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} CAA critical.caa.example --json | jq"
 stdout = { file = "outputs/critical.caa.example.json" }
 stderr = { empty = true }
@@ -44,7 +44,7 @@ status = 0
 tags = [ "caa", "madns", "json" ]
 
 [[cmd]]
-name = "Running with ‘others.caa.example’ prints the correct CAA record structure and ignores the flags"
+name = "Running with ‘others.caa.example --json’ prints the correct CAA record structure and ignores the flags"
 shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} CAA others.caa.example --json | jq"
 stdout = { file = "outputs/others.caa.example.json" }
 stderr = { empty = true }

@@ -12,7 +12,7 @@ tags = [ "soa", "madns" ]
 # SOA record successes (JSON)
 
 [[cmd]]
-name = "Running with ‘soa.example’ prints the correct SOA record structure"
+name = "Running with ‘soa.example --json’ prints the correct SOA record structure"
 shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} SOA soa.example --json | jq"
 stdout = { file = "outputs/soa.example.json" }
 stderr = { empty = true }

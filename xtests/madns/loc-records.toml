@@ -12,7 +12,7 @@ tags = [ "loc", "madns" ]
 # LOC record successes (JSON)
 
 [[cmd]]
-name = "Running with ‘loc.example’ prints the correct LOC record structure"
+name = "Running with ‘loc.example --json’ prints the correct LOC record structure"
 shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} LOC loc.example --json | jq"
 stdout = { file = "outputs/loc.example.json" }
 stderr = { empty = true }

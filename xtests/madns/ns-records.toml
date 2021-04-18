@@ -12,7 +12,7 @@ tags = [ "ns", "madns" ]
 # NS record successes (JSON)
 
 [[cmd]]
-name = "Running with ‘ns.example’ prints the correct NS record structure"
+name = "Running with ‘ns.example --json’ prints the correct NS record structure"
 shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} NS ns.example --json | jq"
 stdout = { file = "outputs/ns.example.json" }
 stderr = { empty = true }

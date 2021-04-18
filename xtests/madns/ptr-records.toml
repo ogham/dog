@@ -12,7 +12,7 @@ tags = [ "ptr", "madns" ]
 # PTR record successes (JSON)
 
 [[cmd]]
-name = "Running with ‘ptr.example’ prints the correct PTR record structure"
+name = "Running with ‘ptr.example --json’ prints the correct PTR record structure"
 shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} PTR ptr.example --json | jq"
 stdout = { file = "outputs/ptr.example.json" }
 stderr = { empty = true }

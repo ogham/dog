@@ -20,7 +20,7 @@ tags = [ "naptr", "madns" ]
 # NAPTR record successes (JSON)
 
 [[cmd]]
-name = "Running with ‘naptr.example’ prints the correct NAPTR record structure"
+name = "Running with ‘naptr.example --json’ prints the correct NAPTR record structure"
 shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} NAPTR naptr.example --json | jq"
 stdout = { file = "outputs/naptr.example.json" }
 stderr = { empty = true }

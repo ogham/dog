@@ -12,7 +12,7 @@ tags = [ "aaaa", "madns" ]
 # AAAA record successes (JSON)
 
 [[cmd]]
-name = "Running with ‘aaaa.example’ prints the correct AAAA record structure"
+name = "Running with ‘aaaa.example --json’ prints the correct AAAA record structure"
 shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} AAAA aaaa.example --json | jq"
 stdout = { file = "outputs/aaaa.example.json" }
 stderr = { empty = true }

@@ -12,7 +12,7 @@ tags = [ "mx", "madns" ]
 # MX record successes (JSON)
 
 [[cmd]]
-name = "Running with ‘mx.example’ prints the correct MX record structure"
+name = "Running with ‘mx.example --json’ prints the correct MX record structure"
 shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} MX mx.example --json | jq"
 stdout = { file = "outputs/mx.example.json" }
 stderr = { empty = true }

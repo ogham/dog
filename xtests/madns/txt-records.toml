@@ -12,7 +12,7 @@ tags = [ "txt", "madns" ]
 # TXT record successes (JSON)
 
 [[cmd]]
-name = "Running with ‘txt.example’ prints the correct TXT record structure"
+name = "Running with ‘txt.example --json’ prints the correct TXT record structure"
 shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} TXT txt.example --json | jq"
 stdout = { file = "outputs/txt.example.json" }
 stderr = { empty = true }

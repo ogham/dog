@@ -12,7 +12,7 @@ tags = [ "sshfp", "madns" ]
 # SSHFP record successes (JSON)
 
 [[cmd]]
-name = "Running with ‘sshfp.example’ prints the correct SSHFP record structure"
+name = "Running with ‘sshfp.example --json’ prints the correct SSHFP record structure"
 shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} SSHFP sshfp.example --json | jq"
 stdout = { file = "outputs/sshfp.example.json" }
 stderr = { empty = true }

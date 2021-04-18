@@ -12,7 +12,7 @@ tags = [ "tlsa", "madns" ]
 # TLSA record successes (JSON)
 
 [[cmd]]
-name = "Running with ‘tlsa.example’ prints the correct TLSA record structure"
+name = "Running with ‘tlsa.example --json’ prints the correct TLSA record structure"
 shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} TLSA tlsa.example --json | jq"
 stdout = { file = "outputs/tlsa.example.json" }
 stderr = { empty = true }

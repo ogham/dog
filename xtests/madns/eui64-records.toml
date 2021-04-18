@@ -12,7 +12,7 @@ tags = [ "eui64", "madns" ]
 # EUI64 record successes (JSON)
 
 [[cmd]]
-name = "Running with ‘eui64.example’ prints the correct EUI64 record structure"
+name = "Running with ‘eui64.example --json’ prints the correct EUI64 record structure"
 shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} EUI64 eui64.example --json | jq"
 stdout = { file = "outputs/eui64.example.json" }
 stderr = { empty = true }

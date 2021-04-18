@@ -12,7 +12,7 @@ tags = [ "cname", "madns" ]
 # CNAME record successes (JSON)
 
 [[cmd]]
-name = "Running with ‘cname.example’ prints the correct CNAME record structure"
+name = "Running with ‘cname.example --json’ prints the correct CNAME record structure"
 shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} CNAME cname.example --json | jq"
 stdout = { file = "outputs/cname.example.json" }
 stderr = { empty = true }
