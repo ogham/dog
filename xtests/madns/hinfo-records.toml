@@ -2,7 +2,7 @@
 
 [[cmd]]
 name = "Running with ‘hinfo.example’ prints the correct HINFO record"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 HINFO hinfo.example"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} HINFO hinfo.example"
 stdout = { file = "outputs/hinfo.example.ansitxt" }
 stderr = { empty = true }
 status = 0
@@ -13,7 +13,7 @@ tags = [ "hinfo", "madns" ]
 
 [[cmd]]
 name = "Running with ‘hinfo.example’ prints the correct HINFO record structure"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 HINFO hinfo.example --json | jq"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} HINFO hinfo.example --json | jq"
 stdout = { file = "outputs/hinfo.example.json" }
 stderr = { empty = true }
 status = 0
@@ -24,7 +24,7 @@ tags = [ "hinfo", "madns", "json" ]
 
 [[cmd]]
 name = "Running with ‘empty.hinfo.invalid’ displays a protocol error"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 HINFO empty.hinfo.invalid"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} HINFO empty.hinfo.invalid"
 stdout = { empty = true }
 stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
 status = 1
@@ -32,7 +32,7 @@ tags = [ "hinfo", "madns" ]
 
 [[cmd]]
 name = "Running with ‘incomplete.hinfo.invalid’ displays a protocol error"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 HINFO incomplete.hinfo.invalid"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} HINFO incomplete.hinfo.invalid"
 stdout = { empty = true }
 stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
 status = 1

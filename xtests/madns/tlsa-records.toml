@@ -2,7 +2,7 @@
 
 [[cmd]]
 name = "Running with ‘tlsa.example’ prints the correct TLSA record"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 TLSA tlsa.example"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} TLSA tlsa.example"
 stdout = { file = "outputs/tlsa.example.ansitxt" }
 stderr = { empty = true }
 status = 0
@@ -13,7 +13,7 @@ tags = [ "tlsa", "madns" ]
 
 [[cmd]]
 name = "Running with ‘tlsa.example’ prints the correct TLSA record structure"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 TLSA tlsa.example --json | jq"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} TLSA tlsa.example --json | jq"
 stdout = { file = "outputs/tlsa.example.json" }
 stderr = { empty = true }
 status = 0
@@ -24,7 +24,7 @@ tags = [ "tlsa", "madns", "json" ]
 
 [[cmd]]
 name = "Running with ‘empty.tlsa.invalid’ displays a protocol error"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 TLSA empty.tlsa.invalid"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} TLSA empty.tlsa.invalid"
 stdout = { empty = true }
 stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
 status = 1
@@ -32,7 +32,7 @@ tags = [ "tlsa", "madns" ]
 
 [[cmd]]
 name = "Running with ‘incomplete.tlsa.invalid’ displays a protocol error"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 TLSA incomplete.tlsa.invalid"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} TLSA incomplete.tlsa.invalid"
 stdout = { empty = true }
 stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
 status = 1

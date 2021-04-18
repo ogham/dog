@@ -2,7 +2,7 @@
 
 [[cmd]]
 name = "Running with ‘mx.example’ prints the correct MX record"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 MX mx.example"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} MX mx.example"
 stdout = { file = "outputs/mx.example.ansitxt" }
 stderr = { empty = true }
 status = 0
@@ -13,7 +13,7 @@ tags = [ "mx", "madns" ]
 
 [[cmd]]
 name = "Running with ‘mx.example’ prints the correct MX record structure"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 MX mx.example --json | jq"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} MX mx.example --json | jq"
 stdout = { file = "outputs/mx.example.json" }
 stderr = { empty = true }
 status = 0
@@ -24,7 +24,7 @@ tags = [ "mx", "madns", "json" ]
 
 [[cmd]]
 name = "Running with ‘empty.mx.invalid’ displays a protocol error"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 MX empty.mx.invalid"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} MX empty.mx.invalid"
 stdout = { empty = true }
 stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
 status = 1
@@ -32,7 +32,7 @@ tags = [ "mx", "madns" ]
 
 [[cmd]]
 name = "Running with ‘incomplete.mx.invalid’ displays a protocol error"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 MX incomplete.mx.invalid"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} MX incomplete.mx.invalid"
 stdout = { empty = true }
 stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
 status = 1

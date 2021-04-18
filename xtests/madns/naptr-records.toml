@@ -2,7 +2,7 @@
 
 [[cmd]]
 name = "Running with ‘naptr.example’ prints the correct NAPTR record"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 NAPTR naptr.example"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} NAPTR naptr.example"
 stdout = { file = "outputs/naptr.example.ansitxt" }
 stderr = { empty = true }
 status = 0
@@ -10,7 +10,7 @@ tags = [ "naptr", "madns" ]
 
 [[cmd]]
 name = "Running with ‘bad-regex.naptr.example’ still prints the correct NAPTR record"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 NAPTR bad-regex.naptr.example"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} NAPTR bad-regex.naptr.example"
 stdout = { file = "outputs/bad-regex.naptr.example.ansitxt" }
 stderr = { empty = true }
 status = 0
@@ -21,7 +21,7 @@ tags = [ "naptr", "madns" ]
 
 [[cmd]]
 name = "Running with ‘naptr.example’ prints the correct NAPTR record structure"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 NAPTR naptr.example --json | jq"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} NAPTR naptr.example --json | jq"
 stdout = { file = "outputs/naptr.example.json" }
 stderr = { empty = true }
 status = 0
@@ -32,7 +32,7 @@ tags = [ "naptr", "madns", "json" ]
 
 [[cmd]]
 name = "Running with ‘empty.naptr.invalid’ displays a protocol error"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 NAPTR empty.naptr.invalid"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} NAPTR empty.naptr.invalid"
 stdout = { empty = true }
 stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
 status = 1
@@ -40,7 +40,7 @@ tags = [ "naptr", "madns" ]
 
 [[cmd]]
 name = "Running with ‘incomplete.naptr.invalid’ displays a protocol error"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 NAPTR incomplete.naptr.invalid"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} NAPTR incomplete.naptr.invalid"
 stdout = { empty = true }
 stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
 status = 1

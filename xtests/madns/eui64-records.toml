@@ -2,7 +2,7 @@
 
 [[cmd]]
 name = "Running with ‘eui64.example’ prints the correct EUI64 record"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 EUI64 eui64.example"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} EUI64 eui64.example"
 stdout = { file = "outputs/eui64.example.ansitxt" }
 stderr = { empty = true }
 status = 0
@@ -13,7 +13,7 @@ tags = [ "eui64", "madns" ]
 
 [[cmd]]
 name = "Running with ‘eui64.example’ prints the correct EUI64 record structure"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 EUI64 eui64.example --json | jq"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} EUI64 eui64.example --json | jq"
 stdout = { file = "outputs/eui64.example.json" }
 stderr = { empty = true }
 status = 0
@@ -24,7 +24,7 @@ tags = [ "eui64", "madns", "json" ]
 
 [[cmd]]
 name = "Running with ‘too-long.eui64.invalid’ displays a record length error"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 EUI64 too-long.eui64.invalid"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} EUI64 too-long.eui64.invalid"
 stdout = { empty = true }
 stderr = { string = "Error [protocol]: Malformed packet: record length should be 8, got 9" }
 status = 1
@@ -32,7 +32,7 @@ tags = [ "eui64", "madns" ]
 
 [[cmd]]
 name = "Running with ‘too-short.eui64.invalid’ displays a record length error"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 EUI64 too-short.eui64.invalid"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} EUI64 too-short.eui64.invalid"
 stdout = { empty = true }
 stderr = { string = "Error [protocol]: Malformed packet: record length should be 8, got 7" }
 status = 1
@@ -40,7 +40,7 @@ tags = [ "eui64", "madns" ]
 
 [[cmd]]
 name = "Running with ‘empty.eui64.invalid’ displays a record length error"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 EUI64 empty.eui64.invalid"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} EUI64 empty.eui64.invalid"
 stdout = { empty = true }
 stderr = { string = "Error [protocol]: Malformed packet: record length should be 8, got 0" }
 status = 1
@@ -48,7 +48,7 @@ tags = [ "eui64", "madns" ]
 
 [[cmd]]
 name = "Running with ‘incomplete.eui64.invalid’ displays a protocol error"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 EUI64 incomplete.eui64.invalid"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} EUI64 incomplete.eui64.invalid"
 stdout = { empty = true }
 stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
 status = 1

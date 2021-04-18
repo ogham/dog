@@ -2,7 +2,7 @@
 
 [[cmd]]
 name = "Running with ‘opt.example’ prints the correct OPT record"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A opt.example --edns=show"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} A opt.example --edns=show"
 stdout = { file = "outputs/opt.example.ansitxt" }
 stderr = { empty = true }
 status = 0
@@ -10,7 +10,7 @@ tags = [ "opt", "madns" ]
 
 [[cmd]]
 name = "Running with ‘do-flag.opt.example’ prints the correct OPT record"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A do-flag.opt.example --edns=show"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} A do-flag.opt.example --edns=show"
 stdout = { file = "outputs/do-flag.opt.example.ansitxt" }
 stderr = { empty = true }
 status = 0
@@ -18,7 +18,7 @@ tags = [ "opt", "madns" ]
 
 [[cmd]]
 name = "Running with ‘other-flags.opt.example’ prints the correct OPT record"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A other-flags.opt.example --edns=show"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} A other-flags.opt.example --edns=show"
 stdout = { file = "outputs/other-flags.opt.example.ansitxt" }
 stderr = { empty = true }
 status = 0
@@ -26,7 +26,7 @@ tags = [ "opt", "madns" ]
 
 [[cmd]]
 name = "Running with ‘named.opt.invalid’ prints the correct OPT record"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A named.opt.invalid --edns=show"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} A named.opt.invalid --edns=show"
 stdout = { file = "outputs/named.opt.invalid.ansitxt" }
 stderr = { empty = true }
 status = 0
@@ -37,7 +37,7 @@ tags = [ "opt", "madns" ]
 
 [[cmd]]
 name = "Running with ‘opt.example’ prints the correct OPT record structure"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A opt.example --edns=show --json | jq"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} A opt.example --edns=show --json | jq"
 stdout = { file = "outputs/opt.example.json" }
 stderr = { empty = true }
 status = 0
@@ -45,7 +45,7 @@ tags = [ "opt", "madns", "json" ]
 
 [[cmd]]
 name = "Running with ‘do-flag.opt.example’ prints the correct OPT record structure"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A do-flag.opt.example --edns=show --json | jq"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} A do-flag.opt.example --edns=show --json | jq"
 stdout = { file = "outputs/do-flag.opt.example.json" }
 stderr = { empty = true }
 status = 0
@@ -53,7 +53,7 @@ tags = [ "opt", "madns", "json" ]
 
 [[cmd]]
 name = "Running with ‘other-flags.opt.example’ prints the correct OPT record structure"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A other-flags.opt.example --edns=show --json | jq"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} A other-flags.opt.example --edns=show --json | jq"
 stdout = { file = "outputs/other-flags.opt.example.json" }
 stderr = { empty = true }
 status = 0
@@ -61,7 +61,7 @@ tags = [ "opt", "madns", "json" ]
 
 [[cmd]]
 name = "Running with ‘named.opt.invalid’ prints the correct OPT record structure"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A named.opt.invalid --edns=show --json | jq"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} A named.opt.invalid --edns=show --json | jq"
 stdout = { file = "outputs/named.opt.invalid.json" }
 stderr = { empty = true }
 status = 0
@@ -72,7 +72,7 @@ tags = [ "opt", "madns", "json" ]
 
 [[cmd]]
 name = "Running with ‘incomplete.opt.invalid’ displays a record length error"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A incomplete.opt.invalid"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} A incomplete.opt.invalid"
 stdout = { empty = true }
 stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
 status = 1

@@ -2,7 +2,7 @@
 
 [[cmd]]
 name = "Running with ‘openpgpkey.example’ prints the correct OPENPGPKEY record"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 OPENPGPKEY openpgpkey.example"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} OPENPGPKEY openpgpkey.example"
 stdout = { file = "outputs/openpgpkey.example.ansitxt" }
 stderr = { empty = true }
 status = 0
@@ -13,7 +13,7 @@ tags = [ "openpgpkey", "madns" ]
 
 [[cmd]]
 name = "Running with ‘openpgpkey.example’ prints the correct OPENPGPKEY record structure"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 OPENPGPKEY openpgpkey.example --json | jq"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} OPENPGPKEY openpgpkey.example --json | jq"
 stdout = { file = "outputs/openpgpkey.example.json" }
 stderr = { empty = true }
 status = 0
@@ -24,7 +24,7 @@ tags = [ "openpgpkey", "madns", "json" ]
 
 [[cmd]]
 name = "Running with ‘empty.openpgpkey.invalid’ displays a record length error"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 OPENPGPKEY empty.openpgpkey.invalid"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} OPENPGPKEY empty.openpgpkey.invalid"
 stdout = { empty = true }
 stderr = { string = "Error [protocol]: Malformed packet: record length should be at least 1, got 0" }
 status = 1
@@ -32,7 +32,7 @@ tags = [ "openpgpkey", "madns" ]
 
 [[cmd]]
 name = "Running with ‘incomplete.openpgpkey.invalid’ displays a protocol error"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 OPENPGPKEY incomplete.openpgpkey.invalid"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} OPENPGPKEY incomplete.openpgpkey.invalid"
 stdout = { empty = true }
 stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
 status = 1

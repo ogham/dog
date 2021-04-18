@@ -2,7 +2,7 @@
 
 [[cmd]]
 name = "Running with ‘caa.example’ prints the correct CAA record"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 CAA caa.example"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} CAA caa.example"
 stdout = { file = "outputs/caa.example.ansitxt" }
 stderr = { empty = true }
 status = 0
@@ -10,7 +10,7 @@ tags = [ "caa", "madns" ]
 
 [[cmd]]
 name = "Running with ‘critical.caa.example’ prints the correct CAA record with the flag"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 CAA critical.caa.example"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} CAA critical.caa.example"
 stdout = { file = "outputs/critical.caa.example.ansitxt" }
 stderr = { empty = true }
 status = 0
@@ -18,7 +18,7 @@ tags = [ "caa", "madns" ]
 
 [[cmd]]
 name = "Running with ‘others.caa.example’ prints the correct CAA record and ignores the flags"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 CAA others.caa.example"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} CAA others.caa.example"
 stdout = { file = "outputs/others.caa.example.ansitxt" }
 stderr = { empty = true }
 status = 0
@@ -29,7 +29,7 @@ tags = [ "caa", "madns" ]
 
 [[cmd]]
 name = "Running with ‘caa.example’ prints the correct CAA record structure"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 CAA caa.example --json | jq"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} CAA caa.example --json | jq"
 stdout = { file = "outputs/caa.example.json" }
 stderr = { empty = true }
 status = 0
@@ -37,7 +37,7 @@ tags = [ "caa", "madns", "json" ]
 
 [[cmd]]
 name = "Running with ‘critical.caa.example’ prints the correct CAA record structurewith the flag"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 CAA critical.caa.example --json | jq"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} CAA critical.caa.example --json | jq"
 stdout = { file = "outputs/critical.caa.example.json" }
 stderr = { empty = true }
 status = 0
@@ -45,7 +45,7 @@ tags = [ "caa", "madns", "json" ]
 
 [[cmd]]
 name = "Running with ‘others.caa.example’ prints the correct CAA record structure and ignores the flags"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 CAA others.caa.example --json | jq"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} CAA others.caa.example --json | jq"
 stdout = { file = "outputs/others.caa.example.json" }
 stderr = { empty = true }
 status = 0
@@ -56,7 +56,7 @@ tags = [ "caa", "madns", "json" ]
 
 [[cmd]]
 name = "Running with ‘empty.caa.invalid’ displays a protocol error"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 CAA empty.caa.invalid"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} CAA empty.caa.invalid"
 stdout = { empty = true }
 stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
 status = 1
@@ -64,7 +64,7 @@ tags = [ "caa", "madns" ]
 
 [[cmd]]
 name = "Running with ‘incomplete.caa.invalid’ displays a protocol error"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 CAA incomplete.caa.invalid"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} CAA incomplete.caa.invalid"
 stdout = { empty = true }
 stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
 status = 1

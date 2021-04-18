@@ -2,7 +2,7 @@
 
 [[cmd]]
 name = "Running with ‘sshfp.example’ prints the correct SSHFP record"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 SSHFP sshfp.example"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} SSHFP sshfp.example"
 stdout = { file = "outputs/sshfp.example.ansitxt" }
 stderr = { empty = true }
 status = 0
@@ -13,7 +13,7 @@ tags = [ "sshfp", "madns" ]
 
 [[cmd]]
 name = "Running with ‘sshfp.example’ prints the correct SSHFP record structure"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 SSHFP sshfp.example --json | jq"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} SSHFP sshfp.example --json | jq"
 stdout = { file = "outputs/sshfp.example.json" }
 stderr = { empty = true }
 status = 0
@@ -24,7 +24,7 @@ tags = [ "sshfp", "madns", "json" ]
 
 [[cmd]]
 name = "Running with ‘empty.sshfp.invalid’ displays a protocol error"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 SSHFP empty.sshfp.invalid"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} SSHFP empty.sshfp.invalid"
 stdout = { empty = true }
 stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
 status = 1
@@ -32,7 +32,7 @@ tags = [ "sshfp", "madns" ]
 
 [[cmd]]
 name = "Running with ‘incomplete.sshfp.invalid’ displays a protocol error"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 SSHFP incomplete.sshfp.invalid"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} SSHFP incomplete.sshfp.invalid"
 stdout = { empty = true }
 stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
 status = 1

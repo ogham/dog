@@ -2,7 +2,7 @@
 
 [[cmd]]
 name = "Running with ‘a.example’ prints the correct A record"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A a.example"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} A a.example"
 stdout = { file = "outputs/a.example.ansitxt" }
 stderr = { empty = true }
 status = 0
@@ -13,7 +13,7 @@ tags = [ "a", "madns" ]
 
 [[cmd]]
 name = "Running with ‘a.example’ prints the correct A record structure"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A a.example --json | jq"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} A a.example --json | jq"
 stdout = { file = "outputs/a.example.json" }
 stderr = { empty = true }
 status = 0
@@ -24,7 +24,7 @@ tags = [ "a", "madns", "json" ]
 
 [[cmd]]
 name = "Running with ‘too-long.a.invalid’ displays a record length error"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A too-long.a.invalid"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} A too-long.a.invalid"
 stdout = { empty = true }
 stderr = { string = "Error [protocol]: Malformed packet: record length should be 4, got 5" }
 status = 1
@@ -32,7 +32,7 @@ tags = [ "a", "madns" ]
 
 [[cmd]]
 name = "Running with ‘too-short.a.invalid’ displays a record length error"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A too-short.a.invalid"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} A too-short.a.invalid"
 stdout = { empty = true }
 stderr = { string = "Error [protocol]: Malformed packet: record length should be 4, got 3" }
 status = 1
@@ -40,7 +40,7 @@ tags = [ "a", "madns" ]
 
 [[cmd]]
 name = "Running with ‘empty.a.invalid’ displays a record length error"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A empty.a.invalid"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} A empty.a.invalid"
 stdout = { empty = true }
 stderr = { string = "Error [protocol]: Malformed packet: record length should be 4, got 0" }
 status = 1
@@ -48,7 +48,7 @@ tags = [ "a", "madns" ]
 
 [[cmd]]
 name = "Running with ‘incomplete.a.invalid’ displays a protocol error"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 A incomplete.a.invalid"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} A incomplete.a.invalid"
 stdout = { empty = true }
 stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
 status = 1

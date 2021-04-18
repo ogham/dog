@@ -2,7 +2,7 @@
 
 [[cmd]]
 name = "Running with ‘soa.example’ prints the correct SOA record"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 SOA soa.example"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} SOA soa.example"
 stdout = { file = "outputs/soa.example.ansitxt" }
 stderr = { empty = true }
 status = 0
@@ -13,7 +13,7 @@ tags = [ "soa", "madns" ]
 
 [[cmd]]
 name = "Running with ‘soa.example’ prints the correct SOA record structure"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 SOA soa.example --json | jq"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} SOA soa.example --json | jq"
 stdout = { file = "outputs/soa.example.json" }
 stderr = { empty = true }
 status = 0
@@ -24,7 +24,7 @@ tags = [ "soa", "madns", "json" ]
 
 [[cmd]]
 name = "Running with ‘empty.soa.invalid’ displays a protocol error"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 SOA empty.soa.invalid"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} SOA empty.soa.invalid"
 stdout = { empty = true }
 stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
 status = 1
@@ -32,7 +32,7 @@ tags = [ "soa", "madns" ]
 
 [[cmd]]
 name = "Running with ‘incomplete.soa.invalid’ displays a protocol error"
-shell = "dog --colour=always --tcp @madns.binarystar.systems:5301 SOA incomplete.soa.invalid"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} SOA incomplete.soa.invalid"
 stdout = { empty = true }
 stderr = { string = "Error [protocol]: Malformed packet: insufficient data" }
 status = 1

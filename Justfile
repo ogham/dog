@@ -73,6 +73,12 @@ export DOG_DEBUG := ""
     specsheet xtests/options/*.toml xtests/live/{basics,tcp}.toml -shide {{args}} \
         -O cmd.target.dog="${CARGO_TARGET_DIR:-../../target}/debug/dog"
 
+# run extended tests against a local madns instance
+@xtests-madns-local *args:
+    env MADNS_ARGS="@localhost:5301 --tcp" \
+        specsheet xtests/madns/*.toml -shide {{args}} \
+            -O cmd.target.dog="${CARGO_TARGET_DIR:-../../target}/debug/dog"
+
 # display the number of extended tests that get run
 @count-xtests:
     grep -F '[[cmd]]' -R xtests | wc -l
