@@ -401,7 +401,7 @@ pub enum WireError {
 
     /// When the data contained a string containing a cycle of pointers.
     /// Contains the vector of indexes that was being checked.
-    TooMuchRecursion(Vec<u16>),
+    TooMuchRecursion(Box<[u16]>),
 
     /// When the data contained a string with a pointer to an index outside of
     /// the packet. Contains the invalid index.

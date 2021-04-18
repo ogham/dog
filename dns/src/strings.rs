@@ -165,14 +165,14 @@ fn read_string_recursive(labels: &mut Labels, c: &mut Cursor<&[u8]>, recursions:
 
             if recursions.contains(&offset) {
                 warn!("Hit previous offset ({}) decoding string", offset);
-                return Err(WireError::TooMuchRecursion(recursions.clone()));
+                return Err(WireError::TooMuchRecursion(recursions.clone().into_boxed_slice()));
             }
 
             recursions.push(offset);
 
             if recursions.len() >= RECURSION_LIMIT {
                 warn!("Hit recursion limit ({}) decoding string", RECURSION_LIMIT);
-                return Err(WireError::TooMuchRecursion(recursions.clone()));
+                return Err(WireError::TooMuchRecursion(recursions.clone().into_boxed_slice()));
             }
 
             trace!("Backtracking to offset {}", offset);
@@ -287,7 +287,7 @@ mod test {
         ];
 
         assert_eq!(Cursor::new(buf).read_labels(),
-                   Err(WireError::TooMuchRecursion(vec![ 0 ])));
+                   Err(WireError::TooMuchRecursion(Box::new([ 0 ]))));
     }
 
     #[test]
@@ -300,7 +300,7 @@ mod test {
         let mut cursor = Cursor::new(buf);
 
         assert_eq!(cursor.read_labels(),
-                   Err(WireError::TooMuchRecursion(vec![ 2, 0 ])));
+                   Err(WireError::TooMuchRecursion(Box::new([ 2, 0 ]))));
     }
 
     #[test]
@@ -320,6 +320,6 @@ mod test {
         let mut cursor = Cursor::new(buf);
 
         assert_eq!(cursor.read_labels(),
-                   Err(WireError::TooMuchRecursion(vec![ 2, 4, 6, 8, 10, 12, 14, 16 ])));
+                   Err(WireError::TooMuchRecursion(Box::new([ 2, 4, 6, 8, 10, 12, 14, 16 ]))));
     }
 }
