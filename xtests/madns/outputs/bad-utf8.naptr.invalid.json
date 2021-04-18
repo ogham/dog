@@ -1,0 +1,30 @@
+{
+  "responses": [
+    {
+      "queries": [
+        {
+          "name": "bad-utf8.naptr.invalid.",
+          "class": "IN",
+          "type": "NAPTR"
+        }
+      ],
+      "answers": [
+        {
+          "name": "bad-utf8.naptr.invalid.",
+          "class": "IN",
+          "ttl": 600,
+          "type": "NAPTR",
+          "data": {
+            "order": 5,
+            "flags": "�Р�",
+            "service": "�Р�",
+            "regex": "�Р�",
+            "replacement": "�Р�."
+          }
+        }
+      ],
+      "authorities": [],
+      "additionals": []
+    }
+  ]
+}

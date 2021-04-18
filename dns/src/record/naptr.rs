@@ -23,14 +23,14 @@ pub struct NAPTR {
 
     /// A set of characters that control the rewriting and interpretation of
     /// the other fields.
-    pub flags: String,
+    pub flags: Box<[u8]>,
 
     /// The service parameters applicable to this delegation path.
-    pub service: String,
+    pub service: Box<[u8]>,
 
     /// A regular expression that gets applied to a string in order to
     /// construct the next domain name to look up using the DDDS algorithm.
-    pub regex: String,
+    pub regex: Box<[u8]>,
 
     /// The replacement domain name as part of the DDDS algorithm.
     pub replacement: Labels,
@@ -53,31 +53,25 @@ impl Wire for NAPTR {
         let flags_length = c.read_u8()?;
         trace!("Parsed flags length -> {:?}", flags_length);
 
-        let mut flags_buffer = vec![0_u8; usize::from(flags_length)];
-        c.read_exact(&mut flags_buffer)?;
-
-        let flags = String::from_utf8_lossy(&flags_buffer).to_string();
-        trace!("Parsed flags -> {:?}", flags);
+        let mut flags = vec![0_u8; usize::from(flags_length)].into_boxed_slice();
+        c.read_exact(&mut flags)?;
+        trace!("Parsed flags -> {:?}", String::from_utf8_lossy(&flags));
 
         // service
         let service_length = c.read_u8()?;
         trace!("Parsed service length -> {:?}", service_length);
 
-        let mut service_buffer = vec![0_u8; usize::from(service_length)];
-        c.read_exact(&mut service_buffer)?;
-
-        let service = String::from_utf8_lossy(&service_buffer).to_string();
-        trace!("Parsed service -> {:?}", service);
+        let mut service = vec![0_u8; usize::from(service_length)].into_boxed_slice();
+        c.read_exact(&mut service)?;
+        trace!("Parsed service -> {:?}", String::from_utf8_lossy(&service));
 
         // regex
         let regex_length = c.read_u8()?;
         trace!("Parsed regex length -> {:?}", regex_length);
 
-        let mut regex_buffer = vec![0_u8; usize::from(regex_length)];
-        c.read_exact(&mut regex_buffer)?;
-
-        let regex = String::from_utf8_lossy(&regex_buffer).to_string();
-        trace!("Parsed regex -> {:?}", regex);
+        let mut regex = vec![0_u8; usize::from(regex_length)].into_boxed_slice();
+        c.read_exact(&mut regex)?;
+        trace!("Parsed regex -> {:?}", String::from_utf8_lossy(&regex));
 
         // replacement
         let (replacement, replacement_length) = c.read_labels()?;
@@ -123,9 +117,9 @@ mod test {
                    NAPTR {
                        order: 5,
                        preference: 10,
-                       flags: "s".into(),
-                       service: "SRV".into(),
-                       regex: "\\d\\d:\\d\\d:\\d\\d".into(),
+                       flags: Box::new(*b"s"),
+                       service: Box::new(*b"SRV"),
+                       regex: Box::new(*b"\\d\\d:\\d\\d:\\d\\d"),
                        replacement: Labels::encode("srv-example.lookup.dog").unwrap(),
                    });
     }

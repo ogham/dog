@@ -228,12 +228,12 @@ impl TextFormat {
                 format!("{} {:?}", mx.preference, mx.exchange.to_string())
             }
             Record::NAPTR(naptr) => {
-                format!("{} {} {} {:?} /{}/ {:?}",
+                format!("{} {} {} {} {} {:?}",
                     naptr.order,
                     naptr.preference,
-                    naptr.flags,
-                    naptr.service,
-                    naptr.regex,
+                    Ascii(&naptr.flags),
+                    Ascii(&naptr.service),
+                    Ascii(&naptr.regex),
                     naptr.replacement.to_string(),
                 )
             }
@@ -520,9 +520,9 @@ fn json_record_data(record: Record) -> JsonValue {
         Record::NAPTR(naptr) => {
             object! {
                 "order": naptr.order,
-                "flags": naptr.flags,
-                "service": naptr.service,
-                "regex": naptr.regex,
+                "flags": String::from_utf8_lossy(&naptr.flags).to_string(),
+                "service": String::from_utf8_lossy(&naptr.service).to_string(),
+                "regex": String::from_utf8_lossy(&naptr.regex).to_string(),
                 "replacement": naptr.replacement.to_string(),
             }
         }
