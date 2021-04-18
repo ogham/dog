@@ -81,7 +81,7 @@ impl TcpTransport {
     pub(crate) fn length_prefixed_read(stream: &mut impl Read) -> Result<Vec<u8>, Error> {
         info!("Waiting to receive...");
 
-        let mut buf = vec![0; 4096];
+        let mut buf = [0; 4096];
         let mut read_len = stream.read(&mut buf[..])?;
 
         if read_len == 0 {
@@ -105,9 +105,7 @@ impl TcpTransport {
         let total_len = u16::from_be_bytes([buf[0], buf[1]]);
         if read_len - 2 == usize::from(total_len) {
             debug!("We have enough bytes");
-            let _ = buf.remove(1);
-            let _ = buf.remove(0);
-            return Ok(buf);
+            return Ok(buf[2..read_len].to_vec());
         }
 
         debug!("We need to read {} bytes total", total_len);
