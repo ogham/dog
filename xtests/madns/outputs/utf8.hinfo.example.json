@@ -1,0 +1,27 @@
+{
+  "responses": [
+    {
+      "queries": [
+        {
+          "name": "utf8.hinfo.example.",
+          "class": "IN",
+          "type": "HINFO"
+        }
+      ],
+      "answers": [
+        {
+          "name": "utf8.hinfo.example.",
+          "class": "IN",
+          "ttl": 600,
+          "type": "HINFO",
+          "data": {
+            "cpu": "some🌴kinda🌴cpu",
+            "os": "some🌴kinda🌴os"
+          }
+        }
+      ],
+      "authorities": [],
+      "additionals": []
+    }
+  ]
+}

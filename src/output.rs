@@ -212,7 +212,7 @@ impl TextFormat {
                 format!("{:?}", eui64.formatted_address())
             }
             Record::HINFO(hinfo) => {
-                format!("{:?} {:?}", hinfo.cpu, hinfo.os)
+                format!("{} {}", Ascii(&hinfo.cpu), Ascii(&hinfo.os))
             }
             Record::LOC(loc) => {
                 format!("{} ({}, {}) ({}, {}, {})",
@@ -490,8 +490,8 @@ fn json_record_data(record: Record) -> JsonValue {
         }
         Record::HINFO(hinfo) => {
             object! {
-                "cpu": hinfo.cpu,
-                "os": hinfo.os,
+                "cpu": String::from_utf8_lossy(&hinfo.cpu).to_string(),
+                "os": String::from_utf8_lossy(&hinfo.os).to_string(),
             }
         }
         Record::LOC(loc) => {

@@ -18,10 +18,10 @@ use crate::wire::*;
 pub struct HINFO {
 
     /// The CPU field, specifying the CPU type.
-    pub cpu: String,
+    pub cpu: Box<[u8]>,
 
     /// The OS field, specifying the operating system.
-    pub os: String,
+    pub os: Box<[u8]>,
 }
 
 impl Wire for HINFO {
@@ -34,20 +34,16 @@ impl Wire for HINFO {
         let cpu_length = c.read_u8()?;
         trace!("Parsed CPU length -> {:?}", cpu_length);
 
-        let mut cpu_buffer = vec![0_u8; usize::from(cpu_length)];
-        c.read_exact(&mut cpu_buffer)?;
-
-        let cpu = String::from_utf8_lossy(&cpu_buffer).to_string();
-        trace!("Parsed CPU -> {:?}", cpu);
+        let mut cpu = vec![0_u8; usize::from(cpu_length)].into_boxed_slice();
+        c.read_exact(&mut cpu)?;
+        trace!("Parsed CPU -> {:?}", String::from_utf8_lossy(&cpu));
 
         let os_length = c.read_u8()?;
         trace!("Parsed OS length -> {:?}", os_length);
 
-        let mut os_buffer = vec![0_u8; usize::from(os_length)];
-        c.read_exact(&mut os_buffer)?;
-
-        let os = String::from_utf8_lossy(&os_buffer).to_string();
-        trace!("Parsed OS -> {:?}", cpu);
+        let mut os = vec![0_u8; usize::from(os_length)].into_boxed_slice();
+        c.read_exact(&mut os)?;
+        trace!("Parsed OS -> {:?}", String::from_utf8_lossy(&os));
 
         let length_after_labels = 1 + u16::from(cpu_length) + 1 + u16::from(os_length);
         if stated_length == length_after_labels {
@@ -80,8 +76,8 @@ mod test {
 
         assert_eq!(HINFO::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
                    HINFO {
-                       cpu: String::from("some-kinda-cpu"),
-                       os: String::from("some-kinda-os"),
+                       cpu: Box::new(*b"some-kinda-cpu"),
+                       os: Box::new(*b"some-kinda-os"),
                    });
     }
 

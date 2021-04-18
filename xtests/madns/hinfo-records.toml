@@ -8,6 +8,22 @@ stderr = { empty = true }
 status = 0
 tags = [ "hinfo", "madns" ]
 
+[[cmd]]
+name = "Running with ‘utf8.hinfo.example’ escapes characters in the fields"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} HINFO utf8.hinfo.example"
+stdout = { file = "outputs/utf8.hinfo.example.ansitxt" }
+stderr = { empty = true }
+status = 0
+tags = [ "hinfo", "madns", "chars" ]
+
+[[cmd]]
+name = "Running with ‘bad-utf8.hinfo.example’ escapes characters in the fields and does not crash"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} HINFO bad-utf8.hinfo.example"
+stdout = { file = "outputs/bad-utf8.hinfo.example.ansitxt" }
+stderr = { empty = true }
+status = 0
+tags = [ "hinfo", "madns", "chars" ]
+
 
 # HINFO record successes (JSON)
 
@@ -19,6 +35,21 @@ stderr = { empty = true }
 status = 0
 tags = [ "hinfo", "madns", "json" ]
 
+[[cmd]]
+name = "Running with ‘utf8.hinfo.example --json’ interprets the response as UTF-8"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} HINFO utf8.hinfo.example --json | jq"
+stdout = { file = "outputs/utf8.hinfo.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "hinfo", "madns", "chars", "json" ]
+
+[[cmd]]
+name = "Running with ‘bad-utf8.hinfo.example --json’ uses UTF-8 replacement characters"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} HINFO bad-utf8.hinfo.example --json | jq"
+stdout = { file = "outputs/bad-utf8.hinfo.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "hinfo", "madns", "chars", "json" ]
 
 # HINFO record invalid packets
 
