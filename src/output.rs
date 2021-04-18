@@ -196,10 +196,10 @@ impl TextFormat {
             }
             Record::CAA(caa) => {
                 if caa.critical {
-                    format!("{:?} {:?} (critical)", caa.tag, caa.value)
+                    format!("{} {} (critical)", Ascii(&caa.tag), Ascii(&caa.value))
                 }
                 else {
-                    format!("{:?} {:?} (non-critical)", caa.tag, caa.value)
+                    format!("{} {} (non-critical)", Ascii(&caa.tag), Ascii(&caa.value))
                 }
             }
             Record::CNAME(cname) => {
@@ -454,6 +454,9 @@ fn json_record_name(record: &Record) -> JsonValue {
 
 
 /// Serialises a received DNS record as a JSON value.
+
+/// Even though DNS doesn’t specify a character encoding, strings are still
+/// converted from UTF-8, because JSON specifies UTF-8.
 fn json_record_data(record: Record) -> JsonValue {
     match record {
         Record::A(a) => {
@@ -469,8 +472,8 @@ fn json_record_data(record: Record) -> JsonValue {
         Record::CAA(caa) => {
             object! {
                 "critical": caa.critical,
-                "tag": caa.tag,
-                "value": caa.value,
+                "tag": String::from_utf8_lossy(&caa.tag).to_string(),
+                "value": String::from_utf8_lossy(&caa.value).to_string(),
             }
         }
         Record::CNAME(cname) => {

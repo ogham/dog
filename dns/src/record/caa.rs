@@ -18,10 +18,10 @@ pub struct CAA {
     pub critical: bool,
 
     /// The “tag” part of the CAA record.
-    pub tag: String,
+    pub tag: Box<[u8]>,
 
     /// The “value” part of the CAA record.
-    pub value: String,
+    pub value: Box<[u8]>,
 }
 
 impl Wire for CAA {
@@ -43,21 +43,17 @@ impl Wire for CAA {
         let tag_length = c.read_u8()?;
         trace!("Parsed tag length -> {:?}", tag_length);
 
-        let mut tag_buffer = vec![0_u8; usize::from(tag_length)];
-        c.read_exact(&mut tag_buffer)?;
-
-        let tag = String::from_utf8_lossy(&tag_buffer).to_string();
-        trace!("Parsed tag -> {:?}", tag);
+        let mut tag = vec![0_u8; usize::from(tag_length)].into_boxed_slice();
+        c.read_exact(&mut tag)?;
+        trace!("Parsed tag -> {:?}", String::from_utf8_lossy(&tag));
 
         // value
         let remaining_length = stated_length.saturating_sub(u16::from(tag_length)).saturating_sub(2);
         trace!("Remaining length -> {:?}", remaining_length);
 
-        let mut value_buffer = vec![0_u8; usize::from(remaining_length)];
-        c.read_exact(&mut value_buffer)?;
-
-        let value = String::from_utf8_lossy(&value_buffer).to_string();
-        trace!("Parsed value -> {:?}", value);
+        let mut value = vec![0_u8; usize::from(remaining_length)].into_boxed_slice();
+        c.read_exact(&mut value)?;
+        trace!("Parsed value -> {:?}", String::from_utf8_lossy(&value));
 
         Ok(Self { critical, tag, value })
     }
@@ -81,8 +77,8 @@ mod test {
         assert_eq!(CAA::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
                    CAA {
                        critical: false,
-                       tag: String::from("issuewild"),
-                       value: String::from("entrust.net"),
+                       tag: Box::new(*b"issuewild"),
+                       value: Box::new(*b"entrust.net"),
                    });
     }
 
@@ -98,8 +94,8 @@ mod test {
         assert_eq!(CAA::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
                    CAA {
                        critical: true,
-                       tag: String::from("issuewild"),
-                       value: String::from("entrust.net"),
+                       tag: Box::new(*b"issuewild"),
+                       value: Box::new(*b"entrust.net"),
                    });
     }
 
@@ -115,8 +111,8 @@ mod test {
         assert_eq!(CAA::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
                    CAA {
                        critical: false,
-                       tag: String::from("e"),
-                       value: String::from("E"),
+                       tag: Box::new(*b"e"),
+                       value: Box::new(*b"E"),
                    });
     }
 

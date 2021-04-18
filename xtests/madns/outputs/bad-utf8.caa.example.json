@@ -1,0 +1,28 @@
+{
+  "responses": [
+    {
+      "queries": [
+        {
+          "name": "bad-utf8.caa.example.",
+          "class": "IN",
+          "type": "CAA"
+        }
+      ],
+      "answers": [
+        {
+          "name": "bad-utf8.caa.example.",
+          "class": "IN",
+          "ttl": 600,
+          "type": "CAA",
+          "data": {
+            "critical": false,
+            "tag": "issuewild",
+            "value": "�Р�"
+          }
+        }
+      ],
+      "authorities": [],
+      "additionals": []
+    }
+  ]
+}

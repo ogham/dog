@@ -24,6 +24,22 @@ stderr = { empty = true }
 status = 0
 tags = [ "caa", "madns" ]
 
+[[cmd]]
+name = "Running with ‘utf8.caa.example’ escapes characters in the fields"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} CAA utf8.caa.example"
+stdout = { file = "outputs/utf8.caa.example.ansitxt" }
+stderr = { empty = true }
+status = 0
+tags = [ "caa", "madns", "chars" ]
+
+[[cmd]]
+name = "Running with ‘bad-utf8.caa.example’ escapes characters in the fields and does not crash"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} CAA bad-utf8.caa.example"
+stdout = { file = "outputs/bad-utf8.caa.example.ansitxt" }
+stderr = { empty = true }
+status = 0
+tags = [ "caa", "madns", "chars" ]
+
 
 # CAA record successes (JSON)
 
@@ -50,6 +66,22 @@ stdout = { file = "outputs/others.caa.example.json" }
 stderr = { empty = true }
 status = 0
 tags = [ "caa", "madns", "json" ]
+
+[[cmd]]
+name = "Running with ‘utf8.caa.example --json’ interprets the response as UTF-8"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} CAA utf8.caa.example --json | jq"
+stdout = { file = "outputs/utf8.caa.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "caa", "madns", "chars", "json" ]
+
+[[cmd]]
+name = "Running with ‘bad-utf8.caa.example --json’ uses UTF-8 replacement characters"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} CAA bad-utf8.caa.example --json | jq"
+stdout = { file = "outputs/bad-utf8.caa.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "caa", "madns", "chars", "json" ]
 
 
 # CAA record invalid packets
