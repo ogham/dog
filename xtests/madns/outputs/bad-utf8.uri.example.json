@@ -1,0 +1,28 @@
+{
+  "responses": [
+    {
+      "queries": [
+        {
+          "name": "bad-utf8.uri.example.",
+          "class": "IN",
+          "type": "URI"
+        }
+      ],
+      "answers": [
+        {
+          "name": "bad-utf8.uri.example.",
+          "class": "IN",
+          "ttl": 600,
+          "type": "URI",
+          "data": {
+            "priority": 10,
+            "weight": 16,
+            "target": "�Р�"
+          }
+        }
+      ],
+      "authorities": [],
+      "additionals": []
+    }
+  ]
+}

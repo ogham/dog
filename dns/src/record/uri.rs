@@ -25,7 +25,7 @@ pub struct URI {
 
     /// The URI contained in the record. Since all we are doing is displaying
     /// it to the user, we do not need to parse it for accuracy.
-    pub target: String,
+    pub target: Vec<u8>,
 }
 
 impl Wire for URI {
@@ -47,11 +47,9 @@ impl Wire for URI {
         }
 
         let remaining_length = stated_length - 4;
-        let mut target_buffer = vec![0_u8; usize::from(remaining_length)];
-        c.read_exact(&mut target_buffer)?;
-
-        let target = String::from_utf8_lossy(&target_buffer).to_string();
-        trace!("Parsed target -> {:?}", target);
+        let mut target = vec![0_u8; usize::from(remaining_length)];
+        c.read_exact(&mut target)?;
+        trace!("Parsed target -> {:?}", String::from_utf8_lossy(&target));
 
         Ok(Self { priority, weight, target })
     }
@@ -76,7 +74,7 @@ mod test {
                    URI {
                        priority: 10,
                        weight: 16,
-                       target: String::from("https://rfcs.io/"),
+                       target: b"https://rfcs.io/".to_vec(),
                    });
     }
 
@@ -92,7 +90,7 @@ mod test {
                    URI {
                        priority: 10,
                        weight: 16,
-                       target: String::from("/"),
+                       target: b"/".to_vec(),
                    });
     }
 

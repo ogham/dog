@@ -280,7 +280,7 @@ impl TextFormat {
                 messages.join(", ")
             }
             Record::URI(uri) => {
-                format!("{} {} {:?}", uri.priority, uri.weight, uri.target)
+                format!("{} {} {}", uri.priority, uri.weight, Ascii(&uri.target))
             }
             Record::Other { bytes, .. } => {
                 format!("{:?}", bytes)
@@ -575,7 +575,7 @@ fn json_record_data(record: Record) -> JsonValue {
             object! {
                 "priority": uri.priority,
                 "weight": uri.weight,
-                "target": uri.target,
+                "target": String::from_utf8_lossy(&uri.target).to_string(),
             }
         }
         Record::Other { bytes, .. } => {

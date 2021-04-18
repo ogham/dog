@@ -16,6 +16,22 @@ stderr = { empty = true }
 status = 0
 tags = [ "uri", "madns" ]
 
+[[cmd]]
+name = "Running with ‘utf8.uri.example’ escapes characters in the URI"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} URI utf8.uri.example"
+stdout = { file = "outputs/utf8.uri.example.ansitxt" }
+stderr = { empty = true }
+status = 0
+tags = [ "uri", "madns", "chars" ]
+
+[[cmd]]
+name = "Running with ‘bad-utf8.uri.example’ escapes characters in the URI and does not crash"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} URI bad-utf8.uri.example"
+stdout = { file = "outputs/bad-utf8.uri.example.ansitxt" }
+stderr = { empty = true }
+status = 0
+tags = [ "uri", "madns", "chars" ]
+
 
 # URI record successes (JSON)
 
@@ -26,6 +42,22 @@ stdout = { file = "outputs/uri.example.json" }
 stderr = { empty = true }
 status = 0
 tags = [ "uri", "madns", "json" ]
+
+[[cmd]]
+name = "Running with ‘utf8.uri.example --json’ interprets the response as UTF-8"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} URI utf8.uri.example --json | jq"
+stdout = { file = "outputs/utf8.uri.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "uri", "madns", "chars", "json" ]
+
+[[cmd]]
+name = "Running with ‘bad-utf8.uri.example --json’ uses UTF-8 replacement characters"
+shell = "dog --colour=always ${MADNS_ARGS:-@madns.binarystar.systems:5301 --tcp} URI bad-utf8.uri.example --json | jq"
+stdout = { file = "outputs/bad-utf8.uri.example.json" }
+stderr = { empty = true }
+status = 0
+tags = [ "uri", "madns", "chars", "json" ]
 
 
 # URI record invalid packets
