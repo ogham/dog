@@ -647,9 +647,11 @@ fn erroneous_phase(error: &TransportError) -> &'static str {
         TransportError::WireError(_)          => "protocol",
         TransportError::TruncatedResponse     |
         TransportError::NetworkError(_)       => "network",
-        #[cfg(feature = "with_tls")]
+        #[cfg(feature = "with_nativetls")]
         TransportError::TlsError(_)           |
         TransportError::TlsHandshakeError(_)  => "tls",
+        #[cfg(feature = "with_rustls")]
+        TransportError::RustlsInvalidDnsNameError(_) => "tls", // TODO: Actually wrong, could be https
         #[cfg(feature = "with_https")]
         TransportError::HttpError(_)          |
         TransportError::WrongHttpStatus(_,_)  => "http",
@@ -662,10 +664,12 @@ fn error_message(error: TransportError) -> String {
         TransportError::WireError(e)          => wire_error_message(e),
         TransportError::TruncatedResponse     => "Truncated response".into(),
         TransportError::NetworkError(e)       => e.to_string(),
-        #[cfg(feature = "with_tls")]
+        #[cfg(feature = "with_nativetls")]
         TransportError::TlsError(e)           => e.to_string(),
-        #[cfg(feature = "with_tls")]
+        #[cfg(feature = "with_nativetls")]
         TransportError::TlsHandshakeError(e)  => e.to_string(),
+        #[cfg(any(feature = "with_rustls"))]
+        TransportError::RustlsInvalidDnsNameError(e) => e.to_string(),
         #[cfg(feature = "with_https")]
         TransportError::HttpError(e)          => e.to_string(),
         #[cfg(feature = "with_https")]

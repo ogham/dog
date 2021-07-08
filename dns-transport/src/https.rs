@@ -8,6 +8,8 @@ use log::*;
 use dns::{Request, Response, WireError};
 use super::{Transport, Error};
 
+use super::tls_stream;
+
 /// The **HTTPS transport**, which sends DNS wire data inside HTTP packets
 /// encrypted with TLS, using TCP.
 pub struct HttpsTransport {
@@ -31,17 +33,17 @@ fn contains_header(buf: &[u8]) -> bool {
     find_subsequence(buf, &header_end).is_some()
 }
 
+use tls_stream::TlsStream;
+
 impl Transport for HttpsTransport {
 
-    #[cfg(feature = "with_https")]
+    #[cfg(any(feature = "with_https"))]
     fn send(&self, request: &Request) -> Result<Response, Error> {
-        let connector = native_tls::TlsConnector::new()?;
-
         let (domain, path) = self.split_domain().expect("Invalid HTTPS nameserver");
 
         info!("Opening TLS socket to {:?}", domain);
-        let stream = TcpStream::connect(format!("{}:443", domain))?;
-        let mut stream = connector.connect(domain, stream)?;
+        let mut stream = Self::stream(&domain, 443)?;
+
         debug!("Connected");
 
         let request_bytes = request.to_bytes().expect("failed to serialise request");

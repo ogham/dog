@@ -14,12 +14,16 @@ pub enum Error {
     TruncatedResponse,
 
     /// There was a problem making a TLS request.
-    #[cfg(feature = "with_tls")]
+    #[cfg(feature = "with_nativetls")]
     TlsError(native_tls::Error),
 
     /// There was a problem _establishing_ a TLS request.
-    #[cfg(feature = "with_tls")]
+    #[cfg(feature = "with_nativetls")]
     TlsHandshakeError(native_tls::HandshakeError<std::net::TcpStream>),
+
+    /// Provided dns name is not valid
+    #[cfg(feature = "with_rustls")]
+    RustlsInvalidDnsNameError(webpki::InvalidDNSNameError),
 
     /// There was a problem decoding the response HTTP headers or body.
     #[cfg(feature = "with_https")]
@@ -46,17 +50,24 @@ impl From<std::io::Error> for Error {
     }
 }
 
-#[cfg(feature = "with_tls")]
+#[cfg(feature = "with_nativetls")]
 impl From<native_tls::Error> for Error {
     fn from(inner: native_tls::Error) -> Self {
         Self::TlsError(inner)
     }
 }
 
-#[cfg(feature = "with_tls")]
+#[cfg(feature = "with_nativetls")]
 impl From<native_tls::HandshakeError<std::net::TcpStream>> for Error {
     fn from(inner: native_tls::HandshakeError<std::net::TcpStream>) -> Self {
         Self::TlsHandshakeError(inner)
+    }
+}
+
+#[cfg(feature = "with_rustls")]
+impl From<webpki::InvalidDNSNameError> for Error {
+    fn from(inner: webpki::InvalidDNSNameError) -> Self {
+        Self::RustlsInvalidDnsNameError(inner)
     }
 }
 

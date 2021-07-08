@@ -7,6 +7,7 @@ use log::*;
 
 use dns::{Request, Response};
 use super::{Transport, Error, TcpTransport};
+use super::tls_stream::TlsStream;
 
 
 /// The **TLS transport**, which sends DNS wire data using TCP through an
@@ -23,24 +24,29 @@ impl TlsTransport {
     }
 }
 
+
+
 impl Transport for TlsTransport {
 
     #[cfg(feature = "with_tls")]
     fn send(&self, request: &Request) -> Result<Response, Error> {
-        let connector = native_tls::TlsConnector::new()?;
-
         info!("Opening TLS socket");
-        let stream =
-            if self.addr.contains(':') {
-                TcpStream::connect(&*self.addr)?
-            }
-            else {
-                TcpStream::connect((&*self.addr, 853))?
-            };
 
         let domain = self.sni_domain();
         info!("Connecting using domain {:?}", domain);
-        let mut stream = connector.connect(domain, stream)?;
+        let mut stream =
+            if self.addr.contains(':') {
+                let mut parts = self.addr.split(":");
+                let domain = parts.nth(0).unwrap();
+                let port = parts.last().unwrap().parse::<u16>().expect("Invalid port number");
+
+                Self::stream(domain, port)?
+            }
+            else {
+                Self::stream(&*self.addr, 853)?
+            };
+
+
         debug!("Connected");
 
         // The message is prepended with the length when sent over TCP,

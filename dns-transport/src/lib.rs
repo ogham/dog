@@ -41,8 +41,10 @@ mod https;
 pub use self::https::HttpsTransport;
 
 mod error;
-pub use self::error::Error;
 
+mod tls_stream;
+
+pub use self::error::Error;
 
 /// The trait implemented by all transport types.
 pub trait Transport {
