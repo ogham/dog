@@ -58,3 +58,26 @@ pub trait Transport {
     /// the TLS and HTTPS transports.
     fn send(&self, request: &dns::Request) -> Result<dns::Response, Error>;
 }
+
+
+use std::net::SocketAddr;
+use std::io::ErrorKind;
+use url::Url;
+
+// parse address:port literals in the style of RFC2732:
+// [2001:db8::1]
+// [2001:db8::2]:53
+// 192.0.2.1
+// 192.0.2.1:53
+fn lookup_addr(addr: &str) -> Result<Vec<SocketAddr>, Error> {
+    if addr.contains('/') {
+        return Err(Error::NameserverError(std::io::Error::new(ErrorKind::InvalidInput, "contains invalid characters")));
+    }
+
+    // cheat and just parse the pseudo-url "dns://<address>"
+    let url = Url::parse(format!("dns://{}/", addr).as_str()).map_err(
+            |e| Error::NameserverError(std::io::Error::new(ErrorKind::InvalidInput, e)))?;
+
+    // This resolves the URL in to 1 or more SocketAddr's (or errors)
+    url.socket_addrs(|| Some(53)).map_err(Error::NameserverError)
+}
