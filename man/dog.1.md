@@ -49,7 +49,7 @@ QUERY OPTIONS
 : Type of the DNS record being queried (`A`, `MX`, `NS`...)
 
 `-n`, `--nameserver=ADDR`
-: Address of the nameserver to send packets to.
+: Address of the nameserver to send packets to. Accepts `ADDR` and `ADDR:PORT` format. If `ADDR` is an ipv6 literal, then it must be in brackets (e.g. `[2606:4700:4700::1111]:53`).
 
 `--class=CLASS`
 : Network class of the DNS record being queried (`IN`, `CH`, `HS`)

@@ -9,6 +9,9 @@ pub enum Error {
     /// There was a problem with the network making a TCP or UDP request.
     NetworkError(std::io::Error),
 
+    /// The supplied nameserver address was somehow invalid
+    NameserverError(std::io::Error),
+
     /// Not enough information was received from the server before a `read`
     /// call returned zero bytes.
     TruncatedResponse,

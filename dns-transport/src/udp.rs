@@ -1,4 +1,4 @@
-use std::net::{Ipv4Addr, UdpSocket};
+use std::net::{Ipv4Addr, Ipv6Addr, UdpSocket, SocketAddr};
 
 use log::*;
 
@@ -27,17 +27,19 @@ impl UdpTransport {
 
 impl Transport for UdpTransport {
     fn send(&self, request: &Request) -> Result<Response, Error> {
-        info!("Opening UDP socket");
-        // TODO: This will need to be changed for IPv6 support.
-        let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0))?;
+        info!("Opening UDP socket to {}", self.addr);
 
-        if self.addr.contains(':') {
-            socket.connect(&*self.addr)?;
-        }
-        else {
-            socket.connect((&*self.addr, 53))?;
-        }
-        debug!("Opened");
+        let dstaddr = crate::lookup_addr(&self.addr)?.pop().unwrap();
+        let srcaddr = if dstaddr.is_ipv4() {
+            SocketAddr::from((Ipv4Addr::UNSPECIFIED, 0))
+        } else {
+            SocketAddr::from((Ipv6Addr::UNSPECIFIED, 0))
+        };
+
+        let socket = UdpSocket::bind(srcaddr)?;
+        socket.connect(dstaddr)?;
+
+        debug!("Opened connection to {}", dstaddr);
 
         let bytes_to_send = request.to_bytes().expect("failed to serialise request");
 

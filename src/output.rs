@@ -646,6 +646,7 @@ fn erroneous_phase(error: &TransportError) -> &'static str {
     match error {
         TransportError::WireError(_)          => "protocol",
         TransportError::TruncatedResponse     |
+        TransportError::NameserverError(_)    |
         TransportError::NetworkError(_)       => "network",
         #[cfg(feature = "with_tls")]
         TransportError::TlsError(_)           |
@@ -662,6 +663,7 @@ fn error_message(error: TransportError) -> String {
         TransportError::WireError(e)          => wire_error_message(e),
         TransportError::TruncatedResponse     => "Truncated response".into(),
         TransportError::NetworkError(e)       => e.to_string(),
+        TransportError::NameserverError(e)    => format!("invalid nameserver: {}", e.to_string()),
         #[cfg(feature = "with_tls")]
         TransportError::TlsError(e)           => e.to_string(),
         #[cfg(feature = "with_tls")]

@@ -31,15 +31,11 @@ impl TcpTransport {
 
 impl Transport for TcpTransport {
     fn send(&self, request: &Request) -> Result<Response, Error> {
-        info!("Opening TCP stream");
-        let mut stream =
-            if self.addr.contains(':') {
-                TcpStream::connect(&*self.addr)?
-            }
-            else {
-                TcpStream::connect((&*self.addr, 53))?
-            };
-        debug!("Opened");
+        info!("Opening TCP stream to {}", self.addr);
+        let dstaddrs = crate::lookup_addr(&self.addr)?;
+
+        let mut stream = TcpStream::connect(&*dstaddrs)?;
+        debug!("Opened connection to {}", stream.peer_addr().unwrap());
 
         // The message is prepended with the length when sent over TCP,
         // so the server knows how long it is (RFC 1035 §4.2.2)
