@@ -38,6 +38,9 @@ pub use self::types::*;
 mod strings;
 pub use self::strings::Labels;
 
+mod value_list;
+pub use self::value_list::ValueList;
+
 mod wire;
 pub use self::wire::{Wire, WireError, MandatedLength};
 

@@ -9,7 +9,6 @@ use log::*;
 
 use crate::wire::*;
 
-
 /// Domain names in the DNS protocol are encoded as **Labels**, which are
 /// segments of ASCII characters prefixed by their length. When written out,
 /// each segment is followed by a dot.
