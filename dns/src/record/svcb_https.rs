@@ -403,8 +403,9 @@ impl SvcParams {
                         alpn_ids = ids;
                     }
                     SvcParam::KeyNNNNN(_) => {
-                        let value = Opaque::read_from(cursor)?;
-                        other.insert(param, value);
+                        let mut vec = vec![0u8; param_length as usize];
+                        cursor.read_exact(&mut vec)?;
+                        other.insert(param, Opaque(vec));
                     }
                     SvcParam::Port => {
                         port = Some(cursor.read_u16::<BigEndian>()?);
