@@ -289,61 +289,36 @@ impl fmt::Display for SvcParams {
             ipv6hint,
             other,
         } = self;
-        let mut after_first = false;
         if !mandatory.is_empty() {
             write!(
                 f,
-                "mandatory={}",
+                " mandatory={}",
                 display_utils::join(mandatory.iter(), ",")
             )?;
-            after_first = true;
         }
         if let Some(alpn) = alpn {
-            if after_first {
-                f.write_str(" ")?;
-            }
-            f.write_str("alpn=")?;
+            f.write_str(" alpn=")?;
             escaping::encode_value_list(alpn.alpn_ids.iter().map(|id| id.0.as_slice()), f)?;
             if alpn.no_default_alpn {
                 write!(f, " no-default-alpn")?;
             }
-            after_first = true;
         }
         if let &Some(port) = port {
-            if after_first {
-                f.write_str(" ")?;
-            }
-            write!(f, "port={}", port)?;
-            after_first = true;
+            write!(f, " port={}", port)?;
         }
         if !ipv4hint.is_empty() {
-            if after_first {
-                f.write_str(" ")?;
-            }
-            write!(f, "ipv4hint={}", display_utils::join(ipv4hint.iter(), ","))?;
-            after_first = true;
+            write!(f, " ipv4hint={}", display_utils::join(ipv4hint.iter(), ","))?;
         }
         if let Some(ech) = ech {
-            if after_first {
-                f.write_str(" ")?;
-            }
-            write!(f, "ech={}", ech.base64)?;
-            after_first = true;
+            write!(f, " ech={}", ech.base64)?;
         }
         if !ipv6hint.is_empty() {
-            if after_first {
-                f.write_str(" ")?;
-            }
-            write!(f, "ipv6hint={}", display_utils::join(ipv6hint.iter(), ","))?;
-            after_first = true;
+            write!(f, " ipv6hint={}", display_utils::join(ipv6hint.iter(), ","))?;
         }
         if !other.is_empty() {
-            if after_first {
-                f.write_str(" ")?;
-            }
-            display_utils::join_format(other.iter(), " ", |(k, v), f| write!(f, "{}={}", k, v))
-                .fmt(f)?;
-            // after_first = true;
+            other
+                .iter()
+                .try_for_each(|(k, v)| write!(f, " {}={}", k, v))?;
         }
         Ok(())
     }
@@ -959,7 +934,10 @@ impl Wire for SVCB {
     fn read(stated_length: u16, cursor: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let initial_pos = cursor.position();
 
-        trace!("{:?}", cursor.std_remaining_slice());
+        trace!(
+            "{:?}",
+            &cursor.std_remaining_slice()[..stated_length as usize]
+        );
 
         let ret = cursor.with_truncated(
             stated_length as _,
@@ -1020,7 +998,7 @@ impl fmt::Display for SVCB {
 
         write!(f, "{} {}", priority, target)?;
         if let Some(params) = parameters {
-            write!(f, "{}{}", if target.len() > 0 { " " } else { "" }, params)?;
+            write!(f, "{}", params)?;
         }
         Ok(())
     }
