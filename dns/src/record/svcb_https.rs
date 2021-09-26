@@ -949,14 +949,11 @@ impl Wire for SVCB {
                 let (target, _target_length) = cursor.read_labels()?;
                 trace!("Parsed target -> {:?}", target);
 
-                // AliasMode
-                let alias_mode = priority == 0;
+                // ServiceMode
+                let service_mode = priority > 0;
 
-                let parameters = if alias_mode {
-                    None
-                } else {
-                    Some(SvcParams::read(cursor)?)
-                };
+                // parse them anyway, but reduce to None if in alias mode
+                let parameters = Some(SvcParams::read(cursor)?).filter(|_| service_mode);
                 let ret = Self {
                     priority,
                     target,
@@ -1116,13 +1113,13 @@ mod test {
     fn ignore_alias_mode_params() {
         init_logs();
         let buf = &[
-            0, 0, // SvcPriority
+            0, 0, // SvcPriority 0, therefore AliasMode
             0, // TargetName = .
             // SvcParams
             0, 3, 0, 2, 0x01, 0xbb, // port, len 2, "443"
         ];
         assert_eq!(
-            SVCB::read(16, &mut Cursor::new(buf)),
+            SVCB::read(9, &mut Cursor::new(buf)),
             Ok(SVCB {
                 priority: 0,
                 target: Labels::root(),
@@ -1213,7 +1210,7 @@ mod test_vectors {
             0x00, 0x01, // priority
             0x03, 0x66, 0x6f, 0x6f, 0x07, 0x65, // target
             0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, //
-            0x03, 0x63, 0x6f, 0x6d, 0x00,       //
+            0x03, 0x63, 0x6f, 0x6d, 0x00, //
             0x02, 0x9b, // key 667
             0x00, 0x05, // length 5
             0x68, 0x65, 0x6c, 0x6c, 0x6f, // value
