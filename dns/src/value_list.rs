@@ -1,7 +1,8 @@
 #![allow(dead_code)]
 
 use core::fmt::{self, Display};
-use std::io::{Cursor, Read};
+use std::borrow::Cow;
+use std::iter::FromIterator;
 
 /// Parameters to a SVCB/HTTPS record can be multi-valued.
 /// This is a fancy comma-separated list, where escaped commas \, and \044 do not separate
@@ -15,9 +16,35 @@ pub struct ValueList {
     pub values: Vec<Vec<u8>>,
 }
 
+impl<A: Into<Vec<u8>>> FromIterator<A> for ValueList {
+    fn from_iter<I: IntoIterator<Item = A>>(iter: I) -> Self {
+        let values = iter.into_iter().map(|x| x.into()).collect();
+        Self { values }
+    }
+}
+impl<A: Into<Vec<u8>>> From<Vec<A>> for ValueList {
+    fn from(vec: Vec<A>) -> Self {
+        let values = vec.into_iter().map(|x| x.into()).collect();
+        Self { values }
+    }
+}
+
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
 pub struct SingleValue {
     pub value: Vec<u8>,
+}
+
+fn wrap_iresult_complete<T>(result: IResult<&[u8], T>) -> Result<T, String> {
+    result
+        .finish()
+        .map_err(|e| String::from_utf8_lossy(e.input).into_owned())
+        .and_then(|(remain, t)| {
+            if remain.is_empty() {
+                Ok(t)
+            } else {
+                Err(String::from_utf8_lossy(remain).into_owned())
+            }
+        })
 }
 
 impl ValueList {
@@ -28,73 +55,43 @@ impl ValueList {
 
     /// Parses a comma separated list with escaping as defined in Appendix A.1. This variant has
     /// unlimited size for each value.
-    pub fn parse(input: &str) -> Result<Self, &str> {
-        value_list_decoding::parse(input.as_bytes())
-            .finish()
-            .map_err(|e| std::str::from_utf8(e.input).unwrap())
-            .and_then(|(remain, values)| {
-                if remain.is_empty() {
-                    Ok(ValueList { values })
-                } else {
-                    Err(std::str::from_utf8(remain).unwrap())
-                }
-            })
+    pub fn parse(input: impl AsRef<[u8]>) -> Result<Self, String> {
+        Self::parse_inner(input.as_ref())
     }
 
-    pub fn read_value_max(
-        stated_length: u16,
-        cursor: &mut Cursor<&[u8]>,
-        single_value_max: usize,
-    ) -> Result<Self, WireError> {
-        // These methods would be better with Cursor::remaining_slice if it were stable
-        let mut buf = vec![0u8; usize::from(stated_length)];
-        cursor.read_exact(&mut buf)?;
-        let values = value_list_decoding::parse(&buf).no_remaining()?;
-        if values.iter().any(|val| val.len() > single_value_max) {
-            return Err(WireError::IO);
-        } else {
-            Ok(Self { values })
-        }
-    }
-
-    pub fn read_unlimited(
-        stated_length: u16,
-        cursor: &mut Cursor<&[u8]>,
-    ) -> Result<Self, WireError> {
-        // These methods would be better with Cursor::remaining_slice if it were stable
-        let mut buf = vec![0u8; usize::from(stated_length)];
-        cursor.read_exact(&mut buf)?;
-        let values = value_list_decoding::parse(&buf).no_remaining()?;
-        Ok(Self { values })
+    fn parse_inner(input: &[u8]) -> Result<Self, String> {
+        let cow = wrap_iresult_complete(char_string_decoding::parse(input.as_ref()))?;
+        let val = wrap_iresult_complete(value_list_decoding::parse(&cow))?;
+        Ok(ValueList { values: val })
     }
 }
 
 impl SingleValue {
-    pub fn read(stated_length: u16, cursor: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
-        // These methods would be better with Cursor::remaining_slice if it were stable
-        let mut buf = vec![0u8; usize::from(stated_length)];
-        cursor.read_exact(&mut buf)?;
-        let value = char_string::parse(&buf).no_remaining()?;
-        Ok(Self { value })
+    pub fn parse(input: impl AsRef<[u8]>) -> Result<Self, String> {
+        Self::parse_inner(input.as_ref())
+    }
+    fn parse_inner(input: &[u8]) -> Result<Self, String> {
+        let value = wrap_iresult_complete(char_string_decoding::parse(&input))?;
+        Ok(Self {
+            value: value.into_owned(),
+        })
     }
 }
 
-trait NoRemaining<I: InputLength, O, E>: Finish<I, O, E> {
-    fn no_remaining(self) -> Result<O, WireError>;
-}
-
-impl<T, I: InputLength, O, E> NoRemaining<I, O, E> for T
-where
-    T: Finish<I, O, E>,
-{
-    fn no_remaining(self) -> Result<O, WireError> {
-        let (i, o) = self.finish().map_err(|_| WireError::IO)?;
-        if i.input_len() == 0 {
-            Ok(o)
-        } else {
-            Err(WireError::IO)
-        }
-    }
+#[test]
+fn rfc_example() {
+    let one = br#""part1,part2,part3\\,part4\\\\""#;
+    let two = br#"part1\,\p\a\r\t2\044part3\092,part4\092\\"#;
+    let expected_string = br"part1,part2,part3\,part4\\".to_vec();
+    let expected_values = vec![
+        br"part1".to_vec(),
+        br"part2".to_vec(),
+        br"part3,part4\".to_vec(),
+    ];
+    assert_eq!(SingleValue::parse(one).unwrap().value, expected_string);
+    assert_eq!(SingleValue::parse(two).unwrap().value, expected_string);
+    assert_eq!(ValueList::parse(one).unwrap().values, expected_values);
+    assert_eq!(ValueList::parse(two).unwrap().values, expected_values);
 }
 
 use nom::branch::alt;
@@ -103,9 +100,7 @@ use nom::combinator::recognize;
 use nom::error::ParseError;
 use nom::sequence::preceded;
 use nom::{Finish, Parser};
-use nom::{IResult, InputLength};
-
-use crate::WireError;
+use nom::IResult;
 
 #[cfg(test)]
 fn strings(x: IResult<&[u8], Vec<u8>>) -> IResult<&str, String> {
@@ -120,20 +115,6 @@ fn strings(x: IResult<&[u8], Vec<u8>>) -> IResult<&str, String> {
             <_ as ParseError<&str>>::from_error_kind(std::str::from_utf8(y.input).unwrap(), y.code)
         })
     })
-}
-
-fn is_non_special(split_comma: bool, whitespace: bool) -> impl Fn(u8) -> bool {
-    move |c: u8| match c {
-        b',' if split_comma => false,
-        // non-special. VCHAR minus DQUOTE, ";", "(", ")" and "\"
-        0x21 | 0x23..=0x27 | 0x2A..=0x3A | 0x3C..=0x5B | 0x5D..=0x7E => true,
-        b' ' | b'\t' if whitespace => true,
-        _ => false,
-    }
-}
-
-fn non_special(split_comma: bool, whitespace: bool) -> impl FnMut(&[u8]) -> IResult<&[u8], &[u8]> {
-    move |input| recognize(take_while1(is_non_special(split_comma, whitespace)))(input)
 }
 
 pub mod escaping {
@@ -165,32 +146,53 @@ pub mod escaping {
         Ok((remain, *byte))
     }
 
-    fn chunk(
-        split_comma: bool,
-        whitespace: bool,
-    ) -> impl FnMut(&[u8]) -> IResult<&[u8], EscChunk<'_>> + Clone {
-        move |remain| {
-            non_special(split_comma, whitespace)
-                .map(EscChunk::Slice)
-                .or(single_byte.map(EscChunk::Byte))
+    #[derive(Debug, Clone)]
+    pub enum EncodingChunk<'a> {
+        Slice(&'a [u8]),
+        Escape(&'a str),
+        Byte(u8),
+    }
+
+    mod char_string {
+        use super::*;
+        fn chunk(remain: &[u8]) -> IResult<&[u8], EncodingChunk<'_>> {
+            super::super::char_string_decoding::non_special
+                .map(EncodingChunk::Slice)
+                .or(tag(br"\").map(|_| EncodingChunk::Escape(r"\\")))
+                .or(tag(br",").map(|_| EncodingChunk::Escape(r"\,")))
+                .or(single_byte.map(EncodingChunk::Byte))
                 .parse(remain)
+        }
+
+        pub fn emit_chunks(
+            input: &[u8],
+        ) -> impl Iterator<Item = Result<EncodingChunk<'_>, fmt::Error>> + Clone {
+            iter_parser(input, chunk)
         }
     }
 
-    pub fn emit_chunks(
-        input: &[u8],
-        split_comma: bool,
-        whitespace: bool,
-    ) -> impl Iterator<Item = Result<EscChunk<'_>, fmt::Error>> + Clone {
-        iter_parser(input, chunk(split_comma, whitespace))
+    mod value_list {
+        use super::*;
+        fn chunk(remain: &[u8]) -> IResult<&[u8], EncodingChunk<'_>> {
+            super::super::value_list_decoding::item_allowed
+                .map(EncodingChunk::Slice)
+                .or(single_byte.map(EncodingChunk::Byte))
+                .parse(remain)
+        }
+
+        pub fn emit_chunks(
+            input: &[u8],
+        ) -> impl Iterator<Item = Result<EncodingChunk<'_>, fmt::Error>> + Clone {
+            iter_parser(input, chunk)
+        }
     }
 
     fn format_iter<'a, I>(iter: I) -> impl fmt::Display + 'a
     where
-        I: Iterator<Item = Result<EscChunk<'a>, fmt::Error>> + Clone + 'a,
+        I: Iterator<Item = Result<EncodingChunk<'a>, fmt::Error>> + Clone + 'a,
     {
         display_utils::join_format(iter, "", |chunk, f| match chunk? {
-            EscChunk::Slice(slice) => {
+            EncodingChunk::Slice(slice) => {
                 // Technically we know this is printable ASCII. is that utf8?
                 let string = std::str::from_utf8(slice).map_err(|e| {
                     log::error!("error escaping string: {}", e);
@@ -199,64 +201,68 @@ pub mod escaping {
                 f.write_str(string)?;
                 Ok(())
             }
-            EscChunk::Byte(byte) => {
+            EncodingChunk::Escape(str) => {
+                str.fmt(f)
+            }
+            EncodingChunk::Byte(byte) => {
                 write!(f, "\\{:03}", byte)
             }
         })
     }
 
-    pub fn format_values_iter<'a>(
-        split_comma: bool,
-        iter: impl Iterator<Item = &'a [u8]> + Clone,
+    pub fn escape_char_string(
+        string: &[u8],
         f: &mut fmt::Formatter<'_>,
     ) -> fmt::Result {
-        // technically this could pull up a false positive, but that's fine, quotes are always valid
-        let should_quote = iter
-            .clone()
-            .any(|val| val.contains(&b' ') || val.contains(&b'\t'));
-        if should_quote {
-            let joiner = if split_comma { "," } else { "" };
-            let iter_fmt = display_utils::join_format(iter, joiner, |value, f| {
-                let iter = emit_chunks(value, split_comma, true);
-                format_iter(iter).fmt(f)
-            });
-            write!(f, "\"{}\"", iter_fmt)?;
+        let chunks = char_string::emit_chunks(string);
+        let iter = format_iter(chunks);
+        if string.contains(&b' ') {
+            write!(f, "\"{}\"", iter)
         } else {
-            display_utils::join_format(iter, ",", |value, f| {
-                let iter = emit_chunks(value, split_comma, false);
-                format_iter(iter).fmt(f)
-            })
-            .fmt(f)?;
+            iter.fmt(f)
         }
-        Ok(())
+    }
+
+    fn escape_values_join<'a>(
+        values: impl Iterator<Item = &'a [u8]> + Clone + 'a,
+    ) -> Result<Vec<u8>, fmt::Error> {
+        // for each value, encode `\`  as `\\` and `,` as `\,`, and join all together with `,`
+        let mut vec = Vec::new();
+        for value in values {
+            let chunks = value_list::emit_chunks(value);
+            for encoding_chunk in chunks {
+                match encoding_chunk? {
+                    EncodingChunk::Slice(slice) => vec.extend_from_slice(slice),
+                    EncodingChunk::Escape(str) => vec.extend_from_slice(str.as_bytes()),
+                    // doesn't happen
+                    EncodingChunk::Byte(byte) => vec.push(byte),
+                }
+            }
+            vec.push(b',');
+        }
+        vec.pop();
+        Ok(vec)
+    }
+
+    pub fn encode_value_list<'a>(
+        iter: impl Iterator<Item = &'a [u8]> + Clone + 'a,
+        f: &mut fmt::Formatter<'_>,
+    ) -> fmt::Result {
+        let joined = escape_values_join(iter)?;
+        escape_char_string(&joined, f)
     }
 
     impl fmt::Display for ValueList {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            format_values_iter(true, self.values.iter().map(|val| val.as_slice()), f)
+            encode_value_list(self.values.iter().map(|val| val.as_slice()), f)
         }
     }
+
     impl fmt::Display for SingleValue {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            format_values_iter(false, core::iter::once(self.value.as_slice()), f)
+            let bytes = self.value.as_slice();
+            escape_char_string(bytes, f)
         }
-    }
-}
-
-fn char_escape(input: &[u8]) -> IResult<&[u8], u8> {
-    let (input, _backslash) = nom::bytes::complete::tag(b"\\")(input)?;
-    match input {
-        // dec-octet, a number 0..=255 as a three digit decimal number
-        &[c @ b'0'..=b'2', ref rest @ ..] => {
-            let (remain, byte) = dec_octet(rest, c - b'0')?;
-            Ok((remain, byte))
-        }
-        // non-digit is VCHAR minus DIGIT
-        &[c @ (0x21..=0x2F | 0x3A..=0x7E), ref remain @ ..] => Ok((remain, c)),
-        _ => Err(nom::Err::Error(nom::error::Error::from_error_kind(
-            input,
-            nom::error::ErrorKind::Escaped,
-        ))),
     }
 }
 
@@ -297,18 +303,18 @@ fn dec_octet(buf: &[u8], zero_one_or_two: u8) -> IResult<&[u8], u8> {
 }
 
 #[derive(Debug, Clone)]
-pub enum EscChunk<'a> {
+pub enum DecodingChunk<'a> {
     Slice(&'a [u8]),
     Byte(u8),
 }
 
-fn chunk_1<'a, F, E>(mut inner: F) -> impl Parser<&'a [u8], Vec<u8>, E>
+fn chunk_1<'a, F, E>(mut inner: F) -> impl Parser<&'a [u8], Cow<'a, [u8]>, E>
 where
-    F: Parser<&'a [u8], EscChunk<'a>, E>,
+    F: Parser<&'a [u8], DecodingChunk<'a>, E>,
     E: ParseError<&'a [u8]> + core::fmt::Debug,
 {
     move |input| {
-        let mut output = Vec::new();
+        let mut output = Cow::Borrowed(&[][..]);
         let parser = |slice| inner.parse(slice);
         let mut iter = nom::combinator::iterator(input, parser);
         let i = &mut iter;
@@ -316,8 +322,14 @@ where
         for chunk in i {
             success = true;
             match chunk {
-                EscChunk::Slice(slice) => output.extend_from_slice(slice),
-                EscChunk::Byte(byte) => output.push(byte),
+                DecodingChunk::Slice(new_slice) => match output {
+                    Cow::Borrowed(ref mut slice) => {
+                        *slice = &input[..(slice.len() + new_slice.len())]
+                    }
+                    Cow::Owned(ref mut vec) => vec.extend_from_slice(new_slice),
+                },
+                // if we have any escapes at all, take ownership of the vec
+                DecodingChunk::Byte(byte) => output.to_mut().push(byte),
             }
         }
         let (remain, ()) = iter.finish()?;
@@ -332,23 +344,53 @@ where
     }
 }
 
-mod char_string {
+mod char_string_decoding {
     use super::*;
-    fn contiguous_chunk(input: &[u8]) -> IResult<&[u8], EscChunk<'_>> {
+
+    fn char_escape(input: &[u8]) -> IResult<&[u8], u8> {
+        let (input, _backslash) = nom::bytes::complete::tag(br"\")(input)?;
+        match input {
+            // dec-octet, a number 0..=255 as a three digit decimal number
+            &[c @ b'0'..=b'2', ref rest @ ..] => {
+                let (remain, byte) = dec_octet(rest, c - b'0')?;
+                Ok((remain, byte))
+            }
+            // non-digit is VCHAR minus DIGIT
+            &[c @ (0x21..=0x2F | 0x3A..=0x7E), ref remain @ ..] => Ok((remain, c)),
+            _ => Err(nom::Err::Error(nom::error::Error::from_error_kind(
+                input,
+                nom::error::ErrorKind::Escaped,
+            ))),
+        }
+    }
+
+    fn is_non_special(c: u8) -> bool {
+        match c {
+            // non-special. VCHAR minus DQUOTE, ";", "(", ")" and "\"
+            0x21 | 0x23..=0x27 | 0x2A..=0x3A | 0x3C..=0x5B | 0x5D..=0x7E => true,
+            _ => false,
+        }
+    }
+
+    pub(super) fn non_special(input: &[u8]) -> IResult<&[u8], &[u8]> {
+        recognize(take_while1(is_non_special))(input)
+    }
+
+    fn contiguous_chunk(input: &[u8]) -> IResult<&[u8], DecodingChunk<'_>> {
         alt((
-            non_special(false, false).map(EscChunk::Slice),
-            char_escape.map(EscChunk::Byte),
+            non_special.map(DecodingChunk::Slice),
+            char_escape.map(DecodingChunk::Byte),
         ))(input)
     }
 
-    fn contiguous(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
+    fn contiguous(input: &[u8]) -> IResult<&[u8], Cow<'_, [u8]>> {
         chunk_1(contiguous_chunk).parse(input)
     }
 
-    fn quoted(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
+    fn quoted(input: &[u8]) -> IResult<&[u8], Cow<'_, [u8]>> {
         let wsc = take_while1(|b| b == b' ' || b == b'\t');
         let wsc2 = take_while1(|b| b == b' ' || b == b'\t');
-        let wsc_chunk = alt((wsc, preceded(tag(b"\\"), wsc2))).map(EscChunk::Slice);
+        let wsc_chunk = alt((wsc, preceded(tag(br"\"), wsc2))).map(DecodingChunk::Slice);
         let parser = chunk_1(alt((contiguous_chunk, wsc_chunk)));
         let mut parser = nom::sequence::delimited(tag(b"\""), parser, tag(b"\""));
         parser.parse(input)
@@ -357,7 +399,7 @@ mod char_string {
     /// A parser as defined by Appendix A of the draft, which describes RFC 1035 § 5.1
     ///
     /// Note: Appendix A says it's not limited to 255 characters
-    pub fn parse(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
+    pub fn parse(input: &[u8]) -> IResult<&[u8], Cow<'_, [u8]>> {
         quoted.or(contiguous).parse(input)
     }
 
@@ -367,15 +409,15 @@ mod char_string {
             char_escape(slice).map(|(a, b)| (std::str::from_utf8(a).unwrap(), char::from(b)))
         };
         assert_eq!(mini(b"\\044"), Ok(("", ',')));
-        let parse = |slice| strings(contiguous(slice));
+        let parse = |slice| strings(parse(slice).map(|(a, b)| (a, Cow::into_owned(b))));
         assert!(parse(b"").is_err());
         assert_eq!(parse(b"hello"), Ok(("", "hello".to_owned())));
         assert_eq!(parse(b"hello\\044"), Ok(("", "hello,".to_owned())));
-        assert_eq!(parse(b"hello\\\\"), Ok(("", "hello\\".to_owned())));
-        assert_eq!(parse(b"hello\\\\\\\\"), Ok(("", "hello\\\\".to_owned())));
-        assert_eq!(parse(b"hello\\*"), Ok(("", "hello*".to_owned())));
-        assert_eq!(parse(b"\\,hello\\*"), Ok(("", ",hello*".to_owned())));
-        assert_eq!(parse(b"\\,hello\\*("), Ok(("(", ",hello*".to_owned())));
+        assert_eq!(parse(br"hello\\"), Ok(("", "hello\\".to_owned())));
+        assert_eq!(parse(br"hello\\\\"), Ok(("", "hello\\\\".to_owned())));
+        assert_eq!(parse(br"hello\*"), Ok(("", "hello*".to_owned())));
+        assert_eq!(parse(br"\,hello\*"), Ok(("", ",hello*".to_owned())));
+        assert_eq!(parse(br"\,hello\*("), Ok(("(", ",hello*".to_owned())));
         assert_eq!(parse(b"*;"), Ok((";", "*".to_owned())));
         assert_eq!(parse(b"*\""), Ok(("\"", "*".to_owned())));
         assert_eq!(parse(b"*\""), Ok(("\"", "*".to_owned())));
@@ -385,37 +427,53 @@ mod char_string {
 mod value_list_decoding {
     use super::*;
 
-    fn contiguous_chunk(input: &[u8]) -> IResult<&[u8], EscChunk<'_>> {
+    fn is_item_allowed(c: u8) -> bool {
+        match c {
+            // item-allowed is OCTET minus "," and "\".
+            b',' => false,
+            b'\\' => false,
+            _ => true,
+        }
+    }
+
+    pub fn item_allowed(input: &[u8]) -> IResult<&[u8], &[u8]> {
+        recognize(take_while1(is_item_allowed))(input)
+    }
+
+    fn contiguous_chunk(input: &[u8]) -> IResult<&[u8], DecodingChunk<'_>> {
         alt((
-            non_special(true, false).map(EscChunk::Slice),
-            char_escape.map(EscChunk::Byte),
+            item_allowed.map(DecodingChunk::Slice),
+            tag(r"\,").map(|_| DecodingChunk::Byte(b',')),
+            tag(r"\\").map(|_| DecodingChunk::Byte(b'\\')),
         ))(input)
     }
 
-    fn value_within_contiguous(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
+    fn value_within_contiguous(input: &[u8]) -> IResult<&[u8], Cow<'_, [u8]>> {
         chunk_1(contiguous_chunk).parse(input)
     }
 
     fn values_contiguous(input: &[u8]) -> IResult<&[u8], Vec<Vec<u8>>> {
-        nom::multi::separated_list1(tag(b","), value_within_contiguous).parse(input)
+        nom::multi::separated_list1(tag(b","), value_within_contiguous.map(|x| x.to_vec()))
+            .parse(input)
     }
 
-    fn value_within_quotes(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
+    fn value_within_quotes(input: &[u8]) -> IResult<&[u8], Cow<'_, [u8]>> {
         let wsc = take_while1(|b| b == b' ' || b == b'\t');
         let wsc2 = take_while1(|b| b == b' ' || b == b'\t');
-        let wsc_chunk = alt((wsc, preceded(tag(b"\\"), wsc2))).map(EscChunk::Slice);
+        let wsc_chunk = alt((wsc, preceded(tag(b"\\"), wsc2))).map(DecodingChunk::Slice);
         let mut parser = chunk_1(alt((contiguous_chunk, wsc_chunk)));
         parser.parse(input)
     }
 
     fn values_quoted(input: &[u8]) -> IResult<&[u8], Vec<Vec<u8>>> {
-        let values = nom::multi::separated_list1(tag(b","), value_within_quotes);
+        let values =
+            nom::multi::separated_list1(tag(b","), value_within_quotes.map(|x| x.to_vec()));
         let mut parser = nom::sequence::delimited(tag(b"\""), values, tag(b"\""));
         parser.parse(input)
     }
 
-    pub fn parse(input: &[u8]) -> IResult<&[u8], Vec<Vec<u8>>> {
-        values_quoted.or(values_contiguous).parse(input)
+    pub fn parse(char_decoded: &[u8]) -> IResult<&[u8], Vec<Vec<u8>>> {
+        values_quoted.or(values_contiguous).parse(char_decoded)
     }
 
     #[cfg(test)]
@@ -442,35 +500,37 @@ mod value_list_decoding {
 
     #[test]
     fn test_escaping() {
-        let mini = |slice| {
-            char_escape(slice).map(|(a, b)| (std::str::from_utf8(a).unwrap(), char::from(b)))
-        };
-        assert_eq!(mini(b"\\044"), Ok(("", ',')));
-
-        let parse = |slice| strings(values_contiguous(slice));
+        let parse = |slice: &[u8]| ValueList::parse(slice);
         assert!(parse(b"").is_err());
-        assert_eq!(parse(b"hello"), Ok(("", vec!["hello".to_owned()])));
-        assert_eq!(parse(b"hello\\044"), Ok(("", vec!["hello,".to_owned()])));
         assert_eq!(
-            parse(b"hello\\\\\\044"),
-            Ok(("", vec!["hello\\,".to_owned()]))
+            parse(br"hello"),
+            Ok([b"hello"].iter().map(|x| x.to_vec()).collect())
         );
         assert_eq!(
-            parse(b"hello,\\\\\\044"),
-            Ok(("", vec!["hello".to_owned(), "\\,".to_owned()]))
+            parse(br"hello\044hello"),
+            Ok(vec![br"hello".to_vec(), br"hello".to_vec()].into())
         );
         assert_eq!(
-            parse(b"hello\\\\\\\\,"),
-            Ok((",", vec!["hello\\\\".to_owned()]))
+            parse(br"hello\\\044hello"),
+            Ok(vec![br"hello,hello".to_vec()].into())
         );
-        assert_eq!(parse(b"hello\\*"), Ok(("", vec!["hello*".to_owned()])));
-        assert_eq!(parse(b"\\,hello\\*"), Ok(("", vec![",hello*".to_owned()])));
         assert_eq!(
-            parse(b"\\,hello\\*("),
-            Ok(("(", vec![",hello*".to_owned()]))
+            parse(br"hello\\\\044"),
+            Ok(vec![br"hello\044".to_vec()].into())
         );
-        assert_eq!(parse(b"*;"), Ok((";", vec!["*".to_owned()])));
-        assert_eq!(parse(b"*\""), Ok(("\"", vec!["*".to_owned()])));
-        assert_eq!(parse(b"*\""), Ok(("\"", vec!["*".to_owned()])));
+        assert_eq!(
+            parse(br"hello,\\\044"),
+            Ok(vec![br"hello".to_vec(), br",".to_vec()].into())
+        );
+        assert_eq!(parse(br"hello\\\\,"), Err(",".into()),);
+        assert_eq!(parse(br"hello\*"), Ok(vec![b"hello*".to_vec()].into()));
+        assert_eq!(
+            parse(br"hi\,hello\*"),
+            Ok(vec![b"hi".to_vec(), b"hello*".to_vec()].into())
+        );
+        assert_eq!(parse(b"\\,hello\\*("), Err("(".into()));
+        assert_eq!(parse(b"*;"), Err(";".into()));
+        assert_eq!(parse(b"*\""), Err("\"".into()));
+        assert_eq!(parse(b"*\""), Err("\"".into()));
     }
 }

@@ -129,7 +129,7 @@ pub struct Opaque(/* u16 len */ Vec<u8>);
 
 impl fmt::Display for Opaque {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        escaping::format_values_iter(false, core::iter::once(&self.0[..]), f)
+        escaping::escape_char_string(&self.0[..], f)
     }
 }
 
@@ -290,7 +290,7 @@ impl fmt::Display for SvcParams {
                 f.write_str(" ")?;
             }
             f.write_str("alpn=")?;
-            escaping::format_values_iter(true, alpn.alpn_ids.iter().map(|id| id.0.as_slice()), f)?;
+            escaping::encode_value_list(alpn.alpn_ids.iter().map(|id| id.0.as_slice()), f)?;
             if alpn.no_default_alpn {
                 write!(f, " no-default-alpn")?;
             }
@@ -1237,7 +1237,7 @@ mod test_vectors {
             0x6f, 0x6d, 0x00, // target
             0x02, 0x9b, // key 667
             0x00, 0x09, // length 9
-            0x68, 0x65, 0x6c, 0x6c, 0x6f, 0xd2, 0x71, 0x6f, 0x6f, // value
+            0x68, 0x65, 0x6c, 0x6c, 0x6f, 0xd2 /* \210 */, 0x71, 0x6f, 0x6f, // value
         ];
         let value = SVCB {
             priority: 1,
@@ -1261,7 +1261,7 @@ mod test_vectors {
 
         // we avoid writing the quotes on values where possible, so this differs from the test
         // vector (which is for a parser, not a formatter?)
-        assert_eq!(value.to_string(), "1 foo.example.com. key667=hello\\210qoo");
+        assert_eq!(value.to_string(), r#"1 foo.example.com. key667=hello\210qoo"#);
     }
 
     #[test]
@@ -1408,7 +1408,7 @@ mod test_vectors {
 
         assert_eq!(
             value.to_string(),
-            r#"16 foo.example.org. alpn=f\092oo\044bar,h2"#
+            r#"16 foo.example.org. alpn=f\\oo,bar,h2"#
         );
     }
 
@@ -1425,9 +1425,6 @@ mod test_vectors {
         });
         // result_bin is taken directly from the binary part of the test vector
         assert_eq!(result, result_bin);
-
-        // I think the test vector's presentation formats include too many backslashes.
-        // At one point is has three backslashes, preceding a '0'. That can't be right.
         assert_eq!(ValueList::parse(r#""f\\\\oo\\,bar,h2""#), result);
         assert_eq!(ValueList::parse(r#"f\\\092oo\092,bar,h2"#), result);
     }
