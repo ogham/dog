@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use core::fmt::{self, Display};
 use std::io::{Cursor, Read};
 
 /// Parameters to a SVCB/HTTPS record can be multi-valued.
@@ -121,17 +122,125 @@ fn strings(x: IResult<&[u8], Vec<u8>>) -> IResult<&str, String> {
     })
 }
 
-fn is_non_special(split_comma: bool) -> impl Fn(u8) -> bool {
+fn is_non_special(split_comma: bool, whitespace: bool) -> impl Fn(u8) -> bool {
     move |c: u8| match c {
         b',' if split_comma => false,
         // non-special. VCHAR minus DQUOTE, ";", "(", ")" and "\"
         0x21 | 0x23..=0x27 | 0x2A..=0x3A | 0x3C..=0x5B | 0x5D..=0x7E => true,
+        b' ' | b'\t' if whitespace => true,
         _ => false,
     }
 }
 
-fn non_special(split_comma: bool) -> impl FnMut(&[u8]) -> IResult<&[u8], &[u8]> {
-    move |input| recognize(take_while1(is_non_special(split_comma)))(input)
+fn non_special(split_comma: bool, whitespace: bool) -> impl FnMut(&[u8]) -> IResult<&[u8], &[u8]> {
+    move |input| recognize(take_while1(is_non_special(split_comma, whitespace)))(input)
+}
+
+pub mod escaping {
+    use super::*;
+
+    fn iter_parser<I: Copy, O, E>(
+        input: I,
+        mut parser: impl Parser<I, O, E> + Clone,
+    ) -> impl Iterator<Item = Result<O, fmt::Error>> + Clone {
+        let mut remain = input;
+        core::iter::from_fn(move || match parser.parse(remain) {
+            Ok((rest, chunk)) => {
+                remain = rest;
+                Some(Ok(chunk))
+            }
+            Err(nom::Err::Error(..)) => None,
+            Err(nom::Err::Failure(..)) => Some(Err(fmt::Error)),
+            Err(nom::Err::Incomplete(..)) => Some(Err(fmt::Error)),
+        })
+    }
+
+    mod valuelist {
+
+        fn single_byte(input: &[u8]) -> IResult<&[u8], u8> {
+            let (byte, remain) = input.split_first().ok_or_else(|| {
+                nom::Err::Error(ParseError::from_error_kind(
+                    input,
+                    nom::error::ErrorKind::Char,
+                ))
+            })?;
+            Ok((remain, *byte))
+        }
+
+        use super::*;
+        fn chunk(quoted: bool) -> impl FnMut(&[u8]) -> IResult<&[u8], EscChunk<'_>> + Clone {
+            move |remain| {
+                non_special(true, false)
+                    .map(EscChunk::Slice)
+                    .or(single_byte.map(EscChunk::Byte))
+                    .parse(remain)
+            }
+        }
+        pub fn iter_unquoted(
+            input: &[u8],
+        ) -> impl Iterator<Item = Result<EscChunk<'_>, fmt::Error>> + Clone {
+            iter_parser(input, chunk(false))
+        }
+
+        pub fn iter_quoted(
+            input: &[u8],
+        ) -> impl Iterator<Item = Result<EscChunk<'_>, fmt::Error>> + Clone {
+            iter_parser(input, chunk(true))
+        }
+    }
+
+    // fn format_iter<'a, 'f>(f: &mut fmt::Formatter<'f>, mut iter: impl Iterator<Item = Result<EscChunk<'a>, fmt::Error>>) -> fmt::Result {
+    //     iter.try_for_each()
+    // }
+
+    fn format_iter<'a, I>(iter: I) -> impl fmt::Display + 'a
+    where
+        I: Iterator<Item = Result<EscChunk<'a>, fmt::Error>> + Clone + 'a,
+    {
+        display_utils::join_format(iter, ",", |chunk, f| match chunk? {
+            EscChunk::Slice(slice) => {
+                // Technically we know this is printable ASCII. is that utf8?
+                let string = std::str::from_utf8(slice).map_err(|e| {
+                    log::error!("error escaping string: {}", e);
+                    fmt::Error
+                })?;
+                f.write_str(string)?;
+                Ok(())
+            }
+            EscChunk::Byte(byte) => {
+                write!(f, "\\{:3o}", byte)
+            }
+        })
+    }
+
+    pub fn format_values_iter<'a>(
+        iter: impl Iterator<Item = &'a [u8]> + Clone,
+        f: &mut fmt::Formatter<'_>,
+    ) -> fmt::Result {
+        // technically this could pull up a false positive, but that's fine, quotes are always valid
+        let should_quote = iter
+            .clone()
+            .any(|val| val.contains(&b' ') || val.contains(&b'\t'));
+        if should_quote {
+            let iter_fmt = display_utils::join_format(iter, ",", |value, f| {
+                let iter = valuelist::iter_quoted(value);
+                format_iter(iter).fmt(f)
+            });
+            write!(f, "\"{}\"", iter_fmt)?;
+        } else {
+            display_utils::join_format(iter, ",", |value, f| {
+                let iter = valuelist::iter_unquoted(value);
+                format_iter(iter).fmt(f)
+            }).fmt(f)?;
+        }
+        Ok(())
+    }
+
+    impl fmt::Display for ValueList {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            format_values_iter(self.values.iter().map(|val| val.as_slice()), f)
+        }
+    }
 }
 
 fn char_escape(input: &[u8]) -> IResult<&[u8], u8> {
@@ -187,8 +296,8 @@ fn dec_octet(buf: &[u8], zero_one_or_two: u8) -> IResult<&[u8], u8> {
     Ok((rest, byte))
 }
 
-#[derive(Debug)]
-enum EscChunk<'a> {
+#[derive(Debug, Clone)]
+pub enum EscChunk<'a> {
     Slice(&'a [u8]),
     Byte(u8),
 }
@@ -227,7 +336,7 @@ mod char_string {
     use super::*;
     fn contiguous_chunk(input: &[u8]) -> IResult<&[u8], EscChunk<'_>> {
         alt((
-            non_special(false).map(EscChunk::Slice),
+            non_special(false, false).map(EscChunk::Slice),
             char_escape.map(EscChunk::Byte),
         ))(input)
     }
@@ -254,7 +363,6 @@ mod char_string {
 
     #[test]
     fn test_escaping() {
-        // let parse = |slice| strings(non_special(slice).map(|(a, b)| (a, Vec::from(b))));
         let mini = |slice| {
             char_escape(slice).map(|(a, b)| (std::str::from_utf8(a).unwrap(), char::from(b)))
         };
@@ -279,7 +387,7 @@ mod value_list_decoding {
 
     fn contiguous_chunk(input: &[u8]) -> IResult<&[u8], EscChunk<'_>> {
         alt((
-            non_special(true).map(EscChunk::Slice),
+            non_special(true, false).map(EscChunk::Slice),
             char_escape.map(EscChunk::Byte),
         ))(input)
     }
@@ -334,7 +442,6 @@ mod value_list_decoding {
 
     #[test]
     fn test_escaping() {
-        // let parse = |slice| strings(non_special(slice).map(|(a, b)| (a, Vec::from(b))));
         let mini = |slice| {
             char_escape(slice).map(|(a, b)| (std::str::from_utf8(a).unwrap(), char::from(b)))
         };

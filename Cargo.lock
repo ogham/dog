@@ -140,11 +140,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e25ea47919b1560c4e3b7fe0aaab9becf5b84a10325ddf7db0f0ba5e1026499"
 
 [[package]]
+name = "display_utils"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c1cabb9d45c20801e16b8483e998bd1ebe4a07bc56406135ded5b4e3ad140c30"
+
+[[package]]
 name = "dns"
 version = "0.2.0-pre"
 dependencies = [
  "base64",
  "byteorder",
+ "display_utils",
  "env_logger",
  "log",
  "mutagen",

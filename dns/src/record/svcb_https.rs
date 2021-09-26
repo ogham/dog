@@ -1,7 +1,7 @@
 //! The format of both SVCB and HTTPS RRs is identical.
 
 use core::fmt;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::io::{self, Seek, SeekFrom};
 use std::net::{Ipv4Addr, Ipv6Addr};
 
@@ -9,6 +9,8 @@ use log::*;
 
 use crate::strings::{Labels, ReadLabels};
 use crate::wire::*;
+
+use crate::value_list::escaping;
 
 /// A kinda hacky but alright way to avoid copying tons of data
 trait CursorExt {
@@ -125,6 +127,12 @@ macro_rules! u16_enum {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Opaque(/* u16 len */ Vec<u8>);
 
+impl fmt::Display for Opaque {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        base64::display::Base64Display::with_config(&self.0[..], base64::STANDARD).fmt(f)
+    }
+}
+
 /// Same as [Opaque] but min length is 1
 #[derive(Debug, Clone, PartialEq)]
 pub struct Opaque1(/* u16 len */ Vec<u8>);
@@ -190,7 +198,7 @@ pub struct HTTPS(SVCB);
 
 u16_enum! {
     ///  14.3.2. Initial contents (subject to IANA additions)
-    #[derive(Copy, Eq, PartialOrd, Hash)]
+    #[derive(Copy, Eq, PartialOrd, Ord, Hash)]
     enum SvcParam {
         /// `mandatory`
         Mandatory = 0,
@@ -228,7 +236,7 @@ impl fmt::Display for SvcParam {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 struct SvcParams {
     /// List of keys that must be understood by a client to use the RR properly.
     ///
@@ -253,20 +261,91 @@ struct SvcParams {
     ech: Option<ech::ECHConfigList>,
     ipv6hint: Vec<Ipv6Addr>,
 
-    /// For any unrecognised keys
-    other: HashMap<SvcParam, Opaque>,
+    /// For any unrecognised keys. BTreeMap, because keys are sorted this way
+    other: BTreeMap<SvcParam, Opaque>,
+}
+
+impl fmt::Display for SvcParams {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let Self {
+            mandatory,
+            alpn,
+            port,
+            ipv4hint,
+            ech,
+            ipv6hint,
+            other,
+        } = self;
+        let mut after_first = false;
+        if !mandatory.is_empty() {
+            write!(
+                f,
+                "mandatory={}",
+                display_utils::join(mandatory.iter(), ",")
+            )?;
+            after_first = true;
+        }
+        if let Some(alpn) = alpn {
+            if after_first {
+                f.write_str(" ")?;
+            }
+            f.write_str("alpn=")?;
+            escaping::format_values_iter(alpn.alpn_ids.iter().map(|id| id.0.as_slice()), f)?;
+            if alpn.no_default_alpn {
+                write!(f, " no-default-alpn")?;
+            }
+            after_first = true;
+        }
+        if let &Some(port) = port {
+            if after_first {
+                f.write_str(" ")?;
+            }
+            write!(f, "port={}", port)?;
+            after_first = true;
+        }
+        if let Some(ech) = ech {
+            if after_first {
+                f.write_str(" ")?;
+            }
+            write!(f, "ech={}", ech.base64)?;
+            after_first = true;
+        }
+        if !ipv4hint.is_empty() {
+            if after_first {
+                f.write_str(" ")?;
+            }
+            write!(f, "ipv4hint={}", display_utils::join(ipv4hint.iter(), ","))?;
+            after_first = true;
+        }
+        if !ipv6hint.is_empty() {
+            if after_first {
+                f.write_str(" ")?;
+            }
+            write!(f, "ipv6hint={}", display_utils::join(ipv6hint.iter(), ","))?;
+            after_first = true;
+        }
+        if !other.is_empty() {
+            if after_first {
+                f.write_str(" ")?;
+            }
+            display_utils::join_format(other.iter(), " ", |(k, v), f| write!(f, "{}={}", k, v))
+                .fmt(f)?;
+            // after_first = true;
+        }
+        Ok(())
+    }
 }
 
 impl SvcParams {
     fn read(cursor: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let mut mandatory = Default::default();
-        let mut no_default_alpn: Option<bool> = None;
+        let mut no_default_alpn = false;
         let mut alpn_ids = Default::default();
         let mut port = Default::default();
         let mut ipv4hint = Default::default();
         let mut ech = Default::default();
         let mut ipv6hint = Default::default();
-        let mut other = HashMap::new();
+        let mut other = BTreeMap::new();
 
         let mut last_param = None;
 
@@ -310,7 +389,7 @@ impl SvcParams {
                         return Err(WireError::IO);
                     }
                     SvcParam::NoDefaultAlpn => {
-                        no_default_alpn = Some(false);
+                        no_default_alpn = true;
                     }
                     SvcParam::Alpn => {
                         let mut ids = Vec::new();
@@ -335,7 +414,7 @@ impl SvcParams {
             })?;
         }
 
-        if no_default_alpn.is_some() && alpn_ids.is_empty() {
+        if no_default_alpn && alpn_ids.is_empty() {
             return Err(WireError::IO);
         }
         let alpn = if alpn_ids.is_empty() {
@@ -343,7 +422,7 @@ impl SvcParams {
         } else {
             Some(Alpn {
                 alpn_ids,
-                no_default_alpn: no_default_alpn.unwrap_or(false),
+                no_default_alpn,
             })
         };
 
@@ -425,7 +504,7 @@ mod ech {
         configs: Vec<ECHConfig>,
 
         /// Need a copy of the whole thing to encode as base64
-        base64: String,
+        pub base64: String,
     }
 
     impl ReadFromCursor for ECHConfigList {
@@ -850,7 +929,6 @@ impl Wire for HTTPS {
     }
 }
 
-//
 impl Wire for SVCB {
     const NAME: &'static str = "SVCB";
     const RR_TYPE: u16 = 64;
@@ -902,6 +980,28 @@ impl Wire for SVCB {
         } else {
             Ok(ret)
         }
+    }
+}
+
+impl fmt::Display for HTTPS {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl fmt::Display for SVCB {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let Self {
+            priority,
+            target,
+            parameters,
+        } = self;
+
+        write!(f, "{} {:?}", priority, target.to_string())?;
+        if let Some(params) = parameters {
+            write!(f, " {}", params)?;
+        }
+        Ok(())
     }
 }
 
@@ -962,7 +1062,7 @@ mod test {
                             "h3-27".into(),
                             "h2".into()
                         ],
-                        no_default_alpn: false
+                        no_default_alpn: false,
                     }),
                     port: None,
                     ipv4hint: vec![
@@ -974,7 +1074,7 @@ mod test {
                         "2606:4700::6810:84e5".parse().unwrap(),
                         "2606:4700::6810:85e5".parse().unwrap()
                     ],
-                    other: HashMap::new(),
+                    other: BTreeMap::new(),
                 }),
             })
         );

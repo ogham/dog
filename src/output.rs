@@ -286,10 +286,10 @@ impl TextFormat {
                 format!("{:?}", bytes)
             }
             Record::HTTPS(https) => {
-                format!("{:?}", https)
+                format!("{}", https)
             }
             Record::SVCB(svcb) => {
-                format!("{:?}", svcb)
+                format!("{}", svcb)
             }
         }
     }
