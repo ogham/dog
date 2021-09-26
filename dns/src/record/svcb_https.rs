@@ -1006,18 +1006,18 @@ impl fmt::Display for SVCB {
 }
 
 #[cfg(test)]
+fn init_logs() {
+    use std::sync::Once;
+    static LOG_INIT: Once = Once::new();
+    LOG_INIT.call_once(|| {
+        env_logger::init();
+    });
+}
+
+#[cfg(test)]
 mod test {
     use super::*;
     use pretty_assertions::assert_eq;
-
-    use std::sync::Once;
-
-    fn init_logs() {
-        static LOG_INIT: Once = Once::new();
-        LOG_INIT.call_once(|| {
-            env_logger::init();
-        });
-    }
 
     #[test]
     fn parses() {
@@ -1125,5 +1125,96 @@ mod test {
         ];
 
         assert_eq!(SVCB::read(23, &mut Cursor::new(buf)), Err(WireError::IO));
+    }
+}
+
+/// See the draft RFC
+#[cfg(test)]
+mod test_vectors {
+    use super::*;
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn alias_form() {
+        init_logs();
+        let buf = b"\x00\x00\x03foo\x07example\x03com\x00";
+        assert_eq!(
+            SVCB::read(buf.len() as u16, &mut Cursor::new(buf)),
+            Ok(SVCB {
+                priority: 0,
+                target: Labels::encode("foo.example.com").unwrap(),
+                parameters: None,
+            })
+        );
+    }
+
+    #[test]
+    fn service_form() {
+        init_logs();
+        let buf = b"\x00\x01\x00";
+        assert_eq!(
+            SVCB::read(buf.len() as u16, &mut Cursor::new(buf)),
+            Ok(SVCB {
+                priority: 1,
+                target: Labels::encode(".").unwrap(),
+                parameters: Some(SvcParams::default()),
+            })
+        );
+    }
+
+    #[test]
+    fn service_form_2() {
+        init_logs();
+        let buf = &[
+            0x00, 0x10, // priority
+            0x03, 0x66, 0x6f, 0x6f, 0x07, 0x65, // target
+            0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00, 0x00,
+            0x03, // key 3
+            0x00, 0x02, // length 2
+            0x00, 0x35, // value
+        ];
+        assert_eq!(
+            SVCB::read(buf.len() as u16, &mut Cursor::new(buf)),
+            Ok(SVCB {
+                priority: 16,
+                target: Labels::encode("foo.example.com.").unwrap(),
+                parameters: Some(SvcParams {
+                    port: Some(53),
+                    ..SvcParams::default()
+                }),
+            })
+        );
+    }
+
+    #[test]
+    fn service_form_3() {
+        init_logs();
+        let buf = &[
+            0x00, 0x01, // priority
+            0x03, 0x66, 0x6f, 0x6f, 0x07, 0x65, // target
+            0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, //
+            0x03, 0x63, 0x6f, 0x6d, 0x00,       //
+            0x02, 0x9b, // key 667
+            0x00, 0x05, // length 5
+            0x68, 0x65, 0x6c, 0x6c, 0x6f, // value
+        ];
+        assert_eq!(
+            SVCB::read(buf.len() as u16, &mut Cursor::new(buf)),
+            Ok(SVCB {
+                priority: 1,
+                target: Labels::encode("foo.example.com.").unwrap(),
+                parameters: Some(SvcParams {
+                    other: {
+                        let mut map = BTreeMap::new();
+                        map.insert(
+                            SvcParam::KeyNNNNN(667),
+                            Opaque(vec![0x68, 0x65, 0x6c, 0x6c, 0x6f]),
+                        );
+                        map
+                    },
+                    ..SvcParams::default()
+                }),
+            })
+        );
     }
 }
