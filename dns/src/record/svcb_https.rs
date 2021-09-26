@@ -1112,6 +1112,25 @@ mod test {
     }
 
     #[test]
+    fn ignore_alias_mode_params() {
+        init_logs();
+        let buf = &[
+            0, 0, // SvcPriority
+            0, // TargetName = .
+            // SvcParams
+            0, 3, 0, 2, 0x01, 0xbb, // port, len 2, "443"
+        ];
+        assert_eq!(
+            SVCB::read(16, &mut Cursor::new(buf)),
+            Ok(SVCB {
+                priority: 0,
+                target: Labels::root(),
+                parameters: None,
+            })
+        );
+    }
+
+    #[test]
     fn record_empty() {
         init_logs();
         assert_eq!(SVCB::read(0, &mut Cursor::new(&[])), Err(WireError::IO));
