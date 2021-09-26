@@ -539,11 +539,16 @@ mod ech {
     impl ReadFromCursor for ECHConfigList {
         fn read_from(cursor: &mut std::io::Cursor<&[u8]>) -> io::Result<Self> {
             let mut configs = Vec::new();
+
+            // write a base64 string that _includes the length field_
+            let mut buf = cursor.std_remaining_slice();
+            let mut throwaway = io::Cursor::new(buf);
+            let configs_length = throwaway.read_u16::<BigEndian>()?;
+            buf = &buf[..configs_length as usize + 2];
+            let base64 = base64::encode(buf);
+
             let configs_length = cursor.read_u16::<BigEndian>()?;
             log::trace!("ECHConfigList length = {}", configs_length);
-
-            let buf = &cursor.std_remaining_slice()[..configs_length.into()];
-            let base64 = base64::encode(buf);
 
             while cursor.std_remaining_slice().len() > 0 {
                 let config = ECHConfig::read_from(cursor)?;
