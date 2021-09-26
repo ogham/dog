@@ -127,6 +127,12 @@ macro_rules! u16_enum {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Opaque(/* u16 len */ Vec<u8>);
 
+impl From<Vec<u8>> for Opaque {
+    fn from(vec: Vec<u8>) -> Self {
+        Self(vec)
+    }
+}
+
 impl fmt::Display for Opaque {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         escaping::escape_char_string(&self.0[..], f)
@@ -176,6 +182,13 @@ macro_rules! opaque {
                 $crate::record::svcb_https::Opaque::read_from(cursor).map(Self)
             }
         }
+
+        impl From<Vec<u8>> for $ident {
+            fn from(vec: Vec<u8>) -> Self {
+                Self(From::from(vec))
+            }
+        }
+
     }
 }
 
@@ -303,18 +316,18 @@ impl fmt::Display for SvcParams {
             write!(f, "port={}", port)?;
             after_first = true;
         }
-        if let Some(ech) = ech {
-            if after_first {
-                f.write_str(" ")?;
-            }
-            write!(f, "ech={}", ech.base64)?;
-            after_first = true;
-        }
         if !ipv4hint.is_empty() {
             if after_first {
                 f.write_str(" ")?;
             }
             write!(f, "ipv4hint={}", display_utils::join(ipv4hint.iter(), ","))?;
+            after_first = true;
+        }
+        if let Some(ech) = ech {
+            if after_first {
+                f.write_str(" ")?;
+            }
+            write!(f, "ech={}", ech.base64)?;
             after_first = true;
         }
         if !ipv6hint.is_empty() {
@@ -500,7 +513,7 @@ mod ech {
 
     use super::{CursorExt, Opaque, Opaque1, ReadFromCursor};
 
-    #[derive(Debug, Clone, PartialEq)]
+    #[derive(Debug, Clone)]
     pub struct ECHConfigList {
         configs: Vec<ECHConfig>,
 
@@ -508,15 +521,31 @@ mod ech {
         pub base64: String,
     }
 
+    impl PartialEq for ECHConfigList {
+        fn eq(&self, other: &Self) -> bool {
+            self.configs == other.configs
+        }
+    }
+
+    impl From<Vec<ECHConfig>> for ECHConfigList {
+        fn from(configs: Vec<ECHConfig>) -> Self {
+            Self {
+                configs,
+                base64: String::from("base64 not computed"),
+            }
+        }
+    }
+
     impl ReadFromCursor for ECHConfigList {
         fn read_from(cursor: &mut std::io::Cursor<&[u8]>) -> io::Result<Self> {
             let mut configs = Vec::new();
             let configs_length = cursor.read_u16::<BigEndian>()?;
+            log::trace!("ECHConfigList length = {}", configs_length);
 
             let buf = &cursor.std_remaining_slice()[..configs_length.into()];
             let base64 = base64::encode(buf);
 
-            for _ in 0..configs_length {
+            while cursor.std_remaining_slice().len() > 0 {
                 let config = ECHConfig::read_from(cursor)?;
                 configs.push(config);
             }
@@ -527,18 +556,31 @@ mod ech {
     impl ReadFromCursor for ECHConfig {
         fn read_from(cursor: &mut std::io::Cursor<&[u8]>) -> io::Result<Self> {
             let version = cursor.read_u16::<BigEndian>()?;
+            log::trace!("ECHConfig version = 0x{:04x}", version);
             let length = cursor.read_u16::<BigEndian>()?;
+            log::trace!("ECHConfig length  = {}", length);
             match version {
                 0xfe0d => cursor.with_truncated(u64::from(length), |cursor, _len_hint| {
                     let key_config = tls13::HpkeKeyConfig::read_from(cursor)?;
+                    log::trace!("key_config = {:?}", key_config);
                     let maximum_name_length = cursor.read_u8()?;
+                    log::trace!("maximum_name_length = {}", maximum_name_length);
                     let public_name = PublicName::read_from(cursor)?;
 
                     let mut extensions = Vec::new();
 
-                    while let ext = tls13::Extension::read_from(cursor)? {
-                        extensions.push(ext);
-                    }
+                    let extensions_len = cursor.read_u16::<BigEndian>()?;
+                    log::trace!("extensions: len = {}", extensions_len);
+                    cursor.with_truncated(
+                        extensions_len as u64,
+                        |cursor, _| -> io::Result<()> {
+                            while cursor.std_remaining_slice().len() > 0 {
+                                let ext = tls13::Extension::read_from(cursor)?;
+                                extensions.push(ext);
+                            }
+                            Ok(())
+                        },
+                    )?;
 
                     Ok(Self::EchConfigContents {
                         key_config,
@@ -557,13 +599,11 @@ mod ech {
     }
 
     #[derive(Clone, PartialEq)]
-    pub struct PublicName {
-        inner: Vec<u8>,
-    }
+    pub struct PublicName(pub Vec<u8>);
 
     impl fmt::Debug for PublicName {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            let bytes = &self.inner[..];
+            let bytes = &self.0[..];
             f.write_str(&String::from_utf8_lossy(bytes))
         }
     }
@@ -571,7 +611,7 @@ mod ech {
     impl ReadFromCursor for PublicName {
         fn read_from(cursor: &mut std::io::Cursor<&[u8]>) -> io::Result<Self> {
             let len = cursor.read_u8()?;
-            log::trace!("read ECHConfig.public_name length = {}", len);
+            log::trace!("PublicName length = {}", len);
             if len == 0 || len > 254 {
                 return Err(io::Error::new(
                     io::ErrorKind::Other,
@@ -579,8 +619,9 @@ mod ech {
                 ));
             }
             let mut vec = vec![0u8; usize::from(len)];
-            cursor.read_exact(&mut vec[..])?;
-            Ok(Self { inner: vec })
+            cursor.read_exact(&mut vec)?;
+            log::trace!("PublicName = {:?}", std::str::from_utf8(&vec));
+            Ok(Self(vec))
         }
     }
 
@@ -648,14 +689,12 @@ mod ech {
         outer: Vec<tls13::ExtensionType>,
     }
 
-    mod tls13 {
+    pub mod tls13 {
+        use crate::record::svcb_https::{CursorExt, Opaque, ReadFromCursor};
         use byteorder::{BigEndian, ReadBytesExt};
+        use std::io::{self, Read};
 
-        use crate::record::svcb_https::ReadFromCursor;
-
-        // const MANDATORY: u16 = 0x1 << 15;
-
-        // We will implement the mandatory-to-implement extensions only from RFC8446
+        // mandatory-to-implement extensions from RFC8446
         //
         // -  Supported Versions ("supported_versions"; Section 4.2.1)
         // -  Cookie ("cookie"; Section 4.2.2)
@@ -698,14 +737,34 @@ mod ech {
         impl ReadFromCursor for Extension {
             fn read_from(cursor: &mut std::io::Cursor<&[u8]>) -> std::io::Result<Self> {
                 let ty: ExtensionType = cursor.read_u16::<BigEndian>()?.into();
-                match ty {
-                    // ExtensionType::ServerName => Extension::ServerName(ServerName::read_)
-                    _ => Ok(Extension::Other(ty, UnknownExtension::read_from(cursor)?)),
-                }
+                log::trace!("TLS extension: {:?}", ty);
+                let remain = cursor.std_remaining_slice();
+                log::trace!("TLS remaining: {:?}", remain);
+                let len = cursor.read_u16::<BigEndian>()?;
+                log::trace!("TLS extension length: {:?}", len);
+                cursor.with_truncated(len as u64, |cursor, len_hint| {
+                    log::trace!("TLS extension length hint: {:?}", len_hint);
+                    match ty {
+                        // ExtensionType::ServerName => Extension::ServerName(ServerName::read_)
+                        _ => Ok(Extension::Other(
+                            ty,
+                            UnknownExtension::read_len(cursor, len_hint as u64)?,
+                        )),
+                    }
+                })
             }
         }
 
-        opaque!(pub struct UnknownExtension);
+        #[derive(Debug, Clone, PartialEq)]
+        pub struct UnknownExtension(Opaque);
+
+        impl UnknownExtension {
+            fn read_len(cursor: &mut io::Cursor<&[u8]>, len: u64) -> io::Result<Self> {
+                let mut vec = vec![0u8; len as usize];
+                cursor.read_exact(&mut vec)?;
+                Ok(Self(Opaque::from(vec)))
+            }
+        }
 
         #[derive(Debug, Clone, PartialEq)]
         pub enum ServerName {
@@ -722,7 +781,7 @@ mod ech {
             /// Draft RFC <https://www.ietf.org/archive/id/draft-irtf-cfrg-hpke-11.txt>
             /// 7.1.  Key Encapsulation Mechanisms (KEMs)
             #[allow(non_camel_case_types)]
-            enum HpkeKemId {
+            pub enum HpkeKemId {
                 Reserved = 0x0000,
                 DHKEM_P256_HKDF_SHA256 = 0x0010,
                 DHKEM_P384_HKDF_SHA384 = 0x0011,
@@ -737,7 +796,7 @@ mod ech {
             /// Draft RFC <https://www.ietf.org/archive/id/draft-irtf-cfrg-hpke-11.txt>
             /// 7.2.  Key Derivation Functions (KDFs)
             #[allow(non_camel_case_types)]
-            enum HpkeKdfId {
+            pub enum HpkeKdfId {
                 Reserved = 0,
                 HKDF_SHA256 = 1,
                 HKDF_SHA384 = 2,
@@ -750,7 +809,7 @@ mod ech {
             /// Draft RFC <https://www.ietf.org/archive/id/draft-irtf-cfrg-hpke-11.txt>
             /// 7.3.  Authenticated Encryption with Associated Data (AEAD) Functions
             #[allow(non_camel_case_types)]
-            enum HpkeAeadId {
+            pub enum HpkeAeadId {
                 Reserved = 0,
                 AES_128_GCM = 1,
                 AES_256_GCM = 2,
@@ -762,13 +821,13 @@ mod ech {
 
         #[test]
         fn test_hpke() {
-            let hpke = HpkeAeadId::from(0x0003);
+            let _hpke = HpkeAeadId::from(0x0003);
         }
 
         #[derive(Debug, Clone, PartialEq)]
         pub struct HpkeSymmetricCipherSuite {
-            kdf_id: HpkeKdfId,
-            aead_id: HpkeAeadId,
+            pub kdf_id: HpkeKdfId,
+            pub aead_id: HpkeAeadId,
         }
 
         impl ReadFromCursor for HpkeSymmetricCipherSuite {
@@ -782,21 +841,31 @@ mod ech {
 
         #[derive(Debug, Clone, PartialEq)]
         pub struct HpkeKeyConfig {
-            config_id: u8,
-            kem_id: HpkeKemId,
-            public_key: HpkePublicKey,
+            pub config_id: u8,
+            pub kem_id: HpkeKemId,
+            pub public_key: HpkePublicKey,
             // u16 len
-            cipher_suites: Vec<HpkeSymmetricCipherSuite>,
+            pub cipher_suites: Vec<HpkeSymmetricCipherSuite>,
         }
 
         impl ReadFromCursor for HpkeKeyConfig {
             fn read_from(cursor: &mut std::io::Cursor<&[u8]>) -> std::io::Result<Self> {
                 let config_id = cursor.read_u8()?;
+                log::trace!("config_id = {:?}", config_id);
                 let kem_id = cursor.read_u16::<BigEndian>()?.into();
+                log::trace!("kem_id = {:?}", kem_id);
                 let public_key = HpkePublicKey::read_from(cursor)?;
+                log::trace!("public_key (len) = {:?}", (public_key.0).0.len());
                 let cs_len = cursor.read_u16::<BigEndian>()?;
-                let n_cipher_suites =
-                    cs_len as usize / core::mem::size_of::<HpkeSymmetricCipherSuite>();
+                log::trace!("cs_len = {:?}", cs_len);
+                if cs_len < 4 || cs_len as u32 > 2u32 << 16 - 4 {
+                    return Err(io::Error::new(
+                        io::ErrorKind::Other,
+                        "cipher_suites length field invalid",
+                    ));
+                }
+                let n_cipher_suites = cs_len as usize / 4;
+                log::trace!("n_cipher_suites = {:?}", n_cipher_suites);
                 let mut cipher_suites = Vec::with_capacity(n_cipher_suites);
                 for _ in 0..n_cipher_suites {
                     let suite = HpkeSymmetricCipherSuite::read_from(cursor)?;
@@ -817,45 +886,8 @@ mod ech {
         pub struct SupportedVersions {
             // min length 2 (otherwise implied by TLS version field), max length 254
             // len is a u8 i suppose?
-            versions: Vec<TlsVersion>,
+            pub versions: Vec<TlsVersion>,
         }
-
-        // #[derive(Debug, Clone, PartialEq)]
-        // pub struct NamedGroupList(/* u16 len */ Vec<NamedGroup>);
-
-        // u16_enum! {
-        //     pub enum NamedGroup {
-        //         /* Elliptic Curve Groups (ECDHE) */
-        //         Secp256r1 = 0x0017,
-        //         Secp384r1 = 0x0018,
-        //         Secp521r1 = 0x0019,
-        //         X25519 = 0x001D,
-        //         X448 = 0x001E,
-        //         /* Finite Field Groups (DHE) */
-        //         Ffdhe2048 = 0x0100,
-        //         Ffdhe3072 = 0x0101,
-        //         Ffdhe4096 = 0x0102,
-        //         Ffdhe6144 = 0x0103,
-        //         Ffdhe8192 = 0x0104,
-        //         /* Reserved Code Points */
-        //         @unknown
-        //         /// ffdhe_private_use(0x01FC..0x01FF),
-        //         /// ecdhe_private_use(0xFE00..0xFEFF),
-        //         PrivateUse(u16),
-        //     }
-        // }
-
-        // #[derive(Debug, Clone, PartialEq)]
-        // struct KeyShareEntry {
-        //     group: NamedGroup,
-        //     key_exchange: Vec<u8>,
-        // }
-
-        // #[derive(Debug, Clone, PartialEq)]
-        // struct KeyShareClientHello {
-        //     // u16 len
-        //     client_shares: Vec<KeyShareEntry>,
-        // }
 
         u16_enum! {
             pub enum TlsVersion {
@@ -921,6 +953,8 @@ impl Wire for SVCB {
     #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, cursor: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let initial_pos = cursor.position();
+
+        trace!("{:?}", cursor.std_remaining_slice());
 
         let ret = cursor.with_truncated(
             stated_length as _,
@@ -1237,7 +1271,8 @@ mod test_vectors {
             0x6f, 0x6d, 0x00, // target
             0x02, 0x9b, // key 667
             0x00, 0x09, // length 9
-            0x68, 0x65, 0x6c, 0x6c, 0x6f, 0xd2 /* \210 */, 0x71, 0x6f, 0x6f, // value
+            0x68, 0x65, 0x6c, 0x6c, 0x6f, 0xd2, /* \210 */
+            0x71, 0x6f, 0x6f, // value
         ];
         let value = SVCB {
             priority: 1,
@@ -1261,7 +1296,10 @@ mod test_vectors {
 
         // we avoid writing the quotes on values where possible, so this differs from the test
         // vector (which is for a parser, not a formatter?)
-        assert_eq!(value.to_string(), r#"1 foo.example.com. key667=hello\210qoo"#);
+        assert_eq!(
+            value.to_string(),
+            r#"1 foo.example.com. key667=hello\210qoo"#
+        );
     }
 
     #[test]
@@ -1434,13 +1472,48 @@ mod test_vectors {
 
 #[cfg(test)]
 mod test_ech {
+    use super::ech::{tls13::*, *};
+    use super::*;
+    use pretty_assertions::assert_eq;
+
     #[test]
     fn ech_param() {
+        init_logs();
         let buf = &[
-            0x00, 0x01, // priority
-            0x00, // target
-            0x00, 0x05, // ech param
-            0x00, 0x24,
+            0, 1,    // priority: = 1
+            0x00, // target: .
+            0, 1, // param: alpn
+            0, 3, // param: len = 3
+            2, 104, 50, // "h2"
+            0, 4, // param: ipv4hint
+            0, 8, // param: len = 8
+            162, 159, 135, 79, // ip 1
+            162, 159, 136, 79, // ip 2
+            0, 5, // param: ech
+            0, 72, // param: len = 72
+            0, 70, // echconfiglist: len = 70
+            254, 13, // config version: 0xfe0d
+            0, 66, // config len
+            63, // config id
+            0, 32, 0, 32, // hpke stuff
+            40, 38, 25, 12, 212, 168, 183, 42, 218, 32, 41, 154, 44, 61, 152, 136, 131, 114, 86,
+            111, 194, 66, 154, 114, 231, 170, 205, 83, 72, 105, 105, 119, // public_key
+            0, 4, // cipher suites len
+            0, 1, 0, 1, // cipher suites
+            0, 19, // public name
+            99, 108, 111, 117, 100, 102, 108, 97, 114, 101, 45, 101, 115, 110, 105, 46, 99, 111,
+            109, // cloudflare-esni.com
+            0, 0, // extensions len
+            0, 6, // param: ipv6hints
+            0, 32, 38, 6, 71, 0, 0, 7, 0, 0, 0, 0, 0, 0, 162, 159, 135, 79, // ipv6 1
+            38, 6, 71, 0, 0, 7, 0, 0, 0, 0, 0, 0, 162, 159, 136, 79, // ipv6 2
         ];
+        let parsed = SVCB::read(buf.len() as u16, &mut Cursor::new(buf));
+        assert_eq!(
+            parsed.map(|x| x.to_string()).as_deref(),
+            Ok(
+                r#"1 . alpn=h2 ipv4hint=162.159.135.79,162.159.136.79 ech=AEb+DQBCPwAgACAoJhkM1Ki3KtogKZosPZiIg3JWb8JCmnLnqs1TSGlpdwAEAAEAAQATY2xvdWRmbGFyZS1lc25pLmNvbQAA ipv6hint=2606:4700:7::a29f:874f,2606:4700:7::a29f:884f"#
+            )
+        );
     }
 }
