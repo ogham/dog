@@ -12,12 +12,12 @@ use std::io::{Cursor, Read};
 /// [Draft RFC](https://tools.ietf.org/id/draft-ietf-dnsop-svcb-https-02.html#name-the-svcb-record-type), section A.1
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
 pub struct ValueList {
-    values: Vec<Vec<u8>>,
+    pub values: Vec<Vec<u8>>,
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
 pub struct SingleValue {
-    value: Vec<u8>,
+    pub value: Vec<u8>,
 }
 
 impl ValueList {
@@ -155,49 +155,41 @@ pub mod escaping {
         })
     }
 
-    mod valuelist {
+    fn single_byte(input: &[u8]) -> IResult<&[u8], u8> {
+        let (byte, remain) = input.split_first().ok_or_else(|| {
+            nom::Err::Error(ParseError::from_error_kind(
+                input,
+                nom::error::ErrorKind::Char,
+            ))
+        })?;
+        Ok((remain, *byte))
+    }
 
-        fn single_byte(input: &[u8]) -> IResult<&[u8], u8> {
-            let (byte, remain) = input.split_first().ok_or_else(|| {
-                nom::Err::Error(ParseError::from_error_kind(
-                    input,
-                    nom::error::ErrorKind::Char,
-                ))
-            })?;
-            Ok((remain, *byte))
-        }
-
-        use super::*;
-        fn chunk(quoted: bool) -> impl FnMut(&[u8]) -> IResult<&[u8], EscChunk<'_>> + Clone {
-            move |remain| {
-                non_special(true, false)
-                    .map(EscChunk::Slice)
-                    .or(single_byte.map(EscChunk::Byte))
-                    .parse(remain)
-            }
-        }
-        pub fn iter_unquoted(
-            input: &[u8],
-        ) -> impl Iterator<Item = Result<EscChunk<'_>, fmt::Error>> + Clone {
-            iter_parser(input, chunk(false))
-        }
-
-        pub fn iter_quoted(
-            input: &[u8],
-        ) -> impl Iterator<Item = Result<EscChunk<'_>, fmt::Error>> + Clone {
-            iter_parser(input, chunk(true))
+    fn chunk(
+        split_comma: bool,
+        whitespace: bool,
+    ) -> impl FnMut(&[u8]) -> IResult<&[u8], EscChunk<'_>> + Clone {
+        move |remain| {
+            non_special(split_comma, whitespace)
+                .map(EscChunk::Slice)
+                .or(single_byte.map(EscChunk::Byte))
+                .parse(remain)
         }
     }
 
-    // fn format_iter<'a, 'f>(f: &mut fmt::Formatter<'f>, mut iter: impl Iterator<Item = Result<EscChunk<'a>, fmt::Error>>) -> fmt::Result {
-    //     iter.try_for_each()
-    // }
+    pub fn emit_chunks(
+        input: &[u8],
+        split_comma: bool,
+        whitespace: bool,
+    ) -> impl Iterator<Item = Result<EscChunk<'_>, fmt::Error>> + Clone {
+        iter_parser(input, chunk(split_comma, whitespace))
+    }
 
     fn format_iter<'a, I>(iter: I) -> impl fmt::Display + 'a
     where
         I: Iterator<Item = Result<EscChunk<'a>, fmt::Error>> + Clone + 'a,
     {
-        display_utils::join_format(iter, ",", |chunk, f| match chunk? {
+        display_utils::join_format(iter, "", |chunk, f| match chunk? {
             EscChunk::Slice(slice) => {
                 // Technically we know this is printable ASCII. is that utf8?
                 let string = std::str::from_utf8(slice).map_err(|e| {
@@ -208,12 +200,13 @@ pub mod escaping {
                 Ok(())
             }
             EscChunk::Byte(byte) => {
-                write!(f, "\\{:3o}", byte)
+                write!(f, "\\{:03}", byte)
             }
         })
     }
 
     pub fn format_values_iter<'a>(
+        split_comma: bool,
         iter: impl Iterator<Item = &'a [u8]> + Clone,
         f: &mut fmt::Formatter<'_>,
     ) -> fmt::Result {
@@ -222,23 +215,30 @@ pub mod escaping {
             .clone()
             .any(|val| val.contains(&b' ') || val.contains(&b'\t'));
         if should_quote {
-            let iter_fmt = display_utils::join_format(iter, ",", |value, f| {
-                let iter = valuelist::iter_quoted(value);
+            let joiner = if split_comma { "," } else { "" };
+            let iter_fmt = display_utils::join_format(iter, joiner, |value, f| {
+                let iter = emit_chunks(value, split_comma, true);
                 format_iter(iter).fmt(f)
             });
             write!(f, "\"{}\"", iter_fmt)?;
         } else {
             display_utils::join_format(iter, ",", |value, f| {
-                let iter = valuelist::iter_unquoted(value);
+                let iter = emit_chunks(value, split_comma, false);
                 format_iter(iter).fmt(f)
-            }).fmt(f)?;
+            })
+            .fmt(f)?;
         }
         Ok(())
     }
 
     impl fmt::Display for ValueList {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            format_values_iter(self.values.iter().map(|val| val.as_slice()), f)
+            format_values_iter(true, self.values.iter().map(|val| val.as_slice()), f)
+        }
+    }
+    impl fmt::Display for SingleValue {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            format_values_iter(false, core::iter::once(self.value.as_slice()), f)
         }
     }
 }

@@ -129,7 +129,7 @@ pub struct Opaque(/* u16 len */ Vec<u8>);
 
 impl fmt::Display for Opaque {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        base64::display::Base64Display::with_config(&self.0[..], base64::STANDARD).fmt(f)
+        escaping::format_values_iter(false, core::iter::once(&self.0[..]), f)
     }
 }
 
@@ -290,7 +290,7 @@ impl fmt::Display for SvcParams {
                 f.write_str(" ")?;
             }
             f.write_str("alpn=")?;
-            escaping::format_values_iter(alpn.alpn_ids.iter().map(|id| id.0.as_slice()), f)?;
+            escaping::format_values_iter(true, alpn.alpn_ids.iter().map(|id| id.0.as_slice()), f)?;
             if alpn.no_default_alpn {
                 write!(f, " no-default-alpn")?;
             }
@@ -484,7 +484,7 @@ impl ReadFromCursor for AlpnId {
 impl fmt::Debug for AlpnId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let bytes = &self.0[..];
-        f.write_str(&String::from_utf8_lossy(bytes))
+        String::from_utf8_lossy(bytes).fmt(f)
     }
 }
 
@@ -903,22 +903,6 @@ mod ech {
     }
 }
 
-impl SvcParams {
-    /// Takes a valid SvcParams struct and encodes it as human-readable input syntax
-    /// The input syntax (not RDATA)
-    //
-    // ```text,ignore
-    // alpha-lc      = %x61-7A   ;  a-z
-    // SvcParamKey   = 1*63(alpha-lc / DIGIT / "-")
-    // SvcParam      = SvcParamKey ["=" SvcParamValue]
-    // SvcParamValue = char-string
-    // value         = *OCTET
-    // ```
-    pub fn encode(&self) -> String {
-        todo!()
-    }
-}
-
 impl Wire for HTTPS {
     const NAME: &'static str = "HTTPS";
     const RR_TYPE: u16 = 65;
@@ -995,9 +979,9 @@ impl fmt::Display for SVCB {
             parameters,
         } = self;
 
-        write!(f, "{} {:?}", priority, target.to_string())?;
+        write!(f, "{} {}", priority, target)?;
         if let Some(params) = parameters {
-            write!(f, " {}", params)?;
+            write!(f, "{}{}", if target.len() > 0 { " " } else { "" }, params)?;
         }
         Ok(())
     }
@@ -1148,6 +1132,8 @@ mod test {
 /// See the draft RFC
 #[cfg(test)]
 mod test_vectors {
+    use crate::ValueList;
+
     use super::*;
     use pretty_assertions::assert_eq;
 
@@ -1155,28 +1141,32 @@ mod test_vectors {
     fn alias_form() {
         init_logs();
         let buf = b"\x00\x00\x03foo\x07example\x03com\x00";
+        let value = SVCB {
+            priority: 0,
+            target: Labels::encode("foo.example.com").unwrap(),
+            parameters: None,
+        };
         assert_eq!(
-            SVCB::read(buf.len() as u16, &mut Cursor::new(buf)),
-            Ok(SVCB {
-                priority: 0,
-                target: Labels::encode("foo.example.com").unwrap(),
-                parameters: None,
-            })
+            SVCB::read(buf.len() as u16, &mut Cursor::new(buf)).as_ref(),
+            Ok(&value)
         );
+        assert_eq!(value.to_string(), "0 foo.example.com.");
     }
 
     #[test]
     fn service_form() {
         init_logs();
         let buf = b"\x00\x01\x00";
+        let value = SVCB {
+            priority: 1,
+            target: Labels::encode(".").unwrap(),
+            parameters: Some(SvcParams::default()),
+        };
         assert_eq!(
-            SVCB::read(buf.len() as u16, &mut Cursor::new(buf)),
-            Ok(SVCB {
-                priority: 1,
-                target: Labels::encode(".").unwrap(),
-                parameters: Some(SvcParams::default()),
-            })
+            SVCB::read(buf.len() as u16, &mut Cursor::new(buf)).as_ref(),
+            Ok(&value)
         );
+        assert_eq!(value.to_string(), "1 .");
     }
 
     #[test]
@@ -1190,17 +1180,19 @@ mod test_vectors {
             0x00, 0x02, // length 2
             0x00, 0x35, // value
         ];
+        let value = SVCB {
+            priority: 16,
+            target: Labels::encode("foo.example.com.").unwrap(),
+            parameters: Some(SvcParams {
+                port: Some(53),
+                ..SvcParams::default()
+            }),
+        };
         assert_eq!(
-            SVCB::read(buf.len() as u16, &mut Cursor::new(buf)),
-            Ok(SVCB {
-                priority: 16,
-                target: Labels::encode("foo.example.com.").unwrap(),
-                parameters: Some(SvcParams {
-                    port: Some(53),
-                    ..SvcParams::default()
-                }),
-            })
+            SVCB::read(buf.len() as u16, &mut Cursor::new(buf)).as_ref(),
+            Ok(&value)
         );
+        assert_eq!(value.to_string(), "16 foo.example.com. port=53");
     }
 
     #[test]
@@ -1215,23 +1207,243 @@ mod test_vectors {
             0x00, 0x05, // length 5
             0x68, 0x65, 0x6c, 0x6c, 0x6f, // value
         ];
+        let value = SVCB {
+            priority: 1,
+            target: Labels::encode("foo.example.com.").unwrap(),
+            parameters: Some(SvcParams {
+                other: {
+                    let mut map = BTreeMap::new();
+                    map.insert(
+                        SvcParam::KeyNNNNN(667),
+                        Opaque(vec![0x68, 0x65, 0x6c, 0x6c, 0x6f]),
+                    );
+                    map
+                },
+                ..SvcParams::default()
+            }),
+        };
         assert_eq!(
-            SVCB::read(buf.len() as u16, &mut Cursor::new(buf)),
-            Ok(SVCB {
-                priority: 1,
-                target: Labels::encode("foo.example.com.").unwrap(),
-                parameters: Some(SvcParams {
-                    other: {
-                        let mut map = BTreeMap::new();
-                        map.insert(
-                            SvcParam::KeyNNNNN(667),
-                            Opaque(vec![0x68, 0x65, 0x6c, 0x6c, 0x6f]),
-                        );
-                        map
-                    },
-                    ..SvcParams::default()
-                }),
-            })
+            SVCB::read(buf.len() as u16, &mut Cursor::new(buf)).as_ref(),
+            Ok(&value)
         );
+        assert_eq!(value.to_string(), "1 foo.example.com. key667=hello");
+    }
+
+    #[test]
+    fn service_form_4() {
+        let buf = &[
+            0x00, 0x01, // priority
+            0x03, 0x66, 0x6f, 0x6f, 0x07, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x03, 0x63,
+            0x6f, 0x6d, 0x00, // target
+            0x02, 0x9b, // key 667
+            0x00, 0x09, // length 9
+            0x68, 0x65, 0x6c, 0x6c, 0x6f, 0xd2, 0x71, 0x6f, 0x6f, // value
+        ];
+        let value = SVCB {
+            priority: 1,
+            target: Labels::encode("foo.example.com.").unwrap(),
+            parameters: Some(SvcParams {
+                other: {
+                    let mut map = BTreeMap::new();
+                    map.insert(
+                        SvcParam::KeyNNNNN(667),
+                        Opaque(vec![0x68, 0x65, 0x6c, 0x6c, 0x6f, 0xd2, 0x71, 0x6f, 0x6f]),
+                    );
+                    map
+                },
+                ..SvcParams::default()
+            }),
+        };
+        assert_eq!(
+            SVCB::read(buf.len() as u16, &mut Cursor::new(buf)).as_ref(),
+            Ok(&value)
+        );
+
+        // we avoid writing the quotes on values where possible, so this differs from the test
+        // vector (which is for a parser, not a formatter?)
+        assert_eq!(value.to_string(), "1 foo.example.com. key667=hello\\210qoo");
+    }
+
+    #[test]
+    fn service_form_5() {
+        let buf = &[
+            0x00, 0x01, // priority
+            0x03, 0x66, 0x6f, 0x6f, 0x07, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x03, 0x63,
+            0x6f, 0x6d, 0x00, // target
+            0x00, 0x06, // key 6
+            0x00, 0x20, // length 0x32,
+            0x20, 0x01, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x01, // first address
+            0x20, 0x01, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x53,
+            0x00, 0x01, // second address
+        ];
+        let value = SVCB {
+            priority: 1,
+            target: Labels::encode("foo.example.com.").unwrap(),
+            parameters: Some(SvcParams {
+                ipv6hint: vec![
+                    "2001:db8::1".parse().unwrap(),
+                    "2001:db8::53:1".parse().unwrap(),
+                ],
+                ..Default::default()
+            }),
+        };
+        assert_eq!(
+            SVCB::read(buf.len() as u16, &mut Cursor::new(buf)).as_ref(),
+            Ok(&value)
+        );
+
+        // we avoid writing the quotes on values where possible, so this differs from the test
+        // vector (which is for a parser, not a formatter?)
+        assert_eq!(
+            value.to_string(),
+            "1 foo.example.com. ipv6hint=2001:db8::1,2001:db8::53:1"
+        );
+    }
+
+    #[test]
+    fn service_form_6() {
+        let buf = &[
+            0x00, 0x01, // priority
+            0x03, 0x66, 0x6f, 0x6f, 0x07, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x03, 0x63,
+            0x6f, 0x6d, 0x00, // target
+            0x00, 0x06, // key 6
+            0x00, 0x10, // length 0x32,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xc6, 0x33,
+            0x64, 0x64, // first address
+        ];
+        let value = SVCB {
+            priority: 1,
+            target: Labels::encode("foo.example.com.").unwrap(),
+            parameters: Some(SvcParams {
+                ipv6hint: vec!["::ffff:198.51.100.100".parse().unwrap()],
+                ..Default::default()
+            }),
+        };
+        assert_eq!(
+            SVCB::read(buf.len() as u16, &mut Cursor::new(buf)).as_ref(),
+            Ok(&value)
+        );
+
+        // we avoid writing the quotes on values where possible, so this differs from the test
+        // vector (which is for a parser, not a formatter?)
+        assert_eq!(
+            value.to_string(),
+            "1 foo.example.com. ipv6hint=::ffff:198.51.100.100"
+        );
+    }
+
+    #[test]
+    fn service_form_7() {
+        let buf = &[
+            0x00, 0x10, // priority
+            0x03, 0x66, 0x6f, 0x6f, 0x07, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x03, 0x6f,
+            0x72, 0x67, 0x00, // target
+            0x00, 0x00, // key 0
+            0x00, 0x04, // param length 4
+            0x00, 0x01, // value: key 1
+            0x00, 0x04, // value: key 4
+            0x00, 0x01, // key 1
+            0x00, 0x09, // param length 9
+            0x02, // alpn length 2
+            0x68, 0x32, // alpn value
+            0x05, // alpn length 5
+            0x68, 0x33, 0x2d, 0x31, 0x39, // alpn value
+            0x00, 0x04, // key 4
+            0x00, 0x04, // param length 4
+            0xc0, 0x00, 0x02, 0x01, // param value
+        ];
+        let value = SVCB {
+            priority: 16,
+            target: Labels::encode("foo.example.org.").unwrap(),
+            parameters: Some(SvcParams {
+                mandatory: vec![SvcParam::Alpn, SvcParam::Ipv4Hint],
+                alpn: Some(Alpn {
+                    alpn_ids: vec!["h2".into(), "h3-19".into()],
+                    no_default_alpn: false,
+                }),
+                ipv4hint: vec!["192.0.2.1".parse().unwrap()],
+                ..Default::default()
+            }),
+        };
+        assert_eq!(
+            SVCB::read(buf.len() as u16, &mut Cursor::new(buf)).as_ref(),
+            Ok(&value)
+        );
+
+        assert_eq!(
+            value.to_string(),
+            "16 foo.example.org. mandatory=alpn,ipv4hint alpn=h2,h3-19 ipv4hint=192.0.2.1"
+        );
+    }
+
+    #[test]
+    fn service_form_8() {
+        let buf = &[
+            0x00, 0x10, // priority
+            0x03, 0x66, 0x6f, 0x6f, 0x07, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x03, 0x6f,
+            0x72, 0x67, 0x00, // target
+            0x00, 0x01, // key 1
+            0x00, 0x0c, // param length 12,
+            0x08, // alpn length 8
+            0x66, 0x5c, 0x6f, 0x6f, 0x2c, 0x62, 0x61, 0x72, // alpn value
+            0x02, // alpn length 2
+            0x68, 0x32, // alpn value
+        ];
+        let value = SVCB {
+            priority: 16,
+            target: Labels::encode("foo.example.org.").unwrap(),
+            parameters: Some(SvcParams {
+                alpn: Some(Alpn {
+                    alpn_ids: vec!["f\\oo,bar".into(), "h2".into()],
+                    no_default_alpn: false,
+                }),
+                ..Default::default()
+            }),
+        };
+        assert_eq!(
+            SVCB::read(buf.len() as u16, &mut Cursor::new(buf)).as_ref(),
+            Ok(&value)
+        );
+
+        assert_eq!(
+            value.to_string(),
+            r#"16 foo.example.org. alpn=f\092oo\044bar,h2"#
+        );
+    }
+
+    #[test]
+    fn test_8_again() {
+        let result = Ok(ValueList {
+            values: vec![br#"f\oo,bar"#.to_vec(), b"h2".to_vec()],
+        });
+        let result_bin = Ok(ValueList {
+            values: vec![
+                [0x66, 0x5c, 0x6f, 0x6f, 0x2c, 0x62, 0x61, 0x72].to_vec(),
+                [0x68, 0x32].to_vec(),
+            ],
+        });
+        // result_bin is taken directly from the binary part of the test vector
+        assert_eq!(result, result_bin);
+
+        // I think the test vector's presentation formats include too many backslashes.
+        // At one point is has three backslashes, preceding a '0'. That can't be right.
+        assert_eq!(ValueList::parse(r#""f\\\\oo\\,bar,h2""#), result);
+        assert_eq!(ValueList::parse(r#"f\\\092oo\092,bar,h2"#), result);
+    }
+
+    // the failure case is not useful, because we don't parse the presentation format.
+}
+
+#[cfg(test)]
+mod test_ech {
+    #[test]
+    fn ech_param() {
+        let buf = &[
+            0x00, 0x01, // priority
+            0x00, // target
+            0x00, 0x05, // ech param
+            0x00, 0x24,
+        ];
     }
 }
