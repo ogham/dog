@@ -133,6 +133,8 @@ impl Table {
             Record::TLSA(_)        => self.colours.tlsa.paint("TLSA"),
             Record::TXT(_)         => self.colours.txt.paint("TXT"),
             Record::URI(_)         => self.colours.uri.paint("URI"),
+            Record::HTTPS(_)       => self.colours.svcb.paint("HTTPS"),
+            Record::SVCB(_)        => self.colours.svcb.paint("SVCB"),
 
             Record::Other { ref type_number, .. } => self.colours.unknown.paint(type_number.to_string()),
         }

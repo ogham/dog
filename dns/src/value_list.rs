@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use std::io::Cursor;
+use std::io::{Cursor, Read};
 
 /// Parameters to a SVCB/HTTPS record can be multi-valued.
 /// This is a fancy comma-separated list, where escaped commas \, and \044 do not separate
@@ -14,93 +14,124 @@ pub struct ValueList {
     values: Vec<Vec<u8>>,
 }
 
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
+pub struct SingleValue {
+    value: Vec<u8>,
+}
+
 impl ValueList {
+    /// New
     pub fn new() -> Self {
         Self { values: Vec::new() }
     }
 
-    /// for tests
-    pub fn encode(input: &str) -> Self {
-        todo!()
+    /// Parses a comma separated list with escaping as defined in Appendix A.1. This variant has
+    /// unlimited size for each value.
+    pub fn parse(input: &str) -> Result<Self, &str> {
+        value_list_decoding::parse(input.as_bytes())
+            .finish()
+            .map_err(|e| std::str::from_utf8(e.input).unwrap())
+            .and_then(|(remain, values)| {
+                if remain.is_empty() {
+                    Ok(ValueList { values })
+                } else {
+                    Err(std::str::from_utf8(remain).unwrap())
+                }
+            })
+    }
+
+    pub fn read_value_max(
+        stated_length: u16,
+        cursor: &mut Cursor<&[u8]>,
+        single_value_max: usize,
+    ) -> Result<Self, WireError> {
+        // These methods would be better with Cursor::remaining_slice if it were stable
+        let mut buf = vec![0u8; usize::from(stated_length)];
+        cursor.read_exact(&mut buf)?;
+        let values = value_list_decoding::parse(&buf).no_remaining()?;
+        if values.iter().any(|val| val.len() > single_value_max) {
+            return Err(WireError::IO);
+        } else {
+            Ok(Self { values })
+        }
+    }
+
+    pub fn read_unlimited(
+        stated_length: u16,
+        cursor: &mut Cursor<&[u8]>,
+    ) -> Result<Self, WireError> {
+        // These methods would be better with Cursor::remaining_slice if it were stable
+        let mut buf = vec![0u8; usize::from(stated_length)];
+        cursor.read_exact(&mut buf)?;
+        let values = value_list_decoding::parse(&buf).no_remaining()?;
+        Ok(Self { values })
     }
 }
 
-fn read_string(_list: &mut ValueList, _c: &mut Cursor<&[u8]>) {
-    todo!()
+impl SingleValue {
+    pub fn read(stated_length: u16, cursor: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
+        // These methods would be better with Cursor::remaining_slice if it were stable
+        let mut buf = vec![0u8; usize::from(stated_length)];
+        cursor.read_exact(&mut buf)?;
+        let value = char_string::parse(&buf).no_remaining()?;
+        Ok(Self { value })
+    }
 }
 
-use nom::Parser;
+trait NoRemaining<I: InputLength, O, E>: Finish<I, O, E> {
+    fn no_remaining(self) -> Result<O, WireError>;
+}
+
+impl<T, I: InputLength, O, E> NoRemaining<I, O, E> for T
+where
+    T: Finish<I, O, E>,
+{
+    fn no_remaining(self) -> Result<O, WireError> {
+        let (i, o) = self.finish().map_err(|_| WireError::IO)?;
+        if i.input_len() == 0 {
+            Ok(o)
+        } else {
+            Err(WireError::IO)
+        }
+    }
+}
+
 use nom::branch::alt;
+use nom::bytes::complete::{tag, take_while1};
 use nom::combinator::recognize;
 use nom::error::ParseError;
 use nom::sequence::preceded;
-use nom::IResult;
-use nom::bytes::complete::{tag, take_while1};
+use nom::{Finish, Parser};
+use nom::{IResult, InputLength};
 
-/// A parser as defined by Appendix A of the draft, which describes RFC 1035 § 5.1
-///
-/// Note: Appendix A says it's not limited to 255 characters
-pub fn parse_char_string(buf: &[u8]) -> IResult<&[u8], Vec<u8>> {
-    if buf.starts_with(b"\"") {
-        quoted(buf)
-    } else {
-        contiguous(buf)
-    }
-}
+use crate::WireError;
 
 #[cfg(test)]
 fn strings(x: IResult<&[u8], Vec<u8>>) -> IResult<&str, String> {
-    x
-        .map(|(remain, output)| {
-            (std::str::from_utf8(remain).unwrap(), String::from_utf8(output).unwrap())
+    x.map(|(remain, output)| {
+        (
+            std::str::from_utf8(remain).unwrap(),
+            String::from_utf8(output).unwrap(),
+        )
+    })
+    .map_err(|x| {
+        x.map(|y| {
+            <_ as ParseError<&str>>::from_error_kind(std::str::from_utf8(y.input).unwrap(), y.code)
         })
-        .map_err(|x| x.map(|y| <_ as ParseError<&str>>::from_error_kind(std::str::from_utf8(y.input).unwrap(), y.code)))
+    })
 }
 
-#[test]
-fn test_escaping() {
-    // let parse = |slice| strings(non_special(slice).map(|(a, b)| (a, Vec::from(b))));
-    let mini = |slice| char_escape(slice).map(|(a, b)| (std::str::from_utf8(a).unwrap(), char::from(b)));
-    assert_eq!(mini(b"\\044"), Ok(("", ',')));
-
-    let parse = |slice| strings(contiguous(slice));
-    assert!(parse(b"").is_err());
-    assert_eq!(parse(b"hello"), Ok(("", "hello".to_owned())));
-    assert_eq!(parse(b"hello\\044"), Ok(("", "hello,".to_owned())));
-    assert_eq!(parse(b"hello\\\\"), Ok(("", "hello\\".to_owned())));
-    assert_eq!(parse(b"hello\\\\\\\\"), Ok(("", "hello\\\\".to_owned())));
-    assert_eq!(parse(b"hello\\*"), Ok(("", "hello*".to_owned())));
-    assert_eq!(parse(b"\\,hello\\*"), Ok(("", ",hello*".to_owned())));
-    assert_eq!(parse(b"\\,hello\\*("), Ok(("(", ",hello*".to_owned())));
-    assert_eq!(parse(b"*;"), Ok((";", "*".to_owned())));
-    assert_eq!(parse(b"*\""), Ok(("\"", "*".to_owned())));
-    assert_eq!(parse(b"*\""), Ok(("\"", "*".to_owned())));
-}
-
-fn non_special(input: &[u8]) -> IResult<&[u8], &[u8]> {
-    fn is_non_special(c: u8) -> bool {
-        match c {
-            // 
-            //
-            //
-            //
-            //
-            //
-            //
-            // TODO: remove comma from this to make a value-list
-            //
-            //
-            //
-            //
-            //
-            //
-            //
-            // non-special. VCHAR minus DQUOTE, ";", "(", ")" and "\"
-            0x21 | 0x23..=0x27 | 0x2A..=0x3A | 0x3C..=0x5B | 0x5D..=0x7E => true,
-            _ => false,
-        }
+fn is_non_special(split_comma: bool) -> impl Fn(u8) -> bool {
+    move |c: u8| match c {
+        b',' if split_comma => false,
+        // non-special. VCHAR minus DQUOTE, ";", "(", ")" and "\"
+        0x21 | 0x23..=0x27 | 0x2A..=0x3A | 0x3C..=0x5B | 0x5D..=0x7E => true,
+        _ => false,
     }
-    recognize(take_while1(is_non_special))(input)
+}
+
+fn non_special(split_comma: bool) -> impl FnMut(&[u8]) -> IResult<&[u8], &[u8]> {
+    move |input| recognize(take_while1(is_non_special(split_comma)))(input)
 }
 
 fn char_escape(input: &[u8]) -> IResult<&[u8], u8> {
@@ -112,26 +143,45 @@ fn char_escape(input: &[u8]) -> IResult<&[u8], u8> {
             Ok((remain, byte))
         }
         // non-digit is VCHAR minus DIGIT
-        &[c @ (0x21..=0x2F | 0x3A..=0x7E), ref remain @ ..] => {
-            Ok((remain, c))
-        }
-        _ => Err(nom::Err::Error(nom::error::Error::from_error_kind(input, nom::error::ErrorKind::Escaped))),
+        &[c @ (0x21..=0x2F | 0x3A..=0x7E), ref remain @ ..] => Ok((remain, c)),
+        _ => Err(nom::Err::Error(nom::error::Error::from_error_kind(
+            input,
+            nom::error::ErrorKind::Escaped,
+        ))),
     }
 }
 
 fn dec_octet(buf: &[u8], zero_one_or_two: u8) -> IResult<&[u8], u8> {
     let (hundreds, tens, ones, rest) = match zero_one_or_two {
         hundreds @ (0 | 1) => match buf {
-            [tens @ b'0'..=b'9', ones @ b'0'..=b'9', rest @ ..] => (hundreds, tens - b'0', ones - b'0', rest),
-            _ => return Err(nom::Err::Error(nom::error::Error::from_error_kind(buf, nom::error::ErrorKind::Escaped))),
-        },
-        hundreds @ 2 => match buf {
-            [tens @ b'0'..=b'4', ones @ b'0'..=b'9', rest @ ..] | [tens @ b'5', ones @ b'0'..=b'5', rest @ ..] => {
+            [tens @ b'0'..=b'9', ones @ b'0'..=b'9', rest @ ..] => {
                 (hundreds, tens - b'0', ones - b'0', rest)
             }
-            _ => return Err(nom::Err::Error(nom::error::Error::from_error_kind(buf, nom::error::ErrorKind::Escaped))),
+            _ => {
+                return Err(nom::Err::Error(nom::error::Error::from_error_kind(
+                    buf,
+                    nom::error::ErrorKind::Escaped,
+                )))
+            }
         },
-        _ => return Err(nom::Err::Error(nom::error::Error::from_error_kind(buf, nom::error::ErrorKind::Escaped))),
+        hundreds @ 2 => match buf {
+            [tens @ b'0'..=b'4', ones @ b'0'..=b'9', rest @ ..]
+            | [tens @ b'5', ones @ b'0'..=b'5', rest @ ..] => {
+                (hundreds, tens - b'0', ones - b'0', rest)
+            }
+            _ => {
+                return Err(nom::Err::Error(nom::error::Error::from_error_kind(
+                    buf,
+                    nom::error::ErrorKind::Escaped,
+                )))
+            }
+        },
+        _ => {
+            return Err(nom::Err::Error(nom::error::Error::from_error_kind(
+                buf,
+                nom::error::ErrorKind::Escaped,
+            )))
+        }
     };
     let byte = hundreds * 100 + tens * 10 + ones;
     Ok((rest, byte))
@@ -140,7 +190,7 @@ fn dec_octet(buf: &[u8], zero_one_or_two: u8) -> IResult<&[u8], u8> {
 #[derive(Debug)]
 enum EscChunk<'a> {
     Slice(&'a [u8]),
-    Byte(u8)
+    Byte(u8),
 }
 
 fn chunk_1<'a, F, E>(mut inner: F) -> impl Parser<&'a [u8], Vec<u8>, E>
@@ -165,24 +215,155 @@ where
         if success {
             Ok((remain, output))
         } else {
-            Err(nom::Err::Error(E::from_error_kind(input, nom::error::ErrorKind::Eof)))
+            Err(nom::Err::Error(E::from_error_kind(
+                input,
+                nom::error::ErrorKind::Eof,
+            )))
         }
     }
 }
 
-fn contiguous_chunk(input: &[u8]) -> IResult<&[u8], EscChunk<'_>> {
-    alt((non_special.map(EscChunk::Slice), char_escape.map(EscChunk::Byte)))(input)
+mod char_string {
+    use super::*;
+    fn contiguous_chunk(input: &[u8]) -> IResult<&[u8], EscChunk<'_>> {
+        alt((
+            non_special(false).map(EscChunk::Slice),
+            char_escape.map(EscChunk::Byte),
+        ))(input)
+    }
+
+    fn contiguous(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
+        chunk_1(contiguous_chunk).parse(input)
+    }
+
+    fn quoted(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
+        let wsc = take_while1(|b| b == b' ' || b == b'\t');
+        let wsc2 = take_while1(|b| b == b' ' || b == b'\t');
+        let wsc_chunk = alt((wsc, preceded(tag(b"\\"), wsc2))).map(EscChunk::Slice);
+        let parser = chunk_1(alt((contiguous_chunk, wsc_chunk)));
+        let mut parser = nom::sequence::delimited(tag(b"\""), parser, tag(b"\""));
+        parser.parse(input)
+    }
+
+    /// A parser as defined by Appendix A of the draft, which describes RFC 1035 § 5.1
+    ///
+    /// Note: Appendix A says it's not limited to 255 characters
+    pub fn parse(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
+        quoted.or(contiguous).parse(input)
+    }
+
+    #[test]
+    fn test_escaping() {
+        // let parse = |slice| strings(non_special(slice).map(|(a, b)| (a, Vec::from(b))));
+        let mini = |slice| {
+            char_escape(slice).map(|(a, b)| (std::str::from_utf8(a).unwrap(), char::from(b)))
+        };
+        assert_eq!(mini(b"\\044"), Ok(("", ',')));
+        let parse = |slice| strings(contiguous(slice));
+        assert!(parse(b"").is_err());
+        assert_eq!(parse(b"hello"), Ok(("", "hello".to_owned())));
+        assert_eq!(parse(b"hello\\044"), Ok(("", "hello,".to_owned())));
+        assert_eq!(parse(b"hello\\\\"), Ok(("", "hello\\".to_owned())));
+        assert_eq!(parse(b"hello\\\\\\\\"), Ok(("", "hello\\\\".to_owned())));
+        assert_eq!(parse(b"hello\\*"), Ok(("", "hello*".to_owned())));
+        assert_eq!(parse(b"\\,hello\\*"), Ok(("", ",hello*".to_owned())));
+        assert_eq!(parse(b"\\,hello\\*("), Ok(("(", ",hello*".to_owned())));
+        assert_eq!(parse(b"*;"), Ok((";", "*".to_owned())));
+        assert_eq!(parse(b"*\""), Ok(("\"", "*".to_owned())));
+        assert_eq!(parse(b"*\""), Ok(("\"", "*".to_owned())));
+    }
 }
 
-fn contiguous(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
-    chunk_1(contiguous_chunk).parse(input)
-}
+mod value_list_decoding {
+    use super::*;
 
-fn quoted(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
-    let wsc = take_while1(|b| b == b' ' || b == b'\t');
-    let wsc2 = take_while1(|b| b == b' ' || b == b'\t');
-    let wsc_chunk = alt((wsc, preceded(tag(b"\\"), wsc2))).map(EscChunk::Slice);
-    let parser = chunk_1(alt((contiguous_chunk, wsc_chunk)));
-    let mut parser = nom::sequence::delimited(tag(b"\""), parser, tag(b"\""));
-    parser.parse(input)
+    fn contiguous_chunk(input: &[u8]) -> IResult<&[u8], EscChunk<'_>> {
+        alt((
+            non_special(true).map(EscChunk::Slice),
+            char_escape.map(EscChunk::Byte),
+        ))(input)
+    }
+
+    fn value_within_contiguous(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
+        chunk_1(contiguous_chunk).parse(input)
+    }
+
+    fn values_contiguous(input: &[u8]) -> IResult<&[u8], Vec<Vec<u8>>> {
+        nom::multi::separated_list1(tag(b","), value_within_contiguous).parse(input)
+    }
+
+    fn value_within_quotes(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
+        let wsc = take_while1(|b| b == b' ' || b == b'\t');
+        let wsc2 = take_while1(|b| b == b' ' || b == b'\t');
+        let wsc_chunk = alt((wsc, preceded(tag(b"\\"), wsc2))).map(EscChunk::Slice);
+        let mut parser = chunk_1(alt((contiguous_chunk, wsc_chunk)));
+        parser.parse(input)
+    }
+
+    fn values_quoted(input: &[u8]) -> IResult<&[u8], Vec<Vec<u8>>> {
+        let values = nom::multi::separated_list1(tag(b","), value_within_quotes);
+        let mut parser = nom::sequence::delimited(tag(b"\""), values, tag(b"\""));
+        parser.parse(input)
+    }
+
+    pub fn parse(input: &[u8]) -> IResult<&[u8], Vec<Vec<u8>>> {
+        values_quoted.or(values_contiguous).parse(input)
+    }
+
+    #[cfg(test)]
+    fn strings(x: IResult<&[u8], Vec<Vec<u8>>>) -> IResult<&str, Vec<String>> {
+        x.map(|(remain, output)| {
+            (
+                std::str::from_utf8(remain).unwrap(),
+                output
+                    .into_iter()
+                    .map(String::from_utf8)
+                    .map(Result::unwrap)
+                    .collect(),
+            )
+        })
+        .map_err(|x| {
+            x.map(|y| {
+                <_ as ParseError<&str>>::from_error_kind(
+                    std::str::from_utf8(y.input).unwrap(),
+                    y.code,
+                )
+            })
+        })
+    }
+
+    #[test]
+    fn test_escaping() {
+        // let parse = |slice| strings(non_special(slice).map(|(a, b)| (a, Vec::from(b))));
+        let mini = |slice| {
+            char_escape(slice).map(|(a, b)| (std::str::from_utf8(a).unwrap(), char::from(b)))
+        };
+        assert_eq!(mini(b"\\044"), Ok(("", ',')));
+
+        let parse = |slice| strings(values_contiguous(slice));
+        assert!(parse(b"").is_err());
+        assert_eq!(parse(b"hello"), Ok(("", vec!["hello".to_owned()])));
+        assert_eq!(parse(b"hello\\044"), Ok(("", vec!["hello,".to_owned()])));
+        assert_eq!(
+            parse(b"hello\\\\\\044"),
+            Ok(("", vec!["hello\\,".to_owned()]))
+        );
+        assert_eq!(
+            parse(b"hello,\\\\\\044"),
+            Ok(("", vec!["hello".to_owned(), "\\,".to_owned()]))
+        );
+        assert_eq!(
+            parse(b"hello\\\\\\\\,"),
+            Ok((",", vec!["hello\\\\".to_owned()]))
+        );
+        assert_eq!(parse(b"hello\\*"), Ok(("", vec!["hello*".to_owned()])));
+        assert_eq!(parse(b"\\,hello\\*"), Ok(("", vec![",hello*".to_owned()])));
+        assert_eq!(
+            parse(b"\\,hello\\*("),
+            Ok(("(", vec![",hello*".to_owned()]))
+        );
+        assert_eq!(parse(b"*;"), Ok((";", vec!["*".to_owned()])));
+        assert_eq!(parse(b"*\""), Ok(("\"", vec!["*".to_owned()])));
+        assert_eq!(parse(b"*\""), Ok(("\"", vec!["*".to_owned()])));
+    }
 }

@@ -285,6 +285,12 @@ impl TextFormat {
             Record::Other { bytes, .. } => {
                 format!("{:?}", bytes)
             }
+            Record::HTTPS(https) => {
+                format!("{:?}", https)
+            }
+            Record::SVCB(svcb) => {
+                format!("{:?}", svcb)
+            }
         }
     }
 
@@ -400,6 +406,7 @@ fn json_record_type_name(record: RecordType) -> JsonValue {
         RecordType::EUI48       => "EUI48".into(),
         RecordType::EUI64       => "EUI64".into(),
         RecordType::HINFO       => "HINFO".into(),
+        RecordType::HTTPS       => "HTTPS".into(),
         RecordType::LOC         => "LOC".into(),
         RecordType::MX          => "MX".into(),
         RecordType::NAPTR       => "NAPTR".into(),
@@ -409,6 +416,7 @@ fn json_record_type_name(record: RecordType) -> JsonValue {
         RecordType::SOA         => "SOA".into(),
         RecordType::SRV         => "SRV".into(),
         RecordType::SSHFP       => "SSHFP".into(),
+        RecordType::SVCB        => "SVCB".into(),
         RecordType::TLSA        => "TLSA".into(),
         RecordType::TXT         => "TXT".into(),
         RecordType::URI         => "URI".into(),
@@ -431,6 +439,7 @@ fn json_record_name(record: &Record) -> JsonValue {
         Record::EUI48(_)       => "EUI48".into(),
         Record::EUI64(_)       => "EUI64".into(),
         Record::HINFO(_)       => "HINFO".into(),
+        Record::HTTPS(_)       => "HTTPS".into(),
         Record::LOC(_)         => "LOC".into(),
         Record::MX(_)          => "MX".into(),
         Record::NAPTR(_)       => "NAPTR".into(),
@@ -440,6 +449,7 @@ fn json_record_name(record: &Record) -> JsonValue {
         Record::SOA(_)         => "SOA".into(),
         Record::SRV(_)         => "SRV".into(),
         Record::SSHFP(_)       => "SSHFP".into(),
+        Record::SVCB(_)        => "SVCB".into(),
         Record::TLSA(_)        => "TLSA".into(),
         Record::TXT(_)         => "TXT".into(),
         Record::URI(_)         => "URI".into(),
@@ -589,6 +599,8 @@ fn json_record_data(record: Record) -> JsonValue {
                 "bytes": bytes,
             }
         }
+        Record::HTTPS(_https) => todo!(),
+        Record::SVCB(_svcb) => todo!(),
     }
 }
 
