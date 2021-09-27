@@ -7,20 +7,23 @@ use std::{
 };
 
 use byteorder::{BigEndian, ReadBytesExt};
+use serde::{Deserialize, Serialize};
 
 #[macro_use]
 mod macros;
 mod cursor_ext;
+mod serde_with_base64;
 
 use cursor_ext::{CursorExt, Opaque, ReadFromCursor};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(transparent)]
 pub struct ECHConfigList {
     configs: Vec<ECHConfig>,
 }
 
 impl ECHConfigList {
-    fn from_base64(base: &str) -> io::Result<Self> {
+    pub fn from_base64(base: &str) -> io::Result<Self> {
         let buffer = base64::decode_config(base, base64::STANDARD)
             .map_err(|de| io::Error::new(io::ErrorKind::Other, format!("{}", de)))?;
         log::trace!("{:?}", buffer);
@@ -69,48 +72,73 @@ impl ReadFromCursor for ECHConfig {
         log::trace!("ECHConfig version = 0x{:04x}", version);
         let length = cursor.read_u16::<BigEndian>()?;
         log::trace!("ECHConfig length  = {}", length);
-        match version {
-            0xfe0d => cursor.with_truncated(u64::from(length), |cursor, _len_hint| {
-                let key_config = tls13::HpkeKeyConfig::read_from(cursor)?;
-                log::trace!("key_config = {:?}", key_config);
-                let maximum_name_length = cursor.read_u8()?;
-                log::trace!("maximum_name_length = {}", maximum_name_length);
-                let public_name = PublicName::read_from(cursor)?;
+        let contents = match version {
+            0xfe0d => cursor.with_truncated(
+                u64::from(length),
+                |cursor, _len_hint| -> io::Result<ECHConfigContents> {
+                    let key_config = tls13::HpkeKeyConfig::read_from(cursor)?;
+                    log::trace!("key_config = {:?}", key_config);
+                    let maximum_name_length = cursor.read_u8()?;
+                    log::trace!("maximum_name_length = {}", maximum_name_length);
+                    let public_name = PublicName::read_from(cursor)?;
 
-                let mut extensions = Vec::new();
+                    let mut extensions = Vec::new();
 
-                let extensions_len = cursor.read_u16::<BigEndian>()?;
-                log::trace!("extensions: len = {}", extensions_len);
-                cursor.with_truncated(extensions_len as u64, |cursor, _| -> io::Result<()> {
-                    while cursor.std_remaining_slice().len() > 0 {
-                        let ext = tls13::Extension::read_from(cursor)?;
-                        extensions.push(ext);
-                    }
-                    Ok(())
-                })?;
+                    let extensions_len = cursor.read_u16::<BigEndian>()?;
+                    log::trace!("extensions: len = {}", extensions_len);
+                    cursor.with_truncated(
+                        extensions_len as u64,
+                        |cursor, _| -> io::Result<()> {
+                            while cursor.std_remaining_slice().len() > 0 {
+                                let ext = tls13::Extension::read_from(cursor)?;
+                                extensions.push(ext);
+                            }
+                            Ok(())
+                        },
+                    )?;
 
-                Ok(Self::EchConfigContents {
-                    key_config,
-                    maximum_name_length,
-                    public_name,
-                    extensions,
-                })
-            }),
+                    Ok(ECHConfigContents::Version0xfe0d {
+                        key_config,
+                        maximum_name_length,
+                        public_name,
+                        extensions,
+                    })
+                },
+            )?,
             _ => {
                 let opq = Opaque::read_known_len(cursor, length)?;
-                Ok(ECHConfig::UnknownECHVersion(version, opq))
+                ECHConfigContents::UnknownECHVersion(opq)
             }
-        }
+        };
+        Ok(Self { version, contents })
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Deserialize, Serialize)]
 pub struct PublicName(pub Vec<u8>);
 
 impl fmt::Debug for PublicName {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let bytes = &self.0[..];
-        f.write_str(&String::from_utf8_lossy(bytes))
+        String::from_utf8_lossy(bytes).fmt(f)
+    }
+}
+
+impl fmt::Display for PublicName {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let bytes = &self.0[..];
+        String::from_utf8_lossy(bytes).fmt(f)
+    }
+}
+
+impl std::str::FromStr for PublicName {
+    type Err = &'static str;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if (1..=254).contains(&s.len()) {
+            Ok(Self(s.as_bytes().to_vec()))
+        } else {
+            Err("string length not in range 1..=254")
+        }
     }
 }
 
@@ -131,13 +159,21 @@ impl ReadFromCursor for PublicName {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum ECHConfig {
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct ECHConfig {
+    pub version: u16,
+    pub contents: ECHConfigContents,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum ECHConfigContents {
     // if version == 0xfe0d
-    EchConfigContents {
+    Version0xfe0d {
         key_config: tls13::HpkeKeyConfig,
         maximum_name_length: u8,
         // min len 1, max len 255
+        #[serde(with = "serde_with::rust::display_fromstr")]
         public_name: PublicName,
 
         // any length up to 65535
@@ -154,10 +190,10 @@ pub enum ECHConfig {
         // > present, clients MUST ignore the "ECHConfig".
         extensions: Vec<tls13::Extension>,
     },
-    UnknownECHVersion(u16, Opaque<0, { u16::MAX }>),
+    UnknownECHVersion(Opaque<0, { u16::MAX }>),
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub enum EncryptedClientHello {
     Outer {
         cipher_suite: tls13::HpkeSymmetricCipherSuite,
@@ -169,6 +205,7 @@ pub enum EncryptedClientHello {
 }
 
 u16_enum! {
+    #[derive(Deserialize, Serialize)]
     pub enum ECHClientHelloType {
         Outer = 0,
         Inner = 1,
@@ -190,7 +227,7 @@ impl ReadFromCursor for EncryptedClientHello {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct EchOuterExtensions {
     outer: Vec<tls13::ExtensionType>,
 }
@@ -198,6 +235,7 @@ pub struct EchOuterExtensions {
 pub mod tls13 {
     use crate::cursor_ext::{Ascii, CursorExt, Opaque, ReadFromCursor};
     use byteorder::{BigEndian, ReadBytesExt};
+    use serde::{Deserialize, Serialize};
     use std::io;
 
     // mandatory-to-implement extensions from RFC8446
@@ -210,7 +248,7 @@ pub mod tls13 {
     // -  Key Share ("key_share"; Section 4.2.8)
     // -  Server Name Indication ("server_name"; Section 3 of [RFC6066])
     //
-    #[derive(Debug, Clone, PartialEq)]
+    #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
     pub enum Extension {
         /// `encrypted_client_hello`
         EncryptedClientHello(super::EncryptedClientHello),
@@ -261,7 +299,7 @@ pub mod tls13 {
         }
     }
 
-    #[derive(Debug, Clone, PartialEq)]
+    #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
     pub struct UnknownExtension(Opaque<0, { u16::MAX }>);
 
     impl UnknownExtension {
@@ -271,7 +309,7 @@ pub mod tls13 {
         }
     }
 
-    #[derive(Debug, Clone, PartialEq)]
+    #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
     pub enum ServerName {
         // name type 0x0000
         HostName(HostName),
@@ -286,6 +324,7 @@ pub mod tls13 {
         /// Draft RFC <https://www.ietf.org/archive/id/draft-irtf-cfrg-hpke-11.txt>
         /// 7.1.  Key Encapsulation Mechanisms (KEMs)
         #[allow(non_camel_case_types)]
+        #[derive(Deserialize, Serialize)]
         pub enum HpkeKemId {
             Reserved = 0x0000,
             DHKEM_P256_HKDF_SHA256 = 0x0010,
@@ -301,6 +340,7 @@ pub mod tls13 {
         /// Draft RFC <https://www.ietf.org/archive/id/draft-irtf-cfrg-hpke-11.txt>
         /// 7.2.  Key Derivation Functions (KDFs)
         #[allow(non_camel_case_types)]
+        #[derive(Deserialize, Serialize)]
         pub enum HpkeKdfId {
             Reserved = 0,
             HKDF_SHA256 = 1,
@@ -314,6 +354,7 @@ pub mod tls13 {
         /// Draft RFC <https://www.ietf.org/archive/id/draft-irtf-cfrg-hpke-11.txt>
         /// 7.3.  Authenticated Encryption with Associated Data (AEAD) Functions
         #[allow(non_camel_case_types)]
+        #[derive(Deserialize, Serialize)]
         pub enum HpkeAeadId {
             Reserved = 0,
             AES_128_GCM = 1,
@@ -324,7 +365,7 @@ pub mod tls13 {
         }
     }
 
-    #[derive(Debug, Clone, PartialEq)]
+    #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
     pub struct HpkeSymmetricCipherSuite {
         pub kdf_id: HpkeKdfId,
         pub aead_id: HpkeAeadId,
@@ -339,7 +380,7 @@ pub mod tls13 {
         }
     }
 
-    #[derive(Debug, Clone, PartialEq)]
+    #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
     pub struct HpkeKeyConfig {
         pub config_id: u8,
         pub kem_id: HpkeKemId,
@@ -383,7 +424,7 @@ pub mod tls13 {
     // opaque!(pub struct HpkePublicKey<1, {u16::MAX}>);
     pub type HpkePublicKey = Opaque<1, { u16::MAX }>;
 
-    #[derive(Debug, Clone, PartialEq)]
+    #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
     pub struct SupportedVersions {
         // min length 2 (otherwise implied by TLS version field), max length 254
         // len is a u8 i suppose?
@@ -391,6 +432,7 @@ pub mod tls13 {
     }
 
     u16_enum! {
+        #[derive(Deserialize, Serialize)]
         pub enum TlsVersion {
             Ssl3_0 = 0x300,
             Tls1_0 = 0x301,
@@ -404,6 +446,7 @@ pub mod tls13 {
     // opaque!(pub struct Cookie);
 
     u16_enum! {
+        #[derive(Deserialize, Serialize)]
         pub enum ExtensionType {
             ServerName = 0,                           /* RFC 6066 */
             MaxFragmentLength = 1,                    /* RFC 6066 */
@@ -464,19 +507,22 @@ mod test {
             0, 0, // extensions len
         ];
         let expected = ECHConfigList {
-            configs: vec![ECHConfig::EchConfigContents {
-                key_config: HpkeKeyConfig {
-                    config_id: 63,
-                    kem_id: HpkeKemId::DHKEM_X25519_HKDF_SHA512,
-                    cipher_suites: vec![HpkeSymmetricCipherSuite {
-                        kdf_id: HpkeKdfId::HKDF_SHA256,
-                        aead_id: HpkeAeadId::AES_128_GCM,
-                    }],
-                    public_key: public_key.to_vec().try_into().unwrap(),
+            configs: vec![ECHConfig {
+                version: 0xfe0d,
+                contents: ECHConfigContents::Version0xfe0d {
+                    key_config: HpkeKeyConfig {
+                        config_id: 63,
+                        kem_id: HpkeKemId::DHKEM_X25519_HKDF_SHA512,
+                        cipher_suites: vec![HpkeSymmetricCipherSuite {
+                            kdf_id: HpkeKdfId::HKDF_SHA256,
+                            aead_id: HpkeAeadId::AES_128_GCM,
+                        }],
+                        public_key: public_key.to_vec().try_into().unwrap(),
+                    },
+                    maximum_name_length: 0,
+                    public_name: PublicName(b"cloudflare-esni.com".to_vec()),
+                    extensions: vec![],
                 },
-                maximum_name_length: 0,
-                public_name: PublicName(b"cloudflare-esni.com".to_vec()),
-                extensions: vec![],
             }],
         };
 
@@ -497,6 +543,7 @@ mod test {
             Ok(&expected),
         );
     }
+
 }
 
 #[cfg(test)]

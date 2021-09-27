@@ -1,4 +1,5 @@
 use byteorder::{BigEndian, ReadBytesExt};
+use serde::{Serialize, Deserialize};
 use std::convert::TryFrom;
 use std::fmt;
 use std::io::{self, Cursor, Read, Seek, SeekFrom};
@@ -53,8 +54,11 @@ impl<const MIN: u16, const MAX: u16> TryFrom<Vec<u8>> for Opaque<MIN, MAX> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct Opaque<const MIN: u16, const MAX: u16>(pub Vec<u8>);
+#[serde_with::serde_as]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Opaque<const MIN: u16, const MAX: u16>(
+    #[serde_as(as = "crate::serde_with_base64::Base64")] pub Vec<u8>,
+);
 
 impl<const MIN: u16, const MAX: u16> Opaque<MIN, MAX> {
     pub(crate) fn read_known_len(cursor: &mut Cursor<&[u8]>, len: u16) -> io::Result<Self> {
@@ -92,7 +96,7 @@ impl<const MIN: u16, const MAX: u16> ReadFromCursor for Opaque<MIN, MAX> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Ascii(pub Vec<u8>);
 
 impl From<Vec<u8>> for Ascii {
