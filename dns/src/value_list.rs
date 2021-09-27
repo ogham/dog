@@ -35,17 +35,37 @@ pub struct SingleValue {
     pub value: Vec<u8>,
 }
 
-fn wrap_iresult_complete<T>(result: IResult<&[u8], T>) -> Result<T, String> {
+fn wrap_iresult_complete<T>(result: IResult<&[u8], T>) -> Result<T, DecodingError> {
     result
         .finish()
-        .map_err(|e| String::from_utf8_lossy(e.input).into_owned())
+        .map_err(|e| DecodingError::new(e.input))
         .and_then(|(remain, t)| {
             if remain.is_empty() {
                 Ok(t)
             } else {
-                Err(String::from_utf8_lossy(remain).into_owned())
+                Err(DecodingError::new(remain))
             }
         })
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct DecodingError {
+    input: Vec<u8>,
+}
+
+impl DecodingError {
+    fn new(input: &[u8]) -> Self {
+        Self {
+            input: input.to_vec(),
+        }
+    }
+}
+
+impl std::error::Error for DecodingError {}
+impl fmt::Display for DecodingError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "error decoding, occurred at: {:x?}", self.input)
+    }
 }
 
 impl ValueList {
@@ -56,11 +76,7 @@ impl ValueList {
 
     /// Parses a comma separated list with escaping as defined in Appendix A.1. This variant has
     /// unlimited size for each value.
-    pub fn parse(input: impl AsRef<[u8]>) -> Result<Self, String> {
-        Self::parse_inner(input.as_ref())
-    }
-
-    fn parse_inner(input: &[u8]) -> Result<Self, String> {
+    pub fn parse(input: &[u8]) -> Result<Self, DecodingError> {
         let cow = wrap_iresult_complete(char_string_decoding::parse(input.as_ref()))?;
         let val = wrap_iresult_complete(value_list_decoding::parse(&cow))?;
         Ok(ValueList { values: val })
@@ -68,10 +84,8 @@ impl ValueList {
 }
 
 impl SingleValue {
-    pub fn parse(input: impl AsRef<[u8]>) -> Result<Self, String> {
-        Self::parse_inner(input.as_ref())
-    }
-    fn parse_inner(input: &[u8]) -> Result<Self, String> {
+    /// Parse with char-string decoding
+    pub fn parse(input: &[u8]) -> Result<Self, DecodingError> {
         let value = wrap_iresult_complete(char_string_decoding::parse(&input))?;
         Ok(Self {
             value: value.into_owned(),
@@ -118,25 +132,32 @@ fn strings(x: IResult<&[u8], Vec<u8>>) -> IResult<&str, String> {
     })
 }
 
-pub mod escaping {
+pub mod encoding {
     use super::*;
 
+    pub use super::DecodingError;
+    pub use super::SingleValue;
+    pub use super::ValueList;
+
+    /// Iterates a parser over an input. Expects it does not fail or return Incomplete. It stops
+    /// parsing when the parser returns nom::Err::Error (which should occur at Eof).
     fn iter_parser<I: Copy, O, E>(
         input: I,
         mut parser: impl Parser<I, O, E> + Clone,
-    ) -> impl Iterator<Item = Result<O, fmt::Error>> + Clone {
+    ) -> impl Iterator<Item = O> + Clone {
         let mut remain = input;
         core::iter::from_fn(move || match parser.parse(remain) {
             Ok((rest, chunk)) => {
                 remain = rest;
-                Some(Ok(chunk))
+                Some(chunk)
             }
             Err(nom::Err::Error(..)) => None,
-            Err(nom::Err::Failure(..)) => Some(Err(fmt::Error)),
-            Err(nom::Err::Incomplete(..)) => Some(Err(fmt::Error)),
+            Err(nom::Err::Failure(..)) => panic!("iter_parser encountered nom::Err::Failure"),
+            Err(nom::Err::Incomplete(..)) => panic!("iter_parser encountered nom::Err::Incomplete"),
         })
     }
 
+    /// Pops a single byte off the front of the input
     fn single_byte(input: &[u8]) -> IResult<&[u8], u8> {
         let (byte, remain) = input.split_first().ok_or_else(|| {
             nom::Err::Error(ParseError::from_error_kind(
@@ -170,9 +191,7 @@ pub mod escaping {
                 .parse(remain)
         }
 
-        pub(super) fn emit_chunks(
-            input: &[u8],
-        ) -> impl Iterator<Item = Result<EncodingChunk<'_>, fmt::Error>> + Clone {
+        pub(super) fn emit_chunks(input: &[u8]) -> impl Iterator<Item = EncodingChunk<'_>> + Clone {
             iter_parser(input, chunk)
         }
     }
@@ -190,18 +209,16 @@ pub mod escaping {
                 .parse(remain)
         }
 
-        pub(super) fn emit_chunks(
-            input: &[u8],
-        ) -> impl Iterator<Item = Result<EncodingChunk<'_>, fmt::Error>> + Clone {
+        pub(super) fn emit_chunks(input: &[u8]) -> impl Iterator<Item = EncodingChunk<'_>> + Clone {
             iter_parser(input, chunk)
         }
     }
 
     fn format_iter<'a, I>(iter: I) -> impl fmt::Display + 'a
     where
-        I: Iterator<Item = Result<EncodingChunk<'a>, fmt::Error>> + Clone + 'a,
+        I: Iterator<Item = EncodingChunk<'a>> + Clone + 'a,
     {
-        display_utils::join_format(iter, "", |chunk, f| match chunk? {
+        display_utils::join_format(iter, "", |chunk, f| match chunk {
             EncodingChunk::Slice(slice) => {
                 // Technically we know this is printable ASCII. is that utf8?
                 let string = std::str::from_utf8(slice).map_err(|e| {
@@ -239,6 +256,8 @@ pub mod escaping {
         assert_eq!(EscapeCharString(br"\").to_string(), r"\\");
     }
 
+    /// Takes an iterator of `&[u8]` and implements Display, writing in value-list (escaped
+    /// comma-separated) encoding for presentation of lists of strings.
     pub struct EscapeValueList<'a, I: IntoIterator<Item = &'a [u8]> + Clone>(pub I);
 
     impl<'a, I> fmt::Display for EscapeValueList<'a, I>
@@ -248,54 +267,21 @@ pub mod escaping {
     {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             let values = self.0.clone().into_iter();
-            // a temporary buffer to do EscapeCharString on.
-            let mut buf = Vec::<u8>::new();
-            for value in values {
+            let chunk_iter = values.map(|value| {
                 let chunks = value_list::emit_chunks(value);
-                for encoding_chunk in chunks {
-                    match encoding_chunk? {
-                        EncodingChunk::Slice(slice) => buf.extend_from_slice(slice),
-                        EncodingChunk::Escape(str) => buf.extend_from_slice(str.as_bytes()),
-                        // doesn't happen
-                        EncodingChunk::Byte(byte) => buf.push(byte),
-                    }
-                }
-                buf.push(b',');
-            }
-            buf.pop();
-            EscapeCharString(buf).fmt(f)
+                let char_escaped_chunks = chunks
+                    .map(|encoding_chunk| match encoding_chunk {
+                        EncodingChunk::Slice(slice) => slice,
+                        EncodingChunk::Escape(str) => str.as_bytes(),
+                        EncodingChunk::Byte(_byte) => unreachable!(
+                            "encountered EncodingChunk::Byte, not used in value_list::emit_chunks"
+                        ),
+                    })
+                    .map(EscapeCharString);
+                display_utils::concat(char_escaped_chunks)
+            });
+            display_utils::join(chunk_iter, ",").fmt(f)
         }
-    }
-
-    fn escape_char_string(string: &[u8], f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let chunks = char_string::emit_chunks(string);
-        let iter = format_iter(chunks);
-        if string.contains(&b' ') {
-            write!(f, "\"{}\"", iter)
-        } else {
-            iter.fmt(f)
-        }
-    }
-
-    fn escape_values_join<'a>(
-        values: impl Iterator<Item = &'a [u8]> + Clone + 'a,
-    ) -> Result<Vec<u8>, fmt::Error> {
-        // for each value, encode `\`  as `\\` and `,` as `\,`, and join all together with `,`
-        let mut vec = Vec::new();
-        for value in values {
-            let chunks = value_list::emit_chunks(value);
-            for encoding_chunk in chunks {
-                match encoding_chunk? {
-                    EncodingChunk::Slice(slice) => vec.extend_from_slice(slice),
-                    EncodingChunk::Escape(str) => vec.extend_from_slice(str.as_bytes()),
-                    // doesn't happen
-                    EncodingChunk::Byte(byte) => vec.push(byte),
-                }
-            }
-            vec.push(b',');
-        }
-        vec.pop();
-        Ok(vec)
     }
 
     impl fmt::Display for ValueList {
@@ -545,38 +531,47 @@ mod value_list_decoding {
     }
 
     #[test]
-    fn test_escaping() {
-        let parse = |slice: &[u8]| ValueList::parse(slice);
-        assert!(parse(b"").is_err());
+    fn test_parsing() {
+        // value lists must be non-empty
+        assert!(ValueList::parse(b"").is_err());
         assert_eq!(
-            parse(br"hello"),
-            Ok([b"hello"].iter().map(|x| x.to_vec()).collect())
+            ValueList::parse(br"hello"),
+            Ok(vec![b"hello".to_vec()].into())
         );
         assert_eq!(
-            parse(br"hello\044hello"),
-            Ok(vec![br"hello".to_vec(), br"hello".to_vec()].into())
+            ValueList::parse(br"hello\044hello"),
+            Ok(vec![b"hello".to_vec(), b"hello".to_vec()].into())
         );
         assert_eq!(
-            parse(br"hello\\\044hello"),
+            ValueList::parse(br"hello\\\044hello"),
             Ok(vec![br"hello,hello".to_vec()].into())
         );
         assert_eq!(
-            parse(br"hello\\\\044"),
+            ValueList::parse(br"hello\\\\044"),
             Ok(vec![br"hello\044".to_vec()].into())
         );
         assert_eq!(
-            parse(br"hello,\\\044"),
+            ValueList::parse(br"hello,\\\044"),
             Ok(vec![br"hello".to_vec(), br",".to_vec()].into())
         );
-        assert_eq!(parse(br"hello\\\\,"), Err(",".into()),);
-        assert_eq!(parse(br"hello\*"), Ok(vec![b"hello*".to_vec()].into()));
         assert_eq!(
-            parse(br"hi\,hello\*"),
+            ValueList::parse(br"hello\\\\,"),
+            Err(DecodingError::new(b",")),
+        );
+        assert_eq!(
+            ValueList::parse(br"hello\*"),
+            Ok(vec![b"hello*".to_vec()].into())
+        );
+        assert_eq!(
+            ValueList::parse(br"hi\,hello\*"),
             Ok(vec![b"hi".to_vec(), b"hello*".to_vec()].into())
         );
-        assert_eq!(parse(b"\\,hello\\*("), Err("(".into()));
-        assert_eq!(parse(b"*;"), Err(";".into()));
-        assert_eq!(parse(b"*\""), Err("\"".into()));
-        assert_eq!(parse(b"*\""), Err("\"".into()));
+        assert_eq!(
+            ValueList::parse(b"\\,hello\\*("),
+            Err(DecodingError::new(b"("))
+        );
+        assert_eq!(ValueList::parse(b"*;"), Err(DecodingError::new(b";")));
+        assert_eq!(ValueList::parse(b"*\""), Err(DecodingError::new(b"\"")));
+        assert_eq!(ValueList::parse(b"*\""), Err(DecodingError::new(b"\"")));
     }
 }

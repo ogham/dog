@@ -10,7 +10,7 @@ use log::*;
 use crate::strings::{Labels, ReadLabels};
 use crate::wire::*;
 
-use crate::value_list::escaping;
+use crate::value_list::encoding;
 
 /// A kinda hacky but alright way to avoid copying tons of data
 trait CursorExt {
@@ -135,7 +135,7 @@ impl From<Vec<u8>> for Opaque {
 
 impl fmt::Display for Opaque {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        escaping::EscapeCharString(&self.0).fmt(f)
+        encoding::EscapeCharString(&self.0).fmt(f)
     }
 }
 
@@ -298,7 +298,7 @@ impl fmt::Display for SvcParams {
         }
         if let Some(alpn) = alpn {
             f.write_str(" alpn=")?;
-            escaping::EscapeValueList(alpn.alpn_ids.iter().map(|id| id.0.as_slice())).fmt(f)?;
+            encoding::EscapeValueList(alpn.alpn_ids.iter().map(|id| id.0.as_slice())).fmt(f)?;
             if alpn.no_default_alpn {
                 write!(f, " no-default-alpn")?;
             }
@@ -1451,8 +1451,8 @@ mod test_vectors {
         });
         // result_bin is taken directly from the binary part of the test vector
         assert_eq!(result, result_bin);
-        assert_eq!(ValueList::parse(r#""f\\\\oo\\,bar,h2""#), result);
-        assert_eq!(ValueList::parse(r#"f\\\092oo\092,bar,h2"#), result);
+        assert_eq!(ValueList::parse(br#""f\\\\oo\\,bar,h2""#), result);
+        assert_eq!(ValueList::parse(br#"f\\\092oo\092,bar,h2"#), result);
     }
 
     // the failure case is not useful, because we don't parse the presentation format.
