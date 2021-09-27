@@ -58,6 +58,7 @@ json = "0.12"
 
 # logging
 log = "0.4"
+base64 = "0.13.0"
 
 # windows default nameserver determination
 [target.'cfg(windows)'.dependencies]

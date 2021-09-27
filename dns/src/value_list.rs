@@ -13,6 +13,7 @@ use std::iter::FromIterator;
 /// [Draft RFC](https://tools.ietf.org/id/draft-ietf-dnsop-svcb-https-02.html#name-the-svcb-record-type), section A.1
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
 pub struct ValueList {
+    /// The parsed values
     pub values: Vec<Vec<u8>>,
 }
 
@@ -32,6 +33,7 @@ impl<A: Into<Vec<u8>>> From<Vec<A>> for ValueList {
 /// Nice
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
 pub struct SingleValue {
+    /// The value
     pub value: Vec<u8>,
 }
 
@@ -48,6 +50,7 @@ fn wrap_iresult_complete<T>(result: IResult<&[u8], T>) -> Result<T, DecodingErro
         })
 }
 
+/// An error that occurred while decoding a char-string or value-list
 #[derive(Debug, Clone, PartialEq)]
 pub struct DecodingError {
     input: Vec<u8>,
@@ -132,6 +135,7 @@ fn strings(x: IResult<&[u8], Vec<u8>>) -> IResult<&str, String> {
     })
 }
 
+/// Tools for encoding and decoding value-list and char-string
 pub mod encoding {
     use super::*;
 

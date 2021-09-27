@@ -4,7 +4,7 @@ use std::fmt;
 use std::time::Duration;
 
 use dns::{Response, Query, Answer, QClass, ErrorCode, WireError, MandatedLength};
-use dns::record::{Record, RecordType, UnknownQtype, OPT};
+use dns::record::{OPT, Record, RecordType, SVCB, UnknownQtype};
 use dns_transport::Error as TransportError;
 use json::{object, JsonValue};
 
@@ -599,8 +599,34 @@ fn json_record_data(record: Record) -> JsonValue {
                 "bytes": bytes,
             }
         }
-        Record::HTTPS(_https) => todo!(),
-        Record::SVCB(_svcb) => todo!(),
+        Record::HTTPS(ref https) => svcb_json(&https.svcb),
+        Record::SVCB(ref svcb) => svcb_json(svcb),
+    }
+}
+
+fn svcb_json(svcb: &SVCB) -> JsonValue {
+    use dns::record::svcb::*;
+    let SVCB { priority, target, params } = svcb;
+    let params = params.as_ref().map(|params|  {
+        let SvcParams { mandatory, alpn, port, ipv4hint, ech, ipv6hint, other } = params;
+        let mut obj = object! {
+            "mandatory": mandatory.iter().map(|x| x.to_string()).collect::<Vec<String>>(),
+            "alpn": alpn.as_ref().map(|x| x.ids.iter().map(|id| id.to_string()).collect::<Vec<String>>()),
+            "port": *port,
+            "no-default-alpn": alpn.as_ref().map(|x| x.no_default_alpn).unwrap_or(false),
+            "ipv4hint": ipv4hint.iter().map(|x| x.to_string()).collect::<Vec<String>>(),
+            "ech": ech.as_ref().map(|x| base64::encode(x)),
+            "ipv6hint": ipv6hint.iter().map(|x| x.to_string()).collect::<Vec<String>>(),
+        };
+        other.iter().map(|(k, v)| (k.to_string(), v.to_string())).for_each(|(k, v)| {
+            obj[k] = v.into();
+        });
+        obj
+    });
+    object! {
+        "priority": *priority,
+        "target": target.to_string(),
+        "params": params,
     }
 }
 

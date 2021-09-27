@@ -211,6 +211,7 @@ version = "0.2.0-pre"
 dependencies = [
  "ansi_term",
  "atty",
+ "base64",
  "datetime",
  "dns",
  "dns-transport",

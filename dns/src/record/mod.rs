@@ -55,6 +55,10 @@ pub use self::srv::SRV;
 
 mod svcb_https;
 pub use self::svcb_https::{HTTPS, SVCB};
+/// Helper objects for the [SVCB] record
+pub mod svcb {
+    pub use super::svcb_https::{Alpn, AlpnId, Opaque, SvcParam, SvcParams,};
+}
 
 mod tlsa;
 pub use self::tlsa::TLSA;

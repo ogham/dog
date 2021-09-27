@@ -124,8 +124,9 @@ macro_rules! u16_enum {
 }
 
 // TODO: reimplement debug and use ... to truncate (base64?) output
+/// An opaque piece of data, e.g. [SvcParams::ech]
 #[derive(Debug, Clone, PartialEq)]
-pub struct Opaque(/* u16 len */ Vec<u8>);
+pub struct Opaque(Vec<u8>);
 
 impl From<Vec<u8>> for Opaque {
     fn from(vec: Vec<u8>) -> Self {
@@ -141,7 +142,7 @@ impl fmt::Display for Opaque {
 
 /// Same as [Opaque] but min length is 1
 #[derive(Debug, Clone, PartialEq)]
-pub struct Opaque1(/* u16 len */ Vec<u8>);
+pub(crate) struct Opaque1(Vec<u8>);
 
 trait ReadFromCursor: Sized {
     fn read_from(cursor: &mut Cursor<&[u8]>) -> io::Result<Self>;
@@ -173,24 +174,6 @@ impl ReadFromCursor for Opaque1 {
     }
 }
 
-macro_rules! opaque {
-    ($vis:vis struct $ident:ident) => {
-        #[derive(Debug, Clone, PartialEq)]
-        $vis struct $ident($crate::record::svcb_https::Opaque);
-        impl $crate::record::svcb_https::ReadFromCursor for $ident {
-            fn read_from(cursor: &mut std::io::Cursor<&[u8]>) -> std::io::Result<Self> {
-                $crate::record::svcb_https::Opaque::read_from(cursor).map(Self)
-            }
-        }
-
-        impl From<Vec<u8>> for $ident {
-            fn from(vec: Vec<u8>) -> Self {
-                Self(From::from(vec))
-            }
-        }
-    }
-}
-
 /// A **SVCB** (*service binding*) record, which holds information needed to make connections to
 /// network services, such as for HTTPS origins.
 ///
@@ -206,7 +189,8 @@ pub struct SVCB {
     /// The domain name of either the alias target (for AliasMode) or the alternative endpoint (for
     /// ServiceMode).
     pub target: Labels,
-    parameters: Option<SvcParams>,
+    /// The SvcParams
+    pub params: Option<SvcParams>,
 }
 
 /// An **HTTPS** record, which is the HTTPS incarnation of **SVCB**.
@@ -217,6 +201,7 @@ pub struct HTTPS {
 }
 
 impl HTTPS {
+    /// Constructor
     pub fn new(svcb: SVCB) -> Self {
         Self { svcb }
     }
@@ -225,18 +210,25 @@ impl HTTPS {
 u16_enum! {
     ///  14.3.2. Initial contents (subject to IANA additions)
     #[derive(Copy, Eq, PartialOrd, Ord, Hash)]
-    enum SvcParam {
+    pub enum SvcParam {
         /// `mandatory`
         Mandatory = 0,
         /// `alpn`
         Alpn = 1,
         /// `no-default-alpn`
         NoDefaultAlpn = 2,
+        /// `port`
         Port = 3,
+        /// `ipv4hint`
         Ipv4Hint = 4,
+        /// `ech`
         Ech = 5,
+        /// `ipv6hint`
         Ipv6Hint = 6,
-        @unknown KeyNNNNN(u16),
+        @unknown
+        /// `keyNNNNN`
+        KeyNNNNN(u16),
+        /// Invalid.
         InvalidKey = 65535,
     }
 }
@@ -262,33 +254,43 @@ impl fmt::Display for SvcParam {
     }
 }
 
+/// The SvcParams section of a [SVCB] record
 #[derive(Debug, Clone, PartialEq, Default)]
-struct SvcParams {
+pub struct SvcParams {
     /// List of keys that must be understood by a client to use the RR properly.
     ///
     /// Wire format: list of u16 network endian svcparam values
-    /// Presentation format: a comma-separated [ValueList]
-    mandatory: Vec<SvcParam>,
+    /// Presentation format: a comma-separated [crate::value_list::ValueList]
+    pub mandatory: Vec<SvcParam>,
     /// Draft 7 section 6.1
     ///
     /// Wire format:
     /// Presentation format: comma-separated list of alpn-id, 1-255 characters each
     /// (also, "Zone file implementations MAY disallow" commas/backslash escapes, use \002 (ascii
     /// 0x02 STX (start text) character). That's a TODO
-    alpn: Option<Alpn>,
-    port: Option<u16>,
-    ipv4hint: Vec<Ipv4Addr>,
+    pub alpn: Option<Alpn>,
+    /// > The "port" SvcParamKey defines the TCP or UDP port that should be used to reach this
+    /// alternative endpoint. If this key is not present, clients SHALL use the authority
+    /// endpoint's port number.
+    pub port: Option<u16>,
+    /// > The "ipv4hint" and "ipv6hint" keys convey IP addresses that clients MAY use to reach the
+    /// service. If A and AAAA records for TargetName are locally available, the client SHOULD
+    /// ignore these hints.
+    pub ipv4hint: Vec<Ipv4Addr>,
     /// An ECHConfigList from the [ECH RFC][ech-rfc]
     ///
     /// [ech-rfc]: https://datatracker.ietf.org/doc/draft-ietf-tls-esni/13/
     ///
-    /// Wire format, the value of the parameter is an ECHConfigList [ECH], including the redundant length prefix.
-    /// Presentation format, the value is a single ECHConfigList encoded in Base64 [base64].
-    ech: Option<Vec<u8>>,
-    ipv6hint: Vec<Ipv6Addr>,
+    /// Wire format: the value of the parameter is an ECHConfigList, including the redundant length prefix.
+    /// Presentation format: the value is a single ECHConfigList encoded in Base64.
+    pub ech: Option<Vec<u8>>,
+    /// > The "ipv4hint" and "ipv6hint" keys convey IP addresses that clients MAY use to reach the
+    /// service. If A and AAAA records for TargetName are locally available, the client SHOULD
+    /// ignore these hints.
+    pub ipv6hint: Vec<Ipv6Addr>,
 
     /// For any unrecognised keys. BTreeMap, because keys are sorted this way
-    other: BTreeMap<SvcParam, Opaque>,
+    pub other: BTreeMap<SvcParam, Opaque>,
 }
 
 impl fmt::Display for SvcParams {
@@ -311,7 +313,7 @@ impl fmt::Display for SvcParams {
         }
         if let Some(alpn) = alpn {
             f.write_str(" alpn=")?;
-            encoding::EscapeValueList(alpn.alpn_ids.iter().map(|id| id.0.as_slice())).fmt(f)?;
+            encoding::EscapeValueList(alpn.ids.iter().map(|id| id.0.as_slice())).fmt(f)?;
             if alpn.no_default_alpn {
                 write!(f, " no-default-alpn")?;
             }
@@ -428,7 +430,7 @@ impl SvcParams {
             None
         } else {
             Some(Alpn {
-                alpn_ids,
+                ids: alpn_ids,
                 no_default_alpn,
             })
         };
@@ -460,15 +462,20 @@ fn read_convert<Raw: Sized, Nice: From<Raw>>(
     Ok(collector)
 }
 
+/// The ALPN configuration, covering the `alpn` and `no-default-alpn` parameters.
 #[derive(Debug, Clone, PartialEq)]
-struct Alpn {
-    alpn_ids: Vec<AlpnId>,
-    no_default_alpn: bool,
+pub struct Alpn {
+    /// The `alpn` field
+    pub ids: Vec<AlpnId>,
+    /// The `no-default-alpn` field
+    ///
+    /// > To determine the set of protocol suites supported by an endpoint (the "SVCB ALPN set"), the client adds the default set to the list of alpn-ids unless the "no-default-alpn" SvcParamKey is present.
+    pub no_default_alpn: bool,
 }
 
+/// An ALPN id, like "h2" or "h3-19"
 #[derive(Clone, PartialEq)]
-#[repr(transparent)]
-struct AlpnId(Vec<u8>);
+pub struct AlpnId(Vec<u8>);
 
 impl From<&str> for AlpnId {
     fn from(s: &str) -> Self {
@@ -484,6 +491,13 @@ impl ReadFromCursor for AlpnId {
         let mut vec = vec![0u8; len as _];
         cursor.read_exact(&mut vec)?;
         Ok(AlpnId(vec))
+    }
+}
+
+impl fmt::Display for AlpnId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let bytes = &self.0[..];
+        String::from_utf8_lossy(bytes).fmt(f)
     }
 }
 
@@ -532,7 +546,7 @@ impl Wire for SVCB {
                 let ret = Self {
                     priority,
                     target,
-                    parameters,
+                    params: parameters,
                 };
                 Ok(ret)
             },
@@ -565,7 +579,7 @@ impl fmt::Display for SVCB {
         let Self {
             priority,
             target,
-            parameters,
+            params: parameters,
         } = self;
 
         write!(f, "{} {}", priority, target)?;
@@ -623,10 +637,10 @@ mod test {
             HTTPS::new(SVCB {
                 priority: 1,
                 target: Labels::root(),
-                parameters: Some(SvcParams {
+                params: Some(SvcParams {
                     mandatory: vec![],
                     alpn: Some(Alpn {
-                        alpn_ids: vec![
+                        ids: vec![
                             "h3".into(),
                             "h3-29".into(),
                             "h3-28".into(),
@@ -696,7 +710,7 @@ mod test {
             Ok(SVCB {
                 priority: 0,
                 target: Labels::root(),
-                parameters: None,
+                params: None,
             })
         );
     }
@@ -733,7 +747,7 @@ mod test_vectors {
         let value = SVCB {
             priority: 0,
             target: Labels::encode("foo.example.com").unwrap(),
-            parameters: None,
+            params: None,
         };
         assert_eq!(
             SVCB::read(buf.len() as u16, &mut Cursor::new(buf)).as_ref(),
@@ -749,7 +763,7 @@ mod test_vectors {
         let value = SVCB {
             priority: 1,
             target: Labels::encode(".").unwrap(),
-            parameters: Some(SvcParams::default()),
+            params: Some(SvcParams::default()),
         };
         assert_eq!(
             SVCB::read(buf.len() as u16, &mut Cursor::new(buf)).as_ref(),
@@ -772,7 +786,7 @@ mod test_vectors {
         let value = SVCB {
             priority: 16,
             target: Labels::encode("foo.example.com.").unwrap(),
-            parameters: Some(SvcParams {
+            params: Some(SvcParams {
                 port: Some(53),
                 ..SvcParams::default()
             }),
@@ -799,7 +813,7 @@ mod test_vectors {
         let value = SVCB {
             priority: 1,
             target: Labels::encode("foo.example.com.").unwrap(),
-            parameters: Some(SvcParams {
+            params: Some(SvcParams {
                 other: {
                     let mut map = BTreeMap::new();
                     map.insert(
@@ -832,7 +846,7 @@ mod test_vectors {
         let value = SVCB {
             priority: 1,
             target: Labels::encode("foo.example.com.").unwrap(),
-            parameters: Some(SvcParams {
+            params: Some(SvcParams {
                 other: {
                     let mut map = BTreeMap::new();
                     map.insert(
@@ -873,7 +887,7 @@ mod test_vectors {
         let value = SVCB {
             priority: 1,
             target: Labels::encode("foo.example.com.").unwrap(),
-            parameters: Some(SvcParams {
+            params: Some(SvcParams {
                 ipv6hint: vec![
                     "2001:db8::1".parse().unwrap(),
                     "2001:db8::53:1".parse().unwrap(),
@@ -908,7 +922,7 @@ mod test_vectors {
         let value = SVCB {
             priority: 1,
             target: Labels::encode("foo.example.com.").unwrap(),
-            parameters: Some(SvcParams {
+            params: Some(SvcParams {
                 ipv6hint: vec!["::ffff:198.51.100.100".parse().unwrap()],
                 ..Default::default()
             }),
@@ -949,10 +963,10 @@ mod test_vectors {
         let value = SVCB {
             priority: 16,
             target: Labels::encode("foo.example.org.").unwrap(),
-            parameters: Some(SvcParams {
+            params: Some(SvcParams {
                 mandatory: vec![SvcParam::Alpn, SvcParam::Ipv4Hint],
                 alpn: Some(Alpn {
-                    alpn_ids: vec!["h2".into(), "h3-19".into()],
+                    ids: vec!["h2".into(), "h3-19".into()],
                     no_default_alpn: false,
                 }),
                 ipv4hint: vec!["192.0.2.1".parse().unwrap()],
@@ -986,11 +1000,11 @@ mod test_vectors {
         let value = SVCB {
             priority: 16,
             target: Labels::encode("foo.example.org.").unwrap(),
-            parameters: Some(SvcParams {
+            params: Some(SvcParams {
                 alpn: Some(Alpn {
                     // here, it's a single \ because there's only one 0x5c and only a single 0x2c
                     // comma, neither of which need escaping in binary
-                    alpn_ids: vec![r"f\oo,bar".into(), "h2".into()],
+                    ids: vec![r"f\oo,bar".into(), "h2".into()],
                     no_default_alpn: false,
                 }),
                 ..Default::default()
