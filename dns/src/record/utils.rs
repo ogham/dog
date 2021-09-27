@@ -54,9 +54,11 @@ pub(crate) fn read_convert<Raw: Sized, Nice: From<Raw>>(
     Ok(collector)
 }
 
-/// An opaque piece of data, e.g. [crate::record::svcb::SvcParams::ech]
+/// An opaque piece of data, displayed as base64
+///
+/// e.g. [crate::record::svcb::SvcParams::ech]
 #[derive(Debug, Clone, PartialEq)]
-pub struct Opaque(pub(crate) Vec<u8>);
+pub struct Opaque(pub Vec<u8>);
 
 impl From<Vec<u8>> for Opaque {
     fn from(vec: Vec<u8>) -> Self {

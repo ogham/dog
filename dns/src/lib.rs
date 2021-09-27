@@ -43,3 +43,5 @@ mod wire;
 pub use self::wire::{Wire, WireError, MandatedLength};
 
 pub mod record;
+
+pub use record::utils::Opaque;

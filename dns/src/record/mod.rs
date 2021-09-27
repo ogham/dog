@@ -3,7 +3,7 @@
 use crate::wire::*;
 
 #[macro_use]
-mod utils;
+pub(crate) mod utils;
 
 mod a;
 pub use self::a::A;
@@ -62,8 +62,6 @@ pub use self::svcb_https::{HTTPS, SVCB};
 pub mod svcb {
     pub use super::svcb_https::{Alpn, AlpnId, SvcParam, SvcParams};
 }
-
-pub use utils::Opaque;
 
 mod tlsa;
 pub use self::tlsa::TLSA;
