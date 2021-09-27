@@ -760,7 +760,7 @@ mod test {
     #[test]
     fn escape_backslashes() {
         assert_eq!(Ascii(b"\\").to_string(),
-                   "\"\\\\\"");
+                   "\\\\");
     }
 
     #[test]
@@ -772,6 +772,6 @@ mod test {
     #[test]
     fn escape_highs() {
         assert_eq!(Ascii("pâté".as_bytes()).to_string(),
-                   "\"p\\195\\162t\\195\\169\"");
+                   "p\\195\\162t\\195\\169");
     }
 }
