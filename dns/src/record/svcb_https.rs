@@ -192,8 +192,8 @@ macro_rules! opaque {
     }
 }
 
-/// A **SVCB** record, which contains an IP address as well as a port number,
-/// for specifying the location of services more precisely.
+/// A **SVCB** (*service binding*) record, which holds information needed to make connections to
+/// network services, such as for HTTPS origins.
 ///
 /// # References
 ///
@@ -201,13 +201,27 @@ macro_rules! opaque {
 ///   specifying the location of services (February 2000)
 #[derive(PartialEq, Debug)]
 pub struct SVCB {
-    priority: u16,
-    target: Labels,
+    /// The priority of this record (relative to others, with lower values preferred). A value of 0
+    /// indicates AliasMode.
+    pub priority: u16,
+    /// The domain name of either the alias target (for AliasMode) or the alternative endpoint (for
+    /// ServiceMode).
+    pub target: Labels,
     parameters: Option<SvcParams>,
 }
 
+/// An **HTTPS** record, which is the HTTPS incarnation of **SVCB**.
 #[derive(PartialEq, Debug)]
-pub struct HTTPS(SVCB);
+pub struct HTTPS {
+    /// The underlying SVCB record
+    pub svcb: SVCB,
+}
+
+impl HTTPS {
+    pub fn new(svcb: SVCB) -> Self {
+        Self { svcb }
+    }
+}
 
 u16_enum! {
     ///  14.3.2. Initial contents (subject to IANA additions)
@@ -922,7 +936,7 @@ impl Wire for HTTPS {
     #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         // TODO: default mandatory fields? something like that?
-        SVCB::read(stated_length, c).map(HTTPS)
+        SVCB::read(stated_length, c).map(HTTPS::new)
     }
 }
 
@@ -984,7 +998,7 @@ impl Wire for SVCB {
 
 impl fmt::Display for HTTPS {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.fmt(f)
+        self.svcb.fmt(f)
     }
 }
 
@@ -1048,7 +1062,7 @@ mod test {
         let result = HTTPS::read(buf.len() as _, &mut Cursor::new(buf)).unwrap();
         assert_eq!(
             result,
-            HTTPS(SVCB {
+            HTTPS::new(SVCB {
                 priority: 1,
                 target: Labels::root(),
                 parameters: Some(SvcParams {
