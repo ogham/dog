@@ -614,7 +614,11 @@ struct Ascii<'a>(&'a [u8]);
 
 impl fmt::Display for Ascii<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "\"")?;
+        let contains_spaces = self.0.contains(&b' ') || self.0.contains(&b'\t') || self.0.contains(&b'"');
+        // let contains_spaces = true;
+        if contains_spaces {
+            write!(f, "\"")?;
+        }
 
         for byte in self.0.iter().copied() {
             if byte < 32 || byte >= 128 {
@@ -631,7 +635,10 @@ impl fmt::Display for Ascii<'_> {
             }
         }
 
-        write!(f, "\"")
+        if contains_spaces {
+            write!(f, "\"")?;
+        }
+        Ok(())
     }
 }
 

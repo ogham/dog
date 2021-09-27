@@ -135,7 +135,7 @@ impl From<Vec<u8>> for Opaque {
 
 impl fmt::Display for Opaque {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        escaping::escape_char_string(&self.0[..], f)
+        escaping::EscapeCharString(&self.0).fmt(f)
     }
 }
 
@@ -298,7 +298,7 @@ impl fmt::Display for SvcParams {
         }
         if let Some(alpn) = alpn {
             f.write_str(" alpn=")?;
-            escaping::encode_value_list(alpn.alpn_ids.iter().map(|id| id.0.as_slice()), f)?;
+            escaping::EscapeValueList(alpn.alpn_ids.iter().map(|id| id.0.as_slice())).fmt(f)?;
             if alpn.no_default_alpn {
                 write!(f, " no-default-alpn")?;
             }
@@ -1149,7 +1149,7 @@ mod test {
 /// See the draft RFC
 #[cfg(test)]
 mod test_vectors {
-    use crate::ValueList;
+    use crate::value_list::ValueList;
 
     use super::*;
     use pretty_assertions::assert_eq;
@@ -1416,7 +1416,9 @@ mod test_vectors {
             target: Labels::encode("foo.example.org.").unwrap(),
             parameters: Some(SvcParams {
                 alpn: Some(Alpn {
-                    alpn_ids: vec!["f\\oo,bar".into(), "h2".into()],
+                    // here, it's a single \ because there's only one 0x5c and only a single 0x2c
+                    // comma, neither of which need escaping in binary
+                    alpn_ids: vec![r"f\oo,bar".into(), "h2".into()],
                     no_default_alpn: false,
                 }),
                 ..Default::default()
@@ -1427,10 +1429,13 @@ mod test_vectors {
             Ok(&value)
         );
 
-        assert_eq!(
-            value.to_string(),
-            r#"16 foo.example.org. alpn=f\\oo,bar,h2"#
-        );
+        // here, we have two levels of escaping applied,
+        // - initial: [br"f\oo,bar", br"h2"]
+        // - value-list encoding => f\\oo\,bar,h2
+        //   this joins the values with commas, and escapes value-internal backslashes and commas
+        // - char-string encoding => f\\\\oo\\,bar,h2
+        let presentation = r#"16 foo.example.org. alpn=f\\\\oo\\,bar,h2"#;
+        assert_eq!(value.to_string(), presentation);
     }
 
     #[test]

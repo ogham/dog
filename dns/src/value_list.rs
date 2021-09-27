@@ -29,6 +29,7 @@ impl<A: Into<Vec<u8>>> From<Vec<A>> for ValueList {
     }
 }
 
+/// Nice
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
 pub struct SingleValue {
     pub value: Vec<u8>,
@@ -99,8 +100,8 @@ use nom::bytes::complete::{tag, take_while1};
 use nom::combinator::recognize;
 use nom::error::ParseError;
 use nom::sequence::preceded;
-use nom::{Finish, Parser};
 use nom::IResult;
+use nom::{Finish, Parser};
 
 #[cfg(test)]
 fn strings(x: IResult<&[u8], Vec<u8>>) -> IResult<&str, String> {
@@ -147,7 +148,7 @@ pub mod escaping {
     }
 
     #[derive(Debug, Clone)]
-    pub enum EncodingChunk<'a> {
+    enum EncodingChunk<'a> {
         Slice(&'a [u8]),
         Escape(&'a str),
         Byte(u8),
@@ -158,13 +159,18 @@ pub mod escaping {
         fn chunk(remain: &[u8]) -> IResult<&[u8], EncodingChunk<'_>> {
             super::super::char_string_decoding::non_special
                 .map(EncodingChunk::Slice)
+                // special treatment for these few, not matched by is_non_special
                 .or(tag(br"\").map(|_| EncodingChunk::Escape(r"\\")))
-                .or(tag(br",").map(|_| EncodingChunk::Escape(r"\,")))
+                .or(tag(b";").map(|_| EncodingChunk::Escape(r"\;")))
+                .or(tag(b"\"").map(|_| EncodingChunk::Escape("\\\"")))
+                .or(tag(b"(").map(|_| EncodingChunk::Escape("\\(")))
+                .or(tag(b")").map(|_| EncodingChunk::Escape("\\)")))
+                // or any other byte
                 .or(single_byte.map(EncodingChunk::Byte))
                 .parse(remain)
         }
 
-        pub fn emit_chunks(
+        pub(super) fn emit_chunks(
             input: &[u8],
         ) -> impl Iterator<Item = Result<EncodingChunk<'_>, fmt::Error>> + Clone {
             iter_parser(input, chunk)
@@ -175,12 +181,16 @@ pub mod escaping {
         use super::*;
         fn chunk(remain: &[u8]) -> IResult<&[u8], EncodingChunk<'_>> {
             super::super::value_list_decoding::item_allowed
+                // .or(tag(br"\\"))
+                // .or(tag(br"\,"))
                 .map(EncodingChunk::Slice)
-                .or(single_byte.map(EncodingChunk::Byte))
+                // .or(single_byte.map(EncodingChunk::Byte))
+                .or(tag(br"\").map(|_| EncodingChunk::Escape(r"\\")))
+                .or(tag(br",").map(|_| EncodingChunk::Escape(r"\,")))
                 .parse(remain)
         }
 
-        pub fn emit_chunks(
+        pub(super) fn emit_chunks(
             input: &[u8],
         ) -> impl Iterator<Item = Result<EncodingChunk<'_>, fmt::Error>> + Clone {
             iter_parser(input, chunk)
@@ -201,19 +211,63 @@ pub mod escaping {
                 f.write_str(string)?;
                 Ok(())
             }
-            EncodingChunk::Escape(str) => {
-                str.fmt(f)
-            }
+            EncodingChunk::Escape(str) => str.fmt(f),
             EncodingChunk::Byte(byte) => {
                 write!(f, "\\{:03}", byte)
             }
         })
     }
 
-    pub fn escape_char_string(
-        string: &[u8],
-        f: &mut fmt::Formatter<'_>,
-    ) -> fmt::Result {
+    /// Display implementation that escapes a string
+    pub struct EscapeCharString<A: AsRef<[u8]>>(pub A);
+
+    impl<A: AsRef<[u8]>> Display for EscapeCharString<A> {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            let string = self.0.as_ref();
+            let chunks = char_string::emit_chunks(string);
+            let iter = format_iter(chunks);
+            if string.contains(&b' ') || string.contains(&b'\t') || string.contains(&b'"') {
+                write!(f, "\"{}\"", iter)
+            } else {
+                iter.fmt(f)
+            }
+        }
+    }
+
+    #[test]
+    fn test_escape_char_string() {
+        assert_eq!(EscapeCharString(br"\").to_string(), r"\\");
+    }
+
+    pub struct EscapeValueList<'a, I: IntoIterator<Item = &'a [u8]> + Clone>(pub I);
+
+    impl<'a, I> fmt::Display for EscapeValueList<'a, I>
+    where
+        I: IntoIterator<Item = &'a [u8]> + Clone,
+        I::IntoIter: Clone,
+    {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            let values = self.0.clone().into_iter();
+            // a temporary buffer to do EscapeCharString on.
+            let mut buf = Vec::<u8>::new();
+            for value in values {
+                let chunks = value_list::emit_chunks(value);
+                for encoding_chunk in chunks {
+                    match encoding_chunk? {
+                        EncodingChunk::Slice(slice) => buf.extend_from_slice(slice),
+                        EncodingChunk::Escape(str) => buf.extend_from_slice(str.as_bytes()),
+                        // doesn't happen
+                        EncodingChunk::Byte(byte) => buf.push(byte),
+                    }
+                }
+                buf.push(b',');
+            }
+            buf.pop();
+            EscapeCharString(buf).fmt(f)
+        }
+    }
+
+    fn escape_char_string(string: &[u8], f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let chunks = char_string::emit_chunks(string);
         let iter = format_iter(chunks);
         if string.contains(&b' ') {
@@ -244,24 +298,16 @@ pub mod escaping {
         Ok(vec)
     }
 
-    pub fn encode_value_list<'a>(
-        iter: impl Iterator<Item = &'a [u8]> + Clone + 'a,
-        f: &mut fmt::Formatter<'_>,
-    ) -> fmt::Result {
-        let joined = escape_values_join(iter)?;
-        escape_char_string(&joined, f)
-    }
-
     impl fmt::Display for ValueList {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            encode_value_list(self.values.iter().map(|val| val.as_slice()), f)
+            EscapeValueList(self.values.iter().map(|val| val.as_slice())).fmt(f)
         }
     }
 
     impl fmt::Display for SingleValue {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             let bytes = self.value.as_slice();
-            escape_char_string(bytes, f)
+            EscapeCharString(bytes).fmt(f)
         }
     }
 }
@@ -404,7 +450,7 @@ mod char_string_decoding {
     }
 
     #[test]
-    fn test_escaping() {
+    fn test_char_string_decoding() {
         let mini = |slice| {
             char_escape(slice).map(|(a, b)| (std::str::from_utf8(a).unwrap(), char::from(b)))
         };
