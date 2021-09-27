@@ -448,6 +448,7 @@ impl SvcParams {
     }
 }
 
+/// Read a bunch of specific endian integers and convert them to an enum, for example
 fn read_convert<Raw: Sized, Nice: From<Raw>>(
     cursor: &mut Cursor<&[u8]>,
     len: usize,
