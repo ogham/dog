@@ -124,7 +124,6 @@ macro_rules! u16_enum {
     };
 }
 
-// TODO: reimplement debug and use ... to truncate (base64?) output
 /// An opaque piece of data, e.g. [SvcParams::ech]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Opaque(Vec<u8>);
@@ -266,7 +265,7 @@ pub struct SvcParams {
     /// List of keys that must be understood by a client to use the RR properly.
     ///
     /// Wire format: list of u16 network endian svcparam values
-    /// Presentation format: a comma-separated [crate::value_list::ValueList]
+    /// Presentation format: a comma-separated value-list
     pub mandatory: Vec<SvcParam>,
     /// Draft 7 section 6.1
     ///

@@ -38,7 +38,6 @@ mod strings;
 pub use self::strings::Labels;
 
 mod value_list;
-pub use self::value_list::encoding;
 
 mod wire;
 pub use self::wire::{Wire, WireError, MandatedLength};

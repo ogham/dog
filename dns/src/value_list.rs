@@ -5,14 +5,15 @@ use std::borrow::Cow;
 use std::iter::FromIterator;
 
 /// Parameters to a SVCB/HTTPS record can be multi-valued.
+///
 /// This is a fancy comma-separated list, where escaped commas \, and \044 do not separate
 /// values.
 ///
 /// # References:
 ///
-/// [Draft RFC](https://tools.ietf.org/id/draft-ietf-dnsop-svcb-https-02.html#name-the-svcb-record-type), section A.1
+/// [Draft RFC](https://tools.ietf.org/id/draft-ietf-dnsop-svcb-https-07.html), section A.1
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
-pub struct ValueList {
+pub(crate) struct ValueList {
     /// The parsed values
     pub values: Vec<Vec<u8>>,
 }
@@ -30,9 +31,8 @@ impl<A: Into<Vec<u8>>> From<Vec<A>> for ValueList {
     }
 }
 
-/// Nice
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone)]
-pub struct SingleValue {
+pub(crate) struct SingleValue {
     /// The value
     pub value: Vec<u8>,
 }
@@ -136,12 +136,12 @@ fn strings(x: IResult<&[u8], Vec<u8>>) -> IResult<&str, String> {
 }
 
 /// Tools for encoding and decoding value-list and char-string
-pub mod encoding {
+pub(crate) mod encoding {
     use super::*;
 
     pub use super::DecodingError;
-    pub use super::SingleValue;
-    pub use super::ValueList;
+    // pub use super::SingleValue;
+    // pub use super::ValueList;
 
     /// Iterates a parser over an input. Expects it does not fail or return Incomplete. It stops
     /// parsing when the parser returns nom::Err::Error (which should occur at Eof).
