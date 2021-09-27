@@ -9,7 +9,6 @@ use log::*;
 
 use crate::wire::*;
 
-
 /// Domain names in the DNS protocol are encoded as **Labels**, which are
 /// segments of ASCII characters prefixed by their length. When written out,
 /// each segment is followed by a dot.
@@ -84,6 +83,9 @@ impl Labels {
 
 impl fmt::Display for Labels {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.len() == 0 {
+            return write!(f, ".");
+        }
         for (_, segment) in &self.segments {
             write!(f, "{}.", segment)?;
         }
@@ -204,7 +206,6 @@ fn read_string_recursive(labels: &mut Labels, c: &mut Cursor<&[u8]>, recursions:
 
     Ok(bytes_read)
 }
-
 
 #[cfg(test)]
 mod test {

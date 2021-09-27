@@ -2,6 +2,8 @@
 
 use crate::wire::*;
 
+#[macro_use]
+pub(crate) mod utils;
 
 mod a;
 pub use self::a::A;
@@ -54,6 +56,13 @@ pub use self::soa::SOA;
 mod srv;
 pub use self::srv::SRV;
 
+mod svcb_https;
+pub use self::svcb_https::{HTTPS, SVCB};
+/// Helper objects for the [SVCB] record
+pub mod svcb {
+    pub use super::svcb_https::{Alpn, AlpnId, SvcParam, SvcParams};
+}
+
 mod tlsa;
 pub use self::tlsa::TLSA;
 
@@ -63,10 +72,8 @@ pub use self::txt::TXT;
 mod uri;
 pub use self::uri::URI;
 
-
 mod others;
 pub use self::others::UnknownQtype;
-
 
 /// A record that’s been parsed from a byte buffer.
 #[derive(PartialEq, Debug)]
@@ -79,6 +86,7 @@ pub enum Record {
     EUI48(EUI48),
     EUI64(EUI64),
     HINFO(HINFO),
+    HTTPS(HTTPS),
     LOC(LOC),
     MX(MX),
     NAPTR(NAPTR),
@@ -89,13 +97,13 @@ pub enum Record {
     SSHFP(SSHFP),
     SOA(SOA),
     SRV(SRV),
+    SVCB(SVCB),
     TLSA(TLSA),
     TXT(TXT),
     URI(URI),
 
     /// A record with a type that we don’t recognise.
     Other {
-
         /// The number that’s meant to represent the record type.
         type_number: UnknownQtype,
 
@@ -103,7 +111,6 @@ pub enum Record {
         bytes: Vec<u8>,
     },
 }
-
 
 /// The type of a record that may or may not be one of the known ones. Has no
 /// data associated with it other than what type of record it is.
@@ -117,6 +124,7 @@ pub enum RecordType {
     EUI48,
     EUI64,
     HINFO,
+    HTTPS,
     LOC,
     MX,
     NAPTR,
@@ -126,6 +134,7 @@ pub enum RecordType {
     SSHFP,
     SOA,
     SRV,
+    SVCB,
     TLSA,
     TXT,
     URI,
@@ -141,7 +150,7 @@ impl From<u16> for RecordType {
                 if $record::RR_TYPE == type_number {
                     return RecordType::$record;
                 }
-            }
+            };
         }
 
         try_record!(A);
@@ -151,6 +160,7 @@ impl From<u16> for RecordType {
         try_record!(EUI48);
         try_record!(EUI64);
         try_record!(HINFO);
+        try_record!(HTTPS);
         try_record!(LOC);
         try_record!(MX);
         try_record!(NAPTR);
@@ -161,6 +171,7 @@ impl From<u16> for RecordType {
         try_record!(SSHFP);
         try_record!(SOA);
         try_record!(SRV);
+        try_record!(SVCB);
         try_record!(TLSA);
         try_record!(TXT);
         try_record!(URI);
@@ -169,9 +180,7 @@ impl From<u16> for RecordType {
     }
 }
 
-
 impl RecordType {
-
     /// Determines the record type with a given name, or `None` if none is
     /// known. Matches names case-insensitively.
     pub fn from_type_name(type_name: &str) -> Option<Self> {
@@ -180,7 +189,7 @@ impl RecordType {
                 if $record::NAME.eq_ignore_ascii_case(type_name) {
                     return Some(Self::$record);
                 }
-            }
+            };
         }
 
         try_record!(A);
@@ -190,6 +199,7 @@ impl RecordType {
         try_record!(EUI48);
         try_record!(EUI64);
         try_record!(HINFO);
+        try_record!(HTTPS);
         try_record!(LOC);
         try_record!(MX);
         try_record!(NAPTR);
@@ -200,6 +210,7 @@ impl RecordType {
         try_record!(SSHFP);
         try_record!(SOA);
         try_record!(SRV);
+        try_record!(SVCB);
         try_record!(TLSA);
         try_record!(TXT);
         try_record!(URI);
@@ -217,6 +228,7 @@ impl RecordType {
             Self::EUI48       => EUI48::RR_TYPE,
             Self::EUI64       => EUI64::RR_TYPE,
             Self::HINFO       => HINFO::RR_TYPE,
+            Self::HTTPS       => HTTPS::RR_TYPE,
             Self::LOC         => LOC::RR_TYPE,
             Self::MX          => MX::RR_TYPE,
             Self::NAPTR       => NAPTR::RR_TYPE,
@@ -227,6 +239,7 @@ impl RecordType {
             Self::SSHFP       => SSHFP::RR_TYPE,
             Self::SOA         => SOA::RR_TYPE,
             Self::SRV         => SRV::RR_TYPE,
+            Self::SVCB        => SVCB::RR_TYPE,
             Self::TLSA        => TLSA::RR_TYPE,
             Self::TXT         => TXT::RR_TYPE,
             Self::URI         => URI::RR_TYPE,

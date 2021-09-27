@@ -5,7 +5,6 @@
 #![warn(nonstandard_style)]
 #![warn(rust_2018_compatibility)]
 #![warn(rust_2018_idioms)]
-#![warn(single_use_lifetimes)]
 #![warn(trivial_casts, trivial_numeric_casts)]
 #![warn(unused)]
 
@@ -38,7 +37,11 @@ pub use self::types::*;
 mod strings;
 pub use self::strings::Labels;
 
+mod value_list;
+
 mod wire;
 pub use self::wire::{Wire, WireError, MandatedLength};
 
 pub mod record;
+
+pub use record::utils::Opaque;

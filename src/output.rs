@@ -4,7 +4,7 @@ use std::fmt;
 use std::time::Duration;
 
 use dns::{Response, Query, Answer, QClass, ErrorCode, WireError, MandatedLength};
-use dns::record::{Record, RecordType, UnknownQtype, OPT};
+use dns::record::{OPT, Record, RecordType, SVCB, UnknownQtype};
 use dns_transport::Error as TransportError;
 use json::{object, JsonValue};
 
@@ -285,6 +285,12 @@ impl TextFormat {
             Record::Other { bytes, .. } => {
                 format!("{:?}", bytes)
             }
+            Record::HTTPS(https) => {
+                format!("{}", https)
+            }
+            Record::SVCB(svcb) => {
+                format!("{}", svcb)
+            }
         }
     }
 
@@ -400,6 +406,7 @@ fn json_record_type_name(record: RecordType) -> JsonValue {
         RecordType::EUI48       => "EUI48".into(),
         RecordType::EUI64       => "EUI64".into(),
         RecordType::HINFO       => "HINFO".into(),
+        RecordType::HTTPS       => "HTTPS".into(),
         RecordType::LOC         => "LOC".into(),
         RecordType::MX          => "MX".into(),
         RecordType::NAPTR       => "NAPTR".into(),
@@ -409,6 +416,7 @@ fn json_record_type_name(record: RecordType) -> JsonValue {
         RecordType::SOA         => "SOA".into(),
         RecordType::SRV         => "SRV".into(),
         RecordType::SSHFP       => "SSHFP".into(),
+        RecordType::SVCB        => "SVCB".into(),
         RecordType::TLSA        => "TLSA".into(),
         RecordType::TXT         => "TXT".into(),
         RecordType::URI         => "URI".into(),
@@ -431,6 +439,7 @@ fn json_record_name(record: &Record) -> JsonValue {
         Record::EUI48(_)       => "EUI48".into(),
         Record::EUI64(_)       => "EUI64".into(),
         Record::HINFO(_)       => "HINFO".into(),
+        Record::HTTPS(_)       => "HTTPS".into(),
         Record::LOC(_)         => "LOC".into(),
         Record::MX(_)          => "MX".into(),
         Record::NAPTR(_)       => "NAPTR".into(),
@@ -440,6 +449,7 @@ fn json_record_name(record: &Record) -> JsonValue {
         Record::SOA(_)         => "SOA".into(),
         Record::SRV(_)         => "SRV".into(),
         Record::SSHFP(_)       => "SSHFP".into(),
+        Record::SVCB(_)        => "SVCB".into(),
         Record::TLSA(_)        => "TLSA".into(),
         Record::TXT(_)         => "TXT".into(),
         Record::URI(_)         => "URI".into(),
@@ -589,6 +599,34 @@ fn json_record_data(record: Record) -> JsonValue {
                 "bytes": bytes,
             }
         }
+        Record::HTTPS(ref https) => svcb_json(&https.svcb),
+        Record::SVCB(ref svcb) => svcb_json(svcb),
+    }
+}
+
+fn svcb_json(svcb: &SVCB) -> JsonValue {
+    use dns::record::svcb::*;
+    let SVCB { priority, target, params } = svcb;
+    let params = params.as_ref().map(|params|  {
+        let SvcParams { mandatory, alpn, port, ipv4hint, ech, ipv6hint, other } = params;
+        let mut obj = object! {
+            "mandatory": mandatory.iter().map(|x| x.to_string()).collect::<Vec<String>>(),
+            "alpn": alpn.as_ref().map(|x| x.ids.iter().map(|id| id.to_string()).collect::<Vec<String>>()),
+            "port": *port,
+            "no-default-alpn": alpn.as_ref().map(|x| x.no_default_alpn).unwrap_or(false),
+            "ipv4hint": ipv4hint.iter().map(|x| x.to_string()).collect::<Vec<String>>(),
+            "ech": ech.as_ref().map(|x| x.to_string()),
+            "ipv6hint": ipv6hint.iter().map(|x| x.to_string()).collect::<Vec<String>>(),
+        };
+        other.iter().map(|(k, v)| (k.to_string(), v.to_string())).for_each(|(k, v)| {
+            obj[k] = v.into();
+        });
+        obj
+    });
+    object! {
+        "priority": *priority,
+        "target": target.to_string(),
+        "params": params,
     }
 }
 
@@ -602,7 +640,11 @@ struct Ascii<'a>(&'a [u8]);
 
 impl fmt::Display for Ascii<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "\"")?;
+        let contains_spaces = self.0.contains(&b' ') || self.0.contains(&b'\t') || self.0.contains(&b'"');
+        // let contains_spaces = true;
+        if contains_spaces {
+            write!(f, "\"")?;
+        }
 
         for byte in self.0.iter().copied() {
             if byte < 32 || byte >= 128 {
@@ -619,7 +661,10 @@ impl fmt::Display for Ascii<'_> {
             }
         }
 
-        write!(f, "\"")
+        if contains_spaces {
+            write!(f, "\"")?;
+        }
+        Ok(())
     }
 }
 
@@ -715,7 +760,7 @@ mod test {
     #[test]
     fn escape_backslashes() {
         assert_eq!(Ascii(b"\\").to_string(),
-                   "\"\\\\\"");
+                   "\\\\");
     }
 
     #[test]
@@ -727,6 +772,6 @@ mod test {
     #[test]
     fn escape_highs() {
         assert_eq!(Ascii("pâté".as_bytes()).to_string(),
-                   "\"p\\195\\162t\\195\\169\"");
+                   "p\\195\\162t\\195\\169");
     }
 }
