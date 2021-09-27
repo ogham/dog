@@ -188,7 +188,6 @@ macro_rules! opaque {
                 Self(From::from(vec))
             }
         }
-
     }
 }
 
@@ -255,7 +254,7 @@ impl fmt::Display for SvcParam {
             Self::NoDefaultAlpn => f.write_str("no-default-alpn")?,
             Self::Port => f.write_str("port")?,
             Self::Ipv4Hint => f.write_str("ipv4hint")?,
-            Self::Ech => f.write_str("echconfig")?,
+            Self::Ech => f.write_str("ech")?,
             Self::Ipv6Hint => f.write_str("ipv6hint")?,
             Self::KeyNNNNN(n) => write!(f, "key{}", n)?,
             Self::InvalidKey => f.write_str("[invalid key]")?,
@@ -285,7 +284,7 @@ struct SvcParams {
     ///
     /// Wire format, the value of the parameter is an ECHConfigList [ECH], including the redundant length prefix.
     /// Presentation format, the value is a single ECHConfigList encoded in Base64 [base64].
-    ech: Option<ech::ECHConfigList>,
+    ech: Option<Vec<u8>>,
     ipv6hint: Vec<Ipv6Addr>,
 
     /// For any unrecognised keys. BTreeMap, because keys are sorted this way
@@ -324,7 +323,11 @@ impl fmt::Display for SvcParams {
             write!(f, " ipv4hint={}", display_utils::join(ipv4hint.iter(), ","))?;
         }
         if let Some(ech) = ech {
-            write!(f, " ech={}", ech.base64)?;
+            write!(
+                f,
+                " ech={}",
+                base64::display::Base64Display::with_config(ech, base64::STANDARD)
+            )?;
         }
         if !ipv6hint.is_empty() {
             write!(f, " ipv6hint={}", display_utils::join(ipv6hint.iter(), ","))?;
@@ -381,8 +384,9 @@ impl SvcParams {
                         ipv4hint = read_convert(cursor, len_hint, |c| c.read_u32::<BigEndian>())?;
                     }
                     SvcParam::Ech => {
-                        let parsed = ech::ECHConfigList::read_from(cursor)?;
-                        ech = Some(parsed);
+                        let mut vec = vec![0u8; len_hint];
+                        cursor.read_exact(&mut vec)?;
+                        ech = Some(vec);
                     }
                     SvcParam::Ipv6Hint => {
                         ipv6hint = read_convert(cursor, len_hint, |c| c.read_u128::<BigEndian>())?;
@@ -490,445 +494,6 @@ impl fmt::Debug for AlpnId {
     }
 }
 
-/// ECH RFC draft 13 section 4
-mod ech {
-    use core::fmt;
-    use std::{
-        convert::TryInto,
-        io::{self, Read},
-    };
-
-    use byteorder::{BigEndian, ReadBytesExt};
-
-    use super::{CursorExt, Opaque, Opaque1, ReadFromCursor};
-
-    #[derive(Debug, Clone)]
-    pub struct ECHConfigList {
-        configs: Vec<ECHConfig>,
-
-        /// Need a copy of the whole thing to encode as base64
-        pub base64: String,
-    }
-
-    impl PartialEq for ECHConfigList {
-        fn eq(&self, other: &Self) -> bool {
-            self.configs == other.configs
-        }
-    }
-
-    impl From<Vec<ECHConfig>> for ECHConfigList {
-        fn from(configs: Vec<ECHConfig>) -> Self {
-            Self {
-                configs,
-                base64: String::from("base64 not computed"),
-            }
-        }
-    }
-
-    impl ReadFromCursor for ECHConfigList {
-        fn read_from(cursor: &mut std::io::Cursor<&[u8]>) -> io::Result<Self> {
-            let mut configs = Vec::new();
-
-            // write a base64 string that _includes the length field_
-            let mut buf = cursor.std_remaining_slice();
-            let mut throwaway = io::Cursor::new(buf);
-            let configs_length = throwaway.read_u16::<BigEndian>()?;
-            buf = &buf[..configs_length as usize + 2];
-            let base64 = base64::encode(buf);
-
-            let configs_length = cursor.read_u16::<BigEndian>()?;
-            log::trace!("ECHConfigList length = {}", configs_length);
-
-            while cursor.std_remaining_slice().len() > 0 {
-                let config = ECHConfig::read_from(cursor)?;
-                configs.push(config);
-            }
-            Ok(Self { configs, base64 })
-        }
-    }
-
-    impl ReadFromCursor for ECHConfig {
-        fn read_from(cursor: &mut std::io::Cursor<&[u8]>) -> io::Result<Self> {
-            let version = cursor.read_u16::<BigEndian>()?;
-            log::trace!("ECHConfig version = 0x{:04x}", version);
-            let length = cursor.read_u16::<BigEndian>()?;
-            log::trace!("ECHConfig length  = {}", length);
-            match version {
-                0xfe0d => cursor.with_truncated(u64::from(length), |cursor, _len_hint| {
-                    let key_config = tls13::HpkeKeyConfig::read_from(cursor)?;
-                    log::trace!("key_config = {:?}", key_config);
-                    let maximum_name_length = cursor.read_u8()?;
-                    log::trace!("maximum_name_length = {}", maximum_name_length);
-                    let public_name = PublicName::read_from(cursor)?;
-
-                    let mut extensions = Vec::new();
-
-                    let extensions_len = cursor.read_u16::<BigEndian>()?;
-                    log::trace!("extensions: len = {}", extensions_len);
-                    cursor.with_truncated(
-                        extensions_len as u64,
-                        |cursor, _| -> io::Result<()> {
-                            while cursor.std_remaining_slice().len() > 0 {
-                                let ext = tls13::Extension::read_from(cursor)?;
-                                extensions.push(ext);
-                            }
-                            Ok(())
-                        },
-                    )?;
-
-                    Ok(Self::EchConfigContents {
-                        key_config,
-                        maximum_name_length,
-                        public_name,
-                        extensions,
-                    })
-                }),
-                _ => {
-                    let mut vec = vec![0u8; usize::from(length)];
-                    cursor.read_exact(&mut vec)?;
-                    Ok(ECHConfig::UnknownECHVersion(version, Opaque(vec)))
-                }
-            }
-        }
-    }
-
-    #[derive(Clone, PartialEq)]
-    pub struct PublicName(pub Vec<u8>);
-
-    impl fmt::Debug for PublicName {
-        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            let bytes = &self.0[..];
-            f.write_str(&String::from_utf8_lossy(bytes))
-        }
-    }
-
-    impl ReadFromCursor for PublicName {
-        fn read_from(cursor: &mut std::io::Cursor<&[u8]>) -> io::Result<Self> {
-            let len = cursor.read_u8()?;
-            log::trace!("PublicName length = {}", len);
-            if len == 0 || len > 254 {
-                return Err(io::Error::new(
-                    io::ErrorKind::Other,
-                    "length of opaque field was zero, but must be at least 1",
-                ));
-            }
-            let mut vec = vec![0u8; usize::from(len)];
-            cursor.read_exact(&mut vec)?;
-            log::trace!("PublicName = {:?}", std::str::from_utf8(&vec));
-            Ok(Self(vec))
-        }
-    }
-
-    #[derive(Debug, Clone, PartialEq)]
-    pub enum ECHConfig {
-        // if version == 0xfe0d
-        EchConfigContents {
-            key_config: tls13::HpkeKeyConfig,
-            maximum_name_length: u8,
-            // min len 1, max len 255
-            public_name: PublicName,
-
-            // any length up to 65535
-            //
-            // each is a TLS 1.3 Extension, defined in RFC8446 section 4.2
-            //
-            // > extensions MAY appear in any order, but
-            // > there MUST NOT be more than one extension of the same type in the
-            // > extensions block.  An extension can be tagged as mandatory by using
-            // > an extension type codepoint with the high order bit set to 1.
-
-            // > Clients MUST parse the extension list and check for unsupported
-            // > mandatory extensions.  If an unsupported mandatory extension is
-            // > present, clients MUST ignore the "ECHConfig".
-            extensions: Vec<tls13::Extension>,
-        },
-        UnknownECHVersion(u16, Opaque),
-    }
-
-    #[derive(Debug, Clone, PartialEq)]
-    pub enum EncryptedClientHello {
-        Outer {
-            cipher_suite: tls13::HpkeSymmetricCipherSuite,
-            config_id: u8,
-            enc: Opaque,
-            payload: Opaque1,
-        },
-        Inner,
-    }
-
-    u16_enum! {
-        pub enum ECHClientHelloType {
-            Outer = 0,
-            Inner = 1,
-        }
-    }
-
-    impl ReadFromCursor for EncryptedClientHello {
-        fn read_from(cursor: &mut std::io::Cursor<&[u8]>) -> std::io::Result<Self> {
-            let ty: ECHClientHelloType = cursor.read_u16::<BigEndian>()?.try_into()?;
-            Ok(match ty {
-                ECHClientHelloType::Inner => EncryptedClientHello::Inner,
-                ECHClientHelloType::Outer => EncryptedClientHello::Outer {
-                    cipher_suite: ReadFromCursor::read_from(cursor)?,
-                    config_id: cursor.read_u8()?,
-                    enc: super::Opaque::read_from(cursor)?,
-                    payload: super::Opaque1::read_from(cursor)?,
-                },
-            })
-        }
-    }
-
-    #[derive(Debug, Clone, PartialEq)]
-    pub struct EchOuterExtensions {
-        outer: Vec<tls13::ExtensionType>,
-    }
-
-    pub mod tls13 {
-        use crate::record::svcb_https::{CursorExt, Opaque, ReadFromCursor};
-        use byteorder::{BigEndian, ReadBytesExt};
-        use std::io::{self, Read};
-
-        // mandatory-to-implement extensions from RFC8446
-        //
-        // -  Supported Versions ("supported_versions"; Section 4.2.1)
-        // -  Cookie ("cookie"; Section 4.2.2)
-        // -  Signature Algorithms ("signature_algorithms"; Section 4.2.3)
-        // -  Signature Algorithms Certificate ("signature_algorithms_cert"; Section 4.2.3)
-        // -  Negotiated Groups ("supported_groups"; Section 4.2.7)
-        // -  Key Share ("key_share"; Section 4.2.8)
-        // -  Server Name Indication ("server_name"; Section 3 of [RFC6066])
-        //
-        #[derive(Debug, Clone, PartialEq)]
-        pub enum Extension {
-            /// `encrypted_client_hello`
-            EncryptedClientHello(super::EncryptedClientHello),
-            /// `ech_outer_extensions`
-            EchOuterExtensions(super::EchOuterExtensions),
-
-            /// `server_name`. This is the SNI field.
-            ///
-            /// This probably shouldn't appear in an ECH config! The whole point is to avoid it!
-            /// So we'll parse it to show if it's being used
-            ServerName(ServerName),
-
-            /// `supported_versions` (TLS version negotiation)
-            SupportedVersions(SupportedVersions),
-
-            // /// `supported_groups`
-            // SupportedGroups(NamedGroupList),
-
-            // /// `cookie`
-            // Cookie(Cookie),
-
-            // /// `key_share`
-            // ///
-            // /// We assume a KeyShareClientHello version of this structure, because these
-            // /// extensions are for adding to a client hello message
-            // KeyShare(KeyShareClientHello),
-            Other(ExtensionType, UnknownExtension),
-        }
-
-        impl ReadFromCursor for Extension {
-            fn read_from(cursor: &mut std::io::Cursor<&[u8]>) -> std::io::Result<Self> {
-                let ty: ExtensionType = cursor.read_u16::<BigEndian>()?.into();
-                log::trace!("TLS extension: {:?}", ty);
-                let remain = cursor.std_remaining_slice();
-                log::trace!("TLS remaining: {:?}", remain);
-                let len = cursor.read_u16::<BigEndian>()?;
-                log::trace!("TLS extension length: {:?}", len);
-                cursor.with_truncated(len as u64, |cursor, len_hint| {
-                    log::trace!("TLS extension length hint: {:?}", len_hint);
-                    match ty {
-                        // ExtensionType::ServerName => Extension::ServerName(ServerName::read_)
-                        _ => Ok(Extension::Other(
-                            ty,
-                            UnknownExtension::read_len(cursor, len_hint as u64)?,
-                        )),
-                    }
-                })
-            }
-        }
-
-        #[derive(Debug, Clone, PartialEq)]
-        pub struct UnknownExtension(Opaque);
-
-        impl UnknownExtension {
-            fn read_len(cursor: &mut io::Cursor<&[u8]>, len: u64) -> io::Result<Self> {
-                let mut vec = vec![0u8; len as usize];
-                cursor.read_exact(&mut vec)?;
-                Ok(Self(Opaque::from(vec)))
-            }
-        }
-
-        #[derive(Debug, Clone, PartialEq)]
-        pub enum ServerName {
-            // name type 0x0000
-            HostName(HostName),
-            Unknown(UnknownNameType),
-        }
-        pub type NameType = u16;
-
-        opaque!(pub struct HostName);
-        opaque!(pub struct UnknownNameType);
-
-        u16_enum! {
-            /// Draft RFC <https://www.ietf.org/archive/id/draft-irtf-cfrg-hpke-11.txt>
-            /// 7.1.  Key Encapsulation Mechanisms (KEMs)
-            #[allow(non_camel_case_types)]
-            pub enum HpkeKemId {
-                Reserved = 0x0000,
-                DHKEM_P256_HKDF_SHA256 = 0x0010,
-                DHKEM_P384_HKDF_SHA384 = 0x0011,
-                DHKEM_P512_HKDF_SHA512 = 0x0012,
-                DHKEM_X25519_HKDF_SHA512 = 0x0020,
-                DHKEM_X448_HKDF_SHA512 = 0x0021,
-                @unknown Unknown(u16),
-            }
-        }
-
-        u16_enum! {
-            /// Draft RFC <https://www.ietf.org/archive/id/draft-irtf-cfrg-hpke-11.txt>
-            /// 7.2.  Key Derivation Functions (KDFs)
-            #[allow(non_camel_case_types)]
-            pub enum HpkeKdfId {
-                Reserved = 0,
-                HKDF_SHA256 = 1,
-                HKDF_SHA384 = 2,
-                HKDF_SHA512 = 3,
-                @unknown Unknown(u16),
-            }
-        }
-
-        u16_enum! {
-            /// Draft RFC <https://www.ietf.org/archive/id/draft-irtf-cfrg-hpke-11.txt>
-            /// 7.3.  Authenticated Encryption with Associated Data (AEAD) Functions
-            #[allow(non_camel_case_types)]
-            pub enum HpkeAeadId {
-                Reserved = 0,
-                AES_128_GCM = 1,
-                AES_256_GCM = 2,
-                ChaCha20Poly1305 = 3,
-                @unknown Unknown(u16),
-                ExportOnly = 0xffff,
-            }
-        }
-
-        #[test]
-        fn test_hpke() {
-            let _hpke = HpkeAeadId::from(0x0003);
-        }
-
-        #[derive(Debug, Clone, PartialEq)]
-        pub struct HpkeSymmetricCipherSuite {
-            pub kdf_id: HpkeKdfId,
-            pub aead_id: HpkeAeadId,
-        }
-
-        impl ReadFromCursor for HpkeSymmetricCipherSuite {
-            fn read_from(cursor: &mut std::io::Cursor<&[u8]>) -> std::io::Result<Self> {
-                Ok(Self {
-                    kdf_id: cursor.read_u16::<BigEndian>()?.into(),
-                    aead_id: cursor.read_u16::<BigEndian>()?.into(),
-                })
-            }
-        }
-
-        #[derive(Debug, Clone, PartialEq)]
-        pub struct HpkeKeyConfig {
-            pub config_id: u8,
-            pub kem_id: HpkeKemId,
-            pub public_key: HpkePublicKey,
-            // u16 len
-            pub cipher_suites: Vec<HpkeSymmetricCipherSuite>,
-        }
-
-        impl ReadFromCursor for HpkeKeyConfig {
-            fn read_from(cursor: &mut std::io::Cursor<&[u8]>) -> std::io::Result<Self> {
-                let config_id = cursor.read_u8()?;
-                log::trace!("config_id = {:?}", config_id);
-                let kem_id = cursor.read_u16::<BigEndian>()?.into();
-                log::trace!("kem_id = {:?}", kem_id);
-                let public_key = HpkePublicKey::read_from(cursor)?;
-                log::trace!("public_key (len) = {:?}", (public_key.0).0.len());
-                let cs_len = cursor.read_u16::<BigEndian>()?;
-                log::trace!("cs_len = {:?}", cs_len);
-                if cs_len < 4 || cs_len as u32 > 2u32 << 16 - 4 {
-                    return Err(io::Error::new(
-                        io::ErrorKind::Other,
-                        "cipher_suites length field invalid",
-                    ));
-                }
-                let n_cipher_suites = cs_len as usize / 4;
-                log::trace!("n_cipher_suites = {:?}", n_cipher_suites);
-                let mut cipher_suites = Vec::with_capacity(n_cipher_suites);
-                for _ in 0..n_cipher_suites {
-                    let suite = HpkeSymmetricCipherSuite::read_from(cursor)?;
-                    cipher_suites.push(suite);
-                }
-                Ok(Self {
-                    config_id,
-                    kem_id,
-                    public_key,
-                    cipher_suites,
-                })
-            }
-        }
-
-        opaque!(pub struct HpkePublicKey);
-
-        #[derive(Debug, Clone, PartialEq)]
-        pub struct SupportedVersions {
-            // min length 2 (otherwise implied by TLS version field), max length 254
-            // len is a u8 i suppose?
-            pub versions: Vec<TlsVersion>,
-        }
-
-        u16_enum! {
-            pub enum TlsVersion {
-                Ssl3_0 = 0x300,
-                Tls1_0 = 0x301,
-                Tls1_1 = 0x302,
-                Tls1_2 = 0x303,
-                Tls1_3 = 0x304,
-                @unknown Other(u16),
-            }
-        }
-
-        // opaque!(pub struct Cookie);
-
-        u16_enum! {
-            pub enum ExtensionType {
-                ServerName = 0,                           /* RFC 6066 */
-                MaxFragmentLength = 1,                    /* RFC 6066 */
-                StatusRequest = 5,                        /* RFC 6066 */
-                SupportedGroups = 10,                     /* RFC 8422, 7919 */
-                SignatureAlgorithms = 13,                 /* RFC 8446 */
-                UseSrtp = 14,                             /* RFC 5764 */
-                Heartbeat = 15,                           /* RFC 6520 */
-                ApplicationLayerProtocolNegotiation = 16, /* RFC 7301 */
-                SignedCertificateTimestamp = 18,          /* RFC 6962 */
-                ClientCertificateType = 19,               /* RFC 7250 */
-                ServerCertificateType = 20,               /* RFC 7250 */
-                Padding = 21,                             /* RFC 7685 */
-                PreSharedKey = 41,                        /* RFC 8446 */
-                EarlyData = 42,                           /* RFC 8446 */
-                SupportedVersions = 43,                   /* RFC 8446 */
-                Cookie = 44,                              /* RFC 8446 */
-                PskKeyExchangeModes = 45,                 /* RFC 8446 */
-                CertificateAuthorities = 47,              /* RFC 8446 */
-                OidFilters = 48,                          /* RFC 8446 */
-                PostHandshakeAuth = 49,                   /* RFC 8446 */
-                SignatureAlgorithmsCert = 50,             /* RFC 8446 */
-                KeyShare = 51,                            /* RFC 8446 */
-                // This is the ECH extension
-                EncryptedClientHello = 0xfe0d,
-                EchOuterExtensions = 0xfd00,
-                @unknown Other(u16),
-            }
-        }
-    }
-}
-
 impl Wire for HTTPS {
     const NAME: &'static str = "HTTPS";
     const RR_TYPE: u16 = 65;
@@ -947,11 +512,6 @@ impl Wire for SVCB {
     #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, cursor: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let initial_pos = cursor.position();
-
-        trace!(
-            "{:?}",
-            &cursor.std_remaining_slice()[..stated_length as usize]
-        );
 
         let ret = cursor.with_truncated(
             stated_length as _,
@@ -984,8 +544,6 @@ impl Wire for SVCB {
                 "Length is incorrect (stated length {:?}, fields plus target length {:?})",
                 stated_length, total_read
             );
-            let remain = cursor.std_remaining_slice();
-            warn!("remaining: {:?}", remain);
             Err(WireError::WrongLabelLength {
                 stated_length,
                 length_after_labels: total_read,
@@ -1474,7 +1032,6 @@ mod test_vectors {
 
 #[cfg(test)]
 mod test_ech {
-    use super::ech::{tls13::*, *};
     use super::*;
     use pretty_assertions::assert_eq;
 
