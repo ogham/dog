@@ -4,6 +4,7 @@ use core::fmt;
 use std::collections::BTreeMap;
 use std::io::{self, Seek, SeekFrom};
 use std::net::{Ipv4Addr, Ipv6Addr};
+use std::ops::RangeInclusive;
 
 use log::*;
 
@@ -136,13 +137,9 @@ impl From<Vec<u8>> for Opaque {
 
 impl fmt::Display for Opaque {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        encoding::EscapeCharString(&self.0).fmt(f)
+        base64::display::Base64Display::with_config(&self.0, base64::STANDARD).fmt(f)
     }
 }
-
-/// Same as [Opaque] but min length is 1
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) struct Opaque1(Vec<u8>);
 
 trait ReadFromCursor: Sized {
     fn read_from(cursor: &mut Cursor<&[u8]>) -> io::Result<Self>;
@@ -150,27 +147,36 @@ trait ReadFromCursor: Sized {
 
 impl ReadFromCursor for Opaque {
     fn read_from(cursor: &mut Cursor<&[u8]>) -> io::Result<Self> {
-        let len = cursor.read_u16::<BigEndian>()?;
-        log::trace!("read opaque length = {}", len);
-        let mut vec = vec![0u8; usize::from(len)];
-        cursor.read_exact(&mut vec[..])?;
-        Ok(Opaque(vec))
+        read_vec(cursor, 0..=u16::MAX).map(Self)
     }
 }
 
-impl ReadFromCursor for Opaque1 {
-    fn read_from(cursor: &mut Cursor<&[u8]>) -> io::Result<Self> {
-        let len = cursor.read_u16::<BigEndian>()?;
-        log::trace!("read opaque1 length = {}", len);
-        if len == 0 {
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                "length of opaque field was zero, but must be at least 1",
-            ));
-        }
-        let mut vec = vec![0u8; usize::from(len)];
-        cursor.read_exact(&mut vec[..])?;
-        Ok(Opaque1(vec))
+fn read_vec_of_len(
+    cursor: &mut Cursor<&[u8]>,
+    limit: RangeInclusive<u16>,
+    len: u16,
+) -> io::Result<Vec<u8>> {
+    if !limit.contains(&len) {
+        return Err(io::Error::new(
+            io::ErrorKind::Other,
+            format!("invalid length {}: must be within {:?}", len, limit),
+        ));
+    }
+    let mut vec = vec![0u8; usize::from(len)];
+    cursor.read_exact(&mut vec[..])?;
+    Ok(vec)
+}
+
+fn read_vec(cursor: &mut Cursor<&[u8]>, limit: RangeInclusive<u16>) -> io::Result<Vec<u8>> {
+    let len = cursor.read_u16::<BigEndian>()?;
+    log::trace!("read opaque length = {}", len);
+    read_vec_of_len(cursor, limit, len)
+}
+
+impl Opaque {
+    pub(crate) fn read_known_len(cursor: &mut Cursor<&[u8]>, len: u16) -> io::Result<Self> {
+        let vec = read_vec_of_len(cursor, 0..=u16::MAX, len)?;
+        Ok(Self(vec))
     }
 }
 
@@ -283,7 +289,7 @@ pub struct SvcParams {
     ///
     /// Wire format: the value of the parameter is an ECHConfigList, including the redundant length prefix.
     /// Presentation format: the value is a single ECHConfigList encoded in Base64.
-    pub ech: Option<Vec<u8>>,
+    pub ech: Option<Opaque>,
     /// > The "ipv4hint" and "ipv6hint" keys convey IP addresses that clients MAY use to reach the
     /// service. If A and AAAA records for TargetName are locally available, the client SHOULD
     /// ignore these hints.
@@ -325,11 +331,7 @@ impl fmt::Display for SvcParams {
             write!(f, " ipv4hint={}", display_utils::join(ipv4hint.iter(), ","))?;
         }
         if let Some(ech) = ech {
-            write!(
-                f,
-                " ech={}",
-                base64::display::Base64Display::with_config(ech, base64::STANDARD)
-            )?;
+            write!(f, " ech={}", ech)?;
         }
         if !ipv6hint.is_empty() {
             write!(f, " ipv6hint={}", display_utils::join(ipv6hint.iter(), ","))?;
@@ -386,9 +388,8 @@ impl SvcParams {
                         ipv4hint = read_convert(cursor, len_hint, |c| c.read_u32::<BigEndian>())?;
                     }
                     SvcParam::Ech => {
-                        let mut vec = vec![0u8; len_hint];
-                        cursor.read_exact(&mut vec)?;
-                        ech = Some(vec);
+                        let opaque = Opaque::read_known_len(cursor, param_length)?;
+                        ech = Some(opaque);
                     }
                     SvcParam::Ipv6Hint => {
                         ipv6hint = read_convert(cursor, len_hint, |c| c.read_u128::<BigEndian>())?;

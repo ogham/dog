@@ -615,7 +615,7 @@ fn svcb_json(svcb: &SVCB) -> JsonValue {
             "port": *port,
             "no-default-alpn": alpn.as_ref().map(|x| x.no_default_alpn).unwrap_or(false),
             "ipv4hint": ipv4hint.iter().map(|x| x.to_string()).collect::<Vec<String>>(),
-            "ech": ech.as_ref().map(|x| base64::encode(x)),
+            "ech": ech.as_ref().map(|x| x.to_string()),
             "ipv6hint": ipv6hint.iter().map(|x| x.to_string()).collect::<Vec<String>>(),
         };
         other.iter().map(|(k, v)| (k.to_string(), v.to_string())).for_each(|(k, v)| {
