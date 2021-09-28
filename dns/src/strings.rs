@@ -22,7 +22,7 @@ pub struct Labels {
 
 #[cfg(feature = "with_idna")]
 fn label_to_ascii(label: &str) -> Result<String, unic_idna::Errors> {
-    let flags = unic_idna::Flags{use_std3_ascii_rules: true, transitional_processing: false, verify_dns_length: true};
+    let flags = unic_idna::Flags{use_std3_ascii_rules: false, transitional_processing: false, verify_dns_length: true};
     unic_idna::to_ascii(label, flags)
 }
 
