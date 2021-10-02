@@ -27,7 +27,9 @@ impl Transport for TlsTransport {
 
     #[cfg(feature = "with_tls")]
     fn send(&self, request: &Request) -> Result<Response, Error> {
-        let connector = native_tls::TlsConnector::new()?;
+        let mut builder = native_tls::TlsConnector::builder();
+        builder.request_alpns(&["dot"]);
+        let connector = builder.build()?;
 
         info!("Opening TLS socket");
         let stream =
