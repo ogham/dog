@@ -35,7 +35,9 @@ impl Transport for HttpsTransport {
 
     #[cfg(feature = "with_https")]
     fn send(&self, request: &Request) -> Result<Response, Error> {
-        let connector = native_tls::TlsConnector::new()?;
+        let mut builder = native_tls::TlsConnector::builder();
+        builder.request_alpns(&["http/1.1"]);
+        let connector = builder.build()?;
 
         let (domain, path) = self.split_domain().expect("Invalid HTTPS nameserver");
 
