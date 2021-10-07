@@ -2,6 +2,7 @@
 
 use std::fmt;
 use std::time::Duration;
+use std::env;
 
 use dns::{Response, Query, Answer, QClass, ErrorCode, WireError, MandatedLength};
 use dns::record::{Record, RecordType, UnknownQtype, OPT};
@@ -55,7 +56,7 @@ impl UseColours {
     /// overridden the colour setting, and if not, whether output is to a
     /// terminal.
     pub fn should_use_colours(self) -> bool {
-        self == Self::Always || (atty::is(atty::Stream::Stdout) && self != Self::Never)
+        self == Self::Always || (atty::is(atty::Stream::Stdout) && env::var("NO_COLOR").is_err() && self != Self::Never)
     }
 
     /// Creates a palette of colours depending on the user’s wishes or whether
