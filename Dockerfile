@@ -11,7 +11,7 @@ RUN cargo build --release
 
 FROM debian:buster-slim
 
-RUN apt update && apt install libssl1.1 && apt clean all
+RUN apt update && apt install -y libssl1.1 ca-certificates && apt clean all
 
 COPY --from=build /build/target/release/dog /dog
 
