@@ -239,6 +239,18 @@ mod test {
     }
 
     #[test]
+    fn one_label_underscore() {
+        let buf: &[u8] = &[
+            0x03,  // label of length 3
+            b'_', b'n', b'e',  // label
+            0x00,  // end reading
+        ];
+
+        assert_eq!(Cursor::new(buf).read_labels(),
+                   Ok((Labels::encode("_ne.").unwrap(), 5)));
+    }
+
+    #[test]
     fn two_labels() {
         let buf: &[u8] = &[
             0x03,  // label of length 3
