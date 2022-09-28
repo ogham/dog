@@ -36,6 +36,9 @@ debug = false
 lto = true
 overflow-checks = true
 panic = "abort"
+strip = "symbols"
+codegen-units = 1
+opt-level = "s"
 
 
 [dependencies]
