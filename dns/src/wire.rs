@@ -165,7 +165,7 @@ impl Answer {
 
 impl Record {
 
-    /// Reads at most `len` bytes from the given curser, and parses them into
+    /// Reads at most `len` bytes from the given cursor, and parses them into
     /// a record structure depending on the type number, which has already been read.
     #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn from_bytes(record_type: RecordType, len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {

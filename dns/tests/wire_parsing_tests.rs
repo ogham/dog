@@ -157,7 +157,7 @@ fn parse_response_with_mixed_string() {
 #[test]
 fn parse_response_with_multiple_additionals() {
 
-    // This is an artifical amalgam of DNS, not a real-world response!
+    // This is an artificial amalgam of DNS, not a real-world response!
     let buf = &[
         0xce, 0xac,  // transaction ID
         0x81, 0x80,  // flags (standard query, response, no error)
