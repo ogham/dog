@@ -161,7 +161,7 @@ impl OutputFormat {
         true
     }
 
-    /// Print an error that’s ocurred while sending or receiving DNS packets
+    /// Print an error that’s occurred while sending or receiving DNS packets
     /// to standard error.
     pub fn print_error(self, error: TransportError) {
         match self {

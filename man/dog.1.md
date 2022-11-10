@@ -211,7 +211,7 @@ The `-Z` command-line argument can be used one or more times to set some protoco
 : Sets the `AD` (Authentic Data) bit in the query.
 
 `bufsize=NUM`
-: Sets the UDP payload size field in the OPT field in the query. This has no effect if EDNS is diabled.
+: Sets the UDP payload size field in the OPT field in the query. This has no effect if EDNS is disabled.
 
 `cd`
 : Sets the `CD` (Checking Disabled) bit in the query.
