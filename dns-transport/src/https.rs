@@ -2,6 +2,7 @@
 
 use std::io::{Read, Write};
 use std::net::TcpStream;
+use std::time::Duration;
 
 use log::*;
 
@@ -38,8 +39,13 @@ use tls_stream::TlsStream;
 impl Transport for HttpsTransport {
 
     #[cfg(any(feature = "with_https"))]
-    fn send(&self, request: &Request) -> Result<Response, Error> {
-        let client = reqwest::blocking::Client::new();
+    fn send(&self, request: &Request, timeout: Option<Duration>) -> Result<Response, Error> {
+        let client = reqwest::blocking::Client::builder()
+            .connect_timeout(timeout)
+            .build()?;
+
+        debug!("Connected");
+
         let request_bytes = request.to_bytes().expect("failed to serialise request");
         let response = client.post(&self.url)
             .header("Content-Type", "application/dns-message")
@@ -66,7 +72,7 @@ impl Transport for HttpsTransport {
     }
 
     #[cfg(not(feature = "with_https"))]
-    fn send(&self, request: &Request) -> Result<Response, Error> {
+    fn send(&self, request: &Request, timeout: Option<Duration>) -> Result<Response, Error> {
         unreachable!("HTTPS feature disabled")
     }
 }

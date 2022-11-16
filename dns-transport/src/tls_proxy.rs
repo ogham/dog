@@ -4,6 +4,8 @@ use std::net::TcpStream;
 use std::env;
 use std::io::{Read, Write};
 use std::collections::HashMap;
+use std::time::Duration;
+use super::to_socket_addr;
 
 use super::error::Error;
 use http::header::HeaderValue;
@@ -218,7 +220,7 @@ pub fn tunnel(
 }
 
 /// setup a maybe proxied stream
-pub fn auto_stream(domain: &str, port: u16) -> Result<TcpStream, Error>
+pub fn auto_stream(domain: &str, port: u16, timeout: Option<Duration>) -> Result<TcpStream, Error>
 {
     // check proxy config and use https proxy if possible
     let proxies: HashMap<String, ProxyScheme> = get_sys_proxies(None);
@@ -226,12 +228,14 @@ pub fn auto_stream(domain: &str, port: u16) -> Result<TcpStream, Error>
     if let Some(proxy) = proxies.get("https") {
         match proxy {
             ProxyScheme::Http { auth: _, host } => {
+                // TODO Implement time-out
                 let mut stream = TcpStream::connect(host.as_str())?;
                 stream = tunnel(stream, domain.into(), port, None, None)?;
                 return Ok(stream);
             }
             #[cfg(any(feature = "with_nativetls", feature = "with_nativetls_vendored"))]
             ProxyScheme::Https { auth: _, host } => {
+                // TODO Implement time-out
                 let connector = native_tls::TlsConnector::new()?;
                 let mut stream = TcpStream::connect(host.as_str())?;
                 connector.connect(domain, stream.try_clone()?)?;
@@ -245,6 +249,8 @@ pub fn auto_stream(domain: &str, port: u16) -> Result<TcpStream, Error>
         }
         
     } else {
-        Ok(TcpStream::connect((domain, port))?)
+        let sock_addr = to_socket_addr(domain, port)?;
+        let stream = if timeout.is_none() {TcpStream::connect(&sock_addr)?} else { TcpStream::connect_timeout(&sock_addr, timeout.unwrap())?};
+        Ok(stream)
     }
 }

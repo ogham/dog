@@ -2,6 +2,7 @@
 
 use std::ffi::OsStr;
 use std::fmt;
+use std::time::Duration;
 
 use log::*;
 
@@ -27,6 +28,9 @@ pub struct Options {
 
     /// How to format the output data.
     pub format: OutputFormat,
+
+    /// Time-out for requests.
+    pub timeout: Option<Duration>,
 }
 
 impl Options {
@@ -55,6 +59,7 @@ impl Options {
         opts.optopt  ("",  "edns",         "Whether to OPT in to EDNS (disable, hide, show)", "SETTING");
         opts.optopt  ("",  "txid",         "Set the transaction ID to a specific value", "NUMBER");
         opts.optmulti("Z", "",             "Set uncommon protocol tweaks", "TWEAKS");
+        opts.optopt  ("",  "timeout",      "Time-out for the request", "NUMBER");
 
         // Protocol options
         opts.optflag ("U", "udp",          "Use the DNS protocol over UDP");
@@ -107,9 +112,10 @@ impl Options {
     fn deduce(matches: getopts::Matches) -> Result<Self, OptionsError> {
         let measure_time = matches.opt_present("time");
         let format = OutputFormat::deduce(&matches);
+        let timeout = TimeOut::deduce(&matches)?;
         let requests = RequestGenerator::deduce(matches)?;
 
-        Ok(Self { requests, measure_time, format })
+        Ok(Self { requests, measure_time, format, timeout })
     }
 }
 
@@ -346,6 +352,21 @@ fn parse_dec_or_hex(input: &str) -> Option<u16> {
     }
 }
 
+struct TimeOut;
+impl TimeOut {
+    fn deduce(matches: &getopts::Matches) -> Result<Option<Duration>, OptionsError> {
+        if let Some(starting_timeout) = matches.opt_str("timeout") {
+            if let Ok(d) = starting_timeout.parse::<u64>() {
+                if d == 0 {
+                    return Err(OptionsError::InvalidTimeOut(starting_timeout));
+                }
+                return Ok(Some(Duration::from_secs(d)));
+            }
+            return Err(OptionsError::InvalidTimeOut(starting_timeout));
+        }
+        Ok(None)
+    }
+}
 
 impl OutputFormat {
     fn deduce(matches: &getopts::Matches) -> Self {
@@ -485,6 +506,7 @@ pub enum OptionsError {
     InvalidQueryClass(String),
     InvalidTxid(String),
     InvalidTweak(String),
+    InvalidTimeOut(String),
     QueryTypeOPT,
     MissingHttpsUrl,
 }
@@ -498,6 +520,7 @@ impl fmt::Display for OptionsError {
             Self::InvalidQueryClass(qc)  => write!(f, "Invalid query class {:?}", qc),
             Self::InvalidTxid(txid)      => write!(f, "Invalid transaction ID {:?}", txid),
             Self::InvalidTweak(tweak)    => write!(f, "Invalid protocol tweak {:?}", tweak),
+            Self::InvalidTimeOut(timeout)=> write!(f, "Invalid time-out {:?}", timeout),
             Self::QueryTypeOPT           => write!(f, "OPT request is sent by default (see -Z flag)"),
             Self::MissingHttpsUrl        => write!(f, "You must pass a URL as a nameserver when using --https"),
         }

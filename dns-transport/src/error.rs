@@ -2,6 +2,9 @@
 #[derive(Debug)]
 pub enum Error {
 
+    /// The server IP or socket is not valid
+    AddrParseError(std::io::Error),
+
     /// The data in the response did not parse correctly from the DNS wire
     /// protocol format.
     WireError(dns::WireError),

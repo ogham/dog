@@ -645,6 +645,7 @@ pub fn print_error_code(rcode: ErrorCode) {
 /// to the user so they can debug what went wrong.
 fn erroneous_phase(error: &TransportError) -> &'static str {
     match error {
+        TransportError::AddrParseError(_)     => "parameter",
         TransportError::WireError(_)          => "protocol",
         TransportError::TruncatedResponse     |
         TransportError::NetworkError(_)       => "network",
@@ -664,6 +665,7 @@ fn erroneous_phase(error: &TransportError) -> &'static str {
 /// Formats an error into its human-readable message.
 fn error_message(error: TransportError) -> String {
     match error {
+        TransportError::AddrParseError(e)     => e.to_string(),
         TransportError::WireError(e)          => wire_error_message(e),
         TransportError::TruncatedResponse     => "Truncated response".into(),
         TransportError::NetworkError(e)       => e.to_string(),

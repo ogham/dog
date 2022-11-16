@@ -1,12 +1,13 @@
 use std::convert::TryFrom;
 use std::net::TcpStream;
 use std::io::{Read, Write};
+use std::time::Duration;
 
 use log::*;
 
 use dns::{Request, Response};
 use super::{Transport, Error};
-
+use super::to_socket_addr;
 
 /// The **TCP transport**, which sends DNS wire data over a TCP stream.
 ///
@@ -28,17 +29,19 @@ impl TcpTransport {
     }
 }
 
-
 impl Transport for TcpTransport {
-    fn send(&self, request: &Request) -> Result<Response, Error> {
+    fn send(&self, request: &Request, timeout: Option<Duration>) -> Result<Response, Error> {
         info!("Opening TCP stream");
-        let mut stream =
-            if self.addr.contains(':') {
-                TcpStream::connect(&*self.addr)?
-            }
-            else {
-                TcpStream::connect((&*self.addr, 53))?
-            };
+
+        let sock_addr = match to_socket_addr(&self.addr, 53) {
+            Ok(addr) => addr,
+            Err(e) => return Err(e),
+        };
+        let mut stream = if timeout.is_none() {
+            TcpStream::connect(&sock_addr)?
+        } else {
+            TcpStream::connect_timeout(&sock_addr, timeout.unwrap())?
+        };
         debug!("Opened");
 
         // The message is prepended with the length when sent over TCP,
