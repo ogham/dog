@@ -1,0 +1,121 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'dns'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=dns"
+                ],
+                "filter": {
+                    "name": "dns",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'wire_parsing_tests'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=wire_parsing_tests",
+                    "--package=dns"
+                ],
+                "filter": {
+                    "name": "wire_parsing_tests",
+                    "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'wire_building_tests'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=wire_building_tests",
+                    "--package=dns"
+                ],
+                "filter": {
+                    "name": "wire_building_tests",
+                    "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'dns-transport'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=dns-transport"
+                ],
+                "filter": {
+                    "name": "dns-transport",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'dog'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=dog",
+                    "--package=dog"
+                ],
+                "filter": {
+                    "name": "dog",
+                    "kind": "bin"
+                }
+            },
+            "args": ["-H", "@https://dns.google/dns-query", "lookup.dog"],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'dog'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=dog",
+                    "--package=dog"
+                ],
+                "filter": {
+                    "name": "dog",
+                    "kind": "bin"
+                }
+            },
+            "args": ["-H", "@https://dns.google/dns-query", "lookup.dog"],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

@@ -29,7 +29,7 @@ members = [
 
 # make dev builds faster by excluding debug symbols
 [profile.dev]
-debug = false
+debug = true
 
 # use LTO for smaller binaries (that take longer to build)
 [profile.release]

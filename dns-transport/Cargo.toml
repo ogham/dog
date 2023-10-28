@@ -23,6 +23,9 @@ native-tls = { version = "0.2", optional = true }
 # http response parsing
 httparse = { version = "1.3", optional = true }
 
+# DoH through reqwest
+reqwest = { version = "0.11.22", optional = true, features = ["blocking"] }
+
 rustls = { version = "0.21.8", optional = true }
 
 webpki = { version = "0.22.4", optional = true }
@@ -35,8 +38,8 @@ cfg-if = "1"
 default = []  # these are enabled in the main dog crate
 
 with_tls   = []
-with_https = ["httparse"]
+with_https = ["httparse", "reqwest"]
 
-with_nativetls = ["native-tls"]
-with_nativetls_vendored = ["native-tls", "native-tls/vendored"]
-with_rustls = ["rustls", "webpki-roots", "webpki"]
+with_nativetls = ["native-tls", "reqwest/native-tls"]
+with_nativetls_vendored = ["native-tls", "native-tls/vendored", "reqwest/native-tls-vendored"]
+with_rustls = ["rustls", "webpki-roots", "webpki", "reqwest/rustls-tls"]
