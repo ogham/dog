@@ -26,6 +26,10 @@ httparse = { version = "1.3", optional = true }
 # DoH through reqwest
 reqwest = { version = "0.11.22", optional = true, features = ["blocking"] }
 
+# For http/https proxies
+http = "0.2"
+url = "2.2"
+
 rustls = { version = "0.21.8", optional = true }
 
 webpki = { version = "0.22.4", optional = true }

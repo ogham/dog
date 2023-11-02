@@ -2,3 +2,6 @@
 /tarpaulin-report.html
 fuzz-*.log
 /cargo-timing*.html
+
+# IDE config
+.vscode

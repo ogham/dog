@@ -44,6 +44,8 @@ mod error;
 
 mod tls_stream;
 
+mod proxy;
+
 pub use self::error::Error;
 
 /// The trait implemented by all transport types.

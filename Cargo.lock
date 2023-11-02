@@ -166,11 +166,13 @@ version = "0.2.0-pre"
 dependencies = [
  "cfg-if",
  "dns",
+ "http",
  "httparse",
  "log",
  "native-tls",
  "reqwest",
  "rustls",
+ "url",
  "webpki",
  "webpki-roots",
 ]

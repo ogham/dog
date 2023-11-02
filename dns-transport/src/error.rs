@@ -1,3 +1,5 @@
+use std::error::Error as StdError;
+
 /// Something that can go wrong making a DNS request.
 #[derive(Debug)]
 pub enum Error {
@@ -32,6 +34,9 @@ pub enum Error {
     /// There was a problem doing DoH request with reqwest.
     #[cfg(feature = "with_https")]
     ReqwestError(reqwest::Error),
+
+    /// There was a problem with proxy.
+    ProxyError(String),
 
     /// The HTTP response code was something other than 200 OK, along with the
     /// response code text, if present.
@@ -86,5 +91,17 @@ impl From<httparse::Error> for Error {
 impl From<reqwest::Error> for Error {
     fn from(inner: reqwest::Error) -> Self {
         Self::ReqwestError(inner)
+    }
+}
+
+impl From<url::ParseError> for Error {
+    fn from(inner: url::ParseError) -> Self {
+        Self::ProxyError(inner.to_string())
+    }
+}
+
+impl From<http::uri::InvalidUri> for Error {
+    fn from(inner: http::uri::InvalidUri) -> Self {
+        Self::ProxyError(inner.to_string())
     }
 }
