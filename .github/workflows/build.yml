@@ -1,0 +1,26 @@
+name: build static binary
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build
+        run: |
+          docker buildx build --file Dockerfile.build.static --output out .
+      - name: Upload to artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: binary
+          path: ./out/dog
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: ./out/dog
