@@ -1,0 +1,23 @@
+name: build static binary
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    pull_requests:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build
+        run: |
+          docker buildx build --file Dockerfile.build.static --output out .
+      - name: Upload to artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: binary
+          path: ./out/dog
