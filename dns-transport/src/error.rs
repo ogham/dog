@@ -1,5 +1,3 @@
-use std::error::Error as StdError;
-
 /// Something that can go wrong making a DNS request.
 #[derive(Debug)]
 pub enum Error {

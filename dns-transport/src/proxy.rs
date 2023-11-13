@@ -1,10 +1,12 @@
 use core::convert::{TryFrom, TryInto};
-use std::error::Error;
+use std::error::Error as StdError;
 use std::net::TcpStream;
+use std::env;
 use std::io::{Read, Write};
 use std::collections::HashMap;
 
-use http::{header::HeaderValue, Uri};
+use super::error::Error;
+use http::header::HeaderValue;
 use url::Url;
 
 /// A particular scheme used for proxying requests.
@@ -23,25 +25,23 @@ pub enum ProxyScheme {
     // TODO: leave socks5 out for now
 }
 
+impl TryFrom<String> for ProxyScheme {
+    type Error = Error;
 
-// impl From<ProxyScheme> for Uri {
-//     fn from(proxy_scheme: ProxyScheme) -> Self {
-//         match proxy_scheme {
-//             ProxyScheme::Http { host, .. } | ProxyScheme::Https { host, .. } => {
-//                 http::Uri::builder()
-//                     .scheme(scheme)
-//                     .authority(host)
-//                     .path_and_query(http::uri::PathAndQuery::from_static("/"))
-//                     .build()
-//                     .expect("scheme and authority is valid Uri")
-//             }
-//         }
-//     }
-// }
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        use url::Position;
+        // validate the URL
+        let url = parse_url_string(value)?;
+        let scheme = match url.scheme() {
+            "http" => Self::Http{auth: None, host: url[Position::BeforeHost..Position::AfterPort].parse()?},
+            "https" => Self::Https{auth: None, host: url[Position::BeforeHost..Position::AfterPort].parse()?},
+            _ => return Err(Error::ProxyError("Invalid uri".into())),
+        };
+        Ok(scheme)
+    }
+}
 
-type SystemProxyMap = HashMap<String, ProxyScheme>;
-
-fn parse_url_string(value: String) -> Result<Url, super::Error> {
+fn parse_url_string(value: String) -> Result<Url, Error> {
     // validate the URL
     let url = match Url::parse(&value) {
         Ok(ok) => ok,
@@ -61,7 +61,7 @@ fn parse_url_string(value: String) -> Result<Url, super::Error> {
                 source = err.source();
             }
             if presumed_to_have_scheme {
-                return Err(super::Error::ProxyError("Invalid url".into()));
+                return Err(Error::ProxyError("Invalid url".into()));
             }
             // the issue could have been caused by a missing scheme, so we try adding http://
             let try_this = format!("http://{}", value);
@@ -71,21 +71,8 @@ fn parse_url_string(value: String) -> Result<Url, super::Error> {
     Ok(url)
 }
 
-impl TryFrom<String> for ProxyScheme {
-    type Error = super::Error;
 
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        use url::Position;
-        // validate the URL
-        let url = parse_url_string(value)?;
-        let mut scheme = match url.scheme() {
-            "http" => Self::Http{auth: None, host: url[Position::BeforeHost..Position::AfterPort].parse()?},
-            "https" => Self::Https{auth: None, host: url[Position::BeforeHost..Position::AfterPort].parse()?},
-            _ => return Err(super::Error::ProxyError("Invalid uri".into())),
-        };
-        Ok(scheme)
-    }
-}
+type SystemProxyMap = HashMap<String, ProxyScheme>;
 
 /// Get system proxies information.
 ///
@@ -133,11 +120,7 @@ fn insert_proxy(proxies: &mut SystemProxyMap, scheme: impl Into<String>, addr: S
 fn get_from_environment() -> SystemProxyMap {
     let mut proxies = HashMap::new();
 
-    if is_cgi() {
-        if log::log_enabled!(log::Level::Warn) && env::var_os("HTTP_PROXY").is_some() {
-            log::warn!("HTTP_PROXY environment variable ignored in CGI");
-        }
-    } else if !insert_from_env(&mut proxies, "http", "HTTP_PROXY") {
+    if !insert_from_env(&mut proxies, "http", "HTTP_PROXY") {
         insert_from_env(&mut proxies, "http", "http_proxy");
     }
 
@@ -163,14 +146,22 @@ fn insert_from_env(proxies: &mut SystemProxyMap, scheme: &str, var: &str) -> boo
     }
 }
 
+/// proxied stream
+/// 
+pub enum ProxiedStream<S>{
+    UnProxied(S),
+    Proxied(TlsStream<S>)
+}
+
 /// make a http connect tunnel for tls stream
 #[cfg(any(feature = "with_nativetls", feature = "with_nativetls_vendored"))]
 pub fn tunnel(
+    mut stream: TcpStream,
     host: String,
     port: u16,
     user_agent: Option<HeaderValue>,
     auth: Option<HeaderValue>,
-) -> Result<TcpStream, super::Error>
+) -> Result<TcpStream, Error>
 {
 
     let mut buf = format!(
@@ -199,10 +190,11 @@ pub fn tunnel(
 
     // headers end
     buf.extend_from_slice(b"\r\n");
-
-    let mut stream = TcpStream::connect((host, port))?;
-
     let written_len = stream.write(&buf)?;
+
+    if written_len != buf.len() {
+        return Err(Error::ProxyError("failed to send tunnel request".into()));
+    }
 
     let mut buf = [0; 8192];
     let mut pos = 0;
@@ -211,7 +203,7 @@ pub fn tunnel(
         let n = stream.read(&mut buf[pos..])?;
 
         if n == 0 {
-            return Err(super::Error::ProxyError("unexpected eof while tunneling".into()));
+            return Err(Error::ProxyError("unexpected eof while tunneling".into()));
         }
         pos += n;
 
@@ -221,13 +213,47 @@ pub fn tunnel(
                 return Ok(stream);
             }
             if pos == buf.len() {
-                return Err(super::Error::ProxyError("proxy headers too long for tunnel".into()));
+                return Err(Error::ProxyError("proxy headers too long for tunnel".into()));
             }
         // else read more
         } else if recvd.starts_with(b"HTTP/1.1 407") {
-            return Err(super::Error::ProxyError("proxy authentication required".into()));
+            return Err(Error::ProxyError("proxy authentication required".into()));
         } else {
-            return Err(super::Error::ProxyError("unsuccessful tunnel".into()));
+            return Err(Error::ProxyError("unsuccessful tunnel".into()));
         }
+    }
+}
+
+/// setup a maybe proxied stream
+pub fn auto_stream<S: Read + Write>(domain: &str, port: u16) -> Result<ProxiedStream<S>, Error>
+{
+    // check proxy config and use https proxy if possible
+    let proxies: HashMap<String, ProxyScheme> = get_sys_proxies(None);
+    
+    if let Some(proxy) = proxies.get("https") {
+        match proxy {
+            ProxyScheme::Http { auth: _, host } => {
+                let mut stream = TcpStream::connect(host.as_str())?;
+                stream = tunnel(stream, domain.into(), port, None, None)?;
+                let connector = native_tls::TlsConnector::new()?;
+                let tls_stream = connector.connect(domain, stream.try_clone()?)?;
+                return Ok(ProxiedStream::<S>(tls_stream));
+            }
+            #[cfg(any(feature = "with_nativetls", feature = "with_nativetls_vendored"))]
+            ProxyScheme::Https { auth: _, host } => {
+                let connector = native_tls::TlsConnector::new()?;
+                let mut stream = TcpStream::connect(host.as_str())?;
+                connector.connect(domain, stream.try_clone()?)?;
+                stream = tunnel(stream, domain.into(), port, None, None)?;
+                return Ok(stream);
+            }
+            #[cfg(feature = "with_rustls")]
+            ProxyScheme::Https { auth, host } => {
+                todo!("not implemented for rustls")
+            }
+        }
+        
+    } else {
+        Ok(TcpStream::connect((domain, port))?)
     }
 }
