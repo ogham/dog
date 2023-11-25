@@ -8,7 +8,6 @@ use log::*;
 use dns::{Request, Response};
 use super::{Transport, Error, TcpTransport};
 use super::tls_stream::TlsStream;
-use super::proxy::auto_stream;
 
 
 /// The **TLS transport**, which sends DNS wire data using TCP through an
@@ -41,10 +40,10 @@ impl Transport for TlsTransport {
                 let domain = parts.nth(0).unwrap();
                 let port = parts.last().unwrap().parse::<u16>().expect("Invalid port number");
 
-                auto_stream(domain, port)?
+                Self::stream(domain, port)?
             }
             else {
-                auto_stream(&*self.addr, 853)?
+                Self::stream(&*self.addr, 853)?
             };
 
 

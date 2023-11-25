@@ -146,13 +146,6 @@ fn insert_from_env(proxies: &mut SystemProxyMap, scheme: &str, var: &str) -> boo
     }
 }
 
-/// proxied stream
-/// 
-pub enum ProxiedStream<S>{
-    UnProxied(S),
-    Proxied(TlsStream<S>)
-}
-
 /// make a http connect tunnel for tls stream
 #[cfg(any(feature = "with_nativetls", feature = "with_nativetls_vendored"))]
 pub fn tunnel(
@@ -225,7 +218,7 @@ pub fn tunnel(
 }
 
 /// setup a maybe proxied stream
-pub fn auto_stream<S: Read + Write>(domain: &str, port: u16) -> Result<ProxiedStream<S>, Error>
+pub fn auto_stream(domain: &str, port: u16) -> Result<TcpStream, Error>
 {
     // check proxy config and use https proxy if possible
     let proxies: HashMap<String, ProxyScheme> = get_sys_proxies(None);
@@ -235,9 +228,7 @@ pub fn auto_stream<S: Read + Write>(domain: &str, port: u16) -> Result<ProxiedSt
             ProxyScheme::Http { auth: _, host } => {
                 let mut stream = TcpStream::connect(host.as_str())?;
                 stream = tunnel(stream, domain.into(), port, None, None)?;
-                let connector = native_tls::TlsConnector::new()?;
-                let tls_stream = connector.connect(domain, stream.try_clone()?)?;
-                return Ok(ProxiedStream::<S>(tls_stream));
+                return Ok(stream);
             }
             #[cfg(any(feature = "with_nativetls", feature = "with_nativetls_vendored"))]
             ProxyScheme::Https { auth: _, host } => {

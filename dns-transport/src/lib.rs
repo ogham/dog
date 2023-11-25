@@ -44,7 +44,7 @@ mod error;
 
 mod tls_stream;
 
-mod proxy;
+mod tls_proxy;
 
 pub use self::error::Error;
 
