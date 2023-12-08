@@ -29,7 +29,7 @@ members = [
 
 # make dev builds faster by excluding debug symbols
 [profile.dev]
-debug = false
+debug = true
 
 # use LTO for smaller binaries (that take longer to build)
 [profile.release]
@@ -63,13 +63,13 @@ log = "0.4"
 
 # windows default nameserver determination
 [target.'cfg(windows)'.dependencies]
-ipconfig = { version = "0.2" }
+ipconfig = { version = "0.3.2" }
 
 [build-dependencies]
 datetime = { version = "0.5.1", default_features = false }
 
 [dev-dependencies]
-pretty_assertions = "0.7"
+pretty_assertions = "1.4.0"
 
 [features]
 default = ["with_idna", "with_tls", "with_https", "with_nativetls"]

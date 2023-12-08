@@ -655,7 +655,9 @@ fn erroneous_phase(error: &TransportError) -> &'static str {
         TransportError::RustlsInvalidDnsNameError(_) => "tls", // TODO: Actually wrong, could be https
         #[cfg(feature = "with_https")]
         TransportError::HttpError(_)          |
+        TransportError::ReqwestError(_)          |
         TransportError::WrongHttpStatus(_,_)  => "http",
+        TransportError::ProxyError(_) => "proxy",
     }
 }
 
@@ -671,8 +673,11 @@ fn error_message(error: TransportError) -> String {
         TransportError::TlsHandshakeError(e)  => e.to_string(),
         #[cfg(any(feature = "with_rustls"))]
         TransportError::RustlsInvalidDnsNameError(e) => e.to_string(),
+        TransportError::ProxyError(e) => e.to_string(),
         #[cfg(feature = "with_https")]
         TransportError::HttpError(e)          => e.to_string(),
+        #[cfg(feature = "with_https")]
+        TransportError::ReqwestError(e)          => e.to_string(),
         #[cfg(feature = "with_https")]
         TransportError::WrongHttpStatus(t,r)  => format!("Nameserver returned HTTP {} ({})", t, r.unwrap_or_else(|| "No reason".into()))
     }

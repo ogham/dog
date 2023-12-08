@@ -115,7 +115,7 @@ impl TcpTransport {
             let extend_len = stream.read(&mut extend_buf[..])?;
             info!("Received further {} bytes of data (of {})", extend_len, total_len);
 
-            if read_len == 0 {
+            if extend_len == 0 {
                 warn!("Read zero bytes!");
                 return Err(Error::TruncatedResponse);
             }

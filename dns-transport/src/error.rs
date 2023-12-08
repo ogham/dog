@@ -29,6 +29,13 @@ pub enum Error {
     #[cfg(feature = "with_https")]
     HttpError(httparse::Error),
 
+    /// There was a problem doing DoH request with reqwest.
+    #[cfg(feature = "with_https")]
+    ReqwestError(reqwest::Error),
+
+    /// There was a problem with proxy.
+    ProxyError(String),
+
     /// The HTTP response code was something other than 200 OK, along with the
     /// response code text, if present.
     #[cfg(feature = "with_https")]
@@ -75,5 +82,24 @@ impl From<webpki::InvalidDNSNameError> for Error {
 impl From<httparse::Error> for Error {
     fn from(inner: httparse::Error) -> Self {
         Self::HttpError(inner)
+    }
+}
+
+#[cfg(feature = "with_https")]
+impl From<reqwest::Error> for Error {
+    fn from(inner: reqwest::Error) -> Self {
+        Self::ReqwestError(inner)
+    }
+}
+
+impl From<url::ParseError> for Error {
+    fn from(inner: url::ParseError) -> Self {
+        Self::ProxyError(inner.to_string())
+    }
+}
+
+impl From<http::uri::InvalidUri> for Error {
+    fn from(inner: http::uri::InvalidUri) -> Self {
+        Self::ProxyError(inner.to_string())
     }
 }

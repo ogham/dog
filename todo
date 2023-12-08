@@ -1,0 +1,3 @@
+-[x] Make DoH respect system proxy settings
+-[ ] Make DoT respect system proxy settings
+-[ ] Use coroutine to enhance performance

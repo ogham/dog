@@ -2,11 +2,12 @@ use std::net::TcpStream;
 use super::Error;
 use super::HttpsTransport;
 use super::TlsTransport;
+use super::tls_proxy::auto_stream;
 
 #[cfg(any(feature = "with_nativetls", feature = "with_nativetls_vendored"))]
 fn stream_nativetls(domain: &str, port: u16) -> Result<native_tls::TlsStream<TcpStream>, Error> {
     let connector = native_tls::TlsConnector::new()?;
-    let stream = TcpStream::connect((domain, port))?;
+    let stream = auto_stream(domain, port)?;
     Ok(connector.connect(domain, stream)?)
 }
 
