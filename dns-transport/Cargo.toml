@@ -30,11 +30,11 @@ reqwest = { version = "0.11.22", optional = true, features = ["blocking"] }
 http = "0.2"
 url = "2.2"
 
-rustls = { version = "0.21.8", optional = true }
+rustls = { version = "0.22", optional = true }
 
-webpki = { version = "0.22.4", optional = true }
+webpki = { version = "0.22", optional = true }
 
-webpki-roots = { version = "0.25.2", optional = true }
+webpki-roots = { version = "0.26", optional = true }
 
 cfg-if = "1"
 
