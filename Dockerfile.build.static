@@ -1,4 +1,4 @@
-FROM alpine as build
+FROM alpine:3.18 as build
 
 COPY ./ /source
 WORKDIR /source
