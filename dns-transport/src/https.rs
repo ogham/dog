@@ -42,6 +42,7 @@ impl Transport for HttpsTransport {
     fn send(&self, request: &Request, timeout: Option<Duration>) -> Result<Response, Error> {
         let client = reqwest::blocking::Client::builder()
             .connect_timeout(timeout)
+            .timeout(timeout)
             .build()?;
 
         debug!("Connected");
