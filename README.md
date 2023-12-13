@@ -105,6 +105,18 @@ The `just man` command will compile the Markdown into manual pages, which it wil
 To use them, copy them into a directory that `man` will read.
 `/usr/local/share/man` is usually a good choice.
 
+- To replace `nativetls` by `rustls`:
+
+    $ cargo build --no-default-features --features with_tls,with_https,with_rustls
+
+### Build for Alpine
+
+    $ docker run --rm  -v "$PWD":/usr/src/myapp -w /usr/src/myapp instrumentisto/rust:1-alpine sh -c "apk add pkgconfig musl-dev openssl-dev git ; cargo build --release"
+
+
+### Build for Buster
+
+    $ docker run --rm --user "$(id -u)":"$(id -g)" -v "$PWD":/usr/src/myapp -w /usr/src/myapp instrumentisto/rust:1-buster cargo build --release
 
 ### Container image
 
@@ -150,6 +162,9 @@ Use `cargo` to build a binary that uses feature toggles. For example, to disable
 
 The list of features that have been disabled can be checked at runtime as part of the `--version` string.
 
+### Debugging with traces
+
+    $ DOG_DEBUG=trace dog --time -U -n 1.1.1.1 google.com
 
 ---
 

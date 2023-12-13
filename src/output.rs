@@ -161,7 +161,7 @@ impl OutputFormat {
         true
     }
 
-    /// Print an error that’s ocurred while sending or receiving DNS packets
+    /// Print an error that’s occurred while sending or receiving DNS packets
     /// to standard error.
     pub fn print_error(self, error: TransportError) {
         match self {
@@ -645,6 +645,7 @@ pub fn print_error_code(rcode: ErrorCode) {
 /// to the user so they can debug what went wrong.
 fn erroneous_phase(error: &TransportError) -> &'static str {
     match error {
+        TransportError::AddrParseError(_)     => "parameter",
         TransportError::WireError(_)          => "protocol",
         TransportError::TruncatedResponse     |
         TransportError::NetworkError(_)       => "network",
@@ -655,13 +656,16 @@ fn erroneous_phase(error: &TransportError) -> &'static str {
         TransportError::RustlsInvalidDnsNameError(_) => "tls", // TODO: Actually wrong, could be https
         #[cfg(feature = "with_https")]
         TransportError::HttpError(_)          |
+        TransportError::ReqwestError(_)          |
         TransportError::WrongHttpStatus(_,_)  => "http",
+        TransportError::ProxyError(_) => "proxy",
     }
 }
 
 /// Formats an error into its human-readable message.
 fn error_message(error: TransportError) -> String {
     match error {
+        TransportError::AddrParseError(e)     => e.to_string(),
         TransportError::WireError(e)          => wire_error_message(e),
         TransportError::TruncatedResponse     => "Truncated response".into(),
         TransportError::NetworkError(e)       => e.to_string(),
@@ -671,8 +675,11 @@ fn error_message(error: TransportError) -> String {
         TransportError::TlsHandshakeError(e)  => e.to_string(),
         #[cfg(any(feature = "with_rustls"))]
         TransportError::RustlsInvalidDnsNameError(e) => e.to_string(),
+        TransportError::ProxyError(e) => e.to_string(),
         #[cfg(feature = "with_https")]
         TransportError::HttpError(e)          => e.to_string(),
+        #[cfg(feature = "with_https")]
+        TransportError::ReqwestError(e)          => e.to_string(),
         #[cfg(feature = "with_https")]
         TransportError::WrongHttpStatus(t,r)  => format!("Nameserver returned HTTP {} ({})", t, r.unwrap_or_else(|| "No reason".into()))
     }

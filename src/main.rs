@@ -98,7 +98,7 @@ fn main() {
 
 
 /// Runs dog with some options, returning the status to exit with.
-fn run(Options { requests, format, measure_time }: Options) -> i32 {
+fn run(Options { requests, format, measure_time, timeout }: Options) -> i32 {
     use std::time::Instant;
 
     let should_show_opt = requests.edns.should_show();
@@ -133,7 +133,7 @@ fn run(Options { requests, format, measure_time }: Options) -> i32 {
     for (transport, request_list) in request_tuples {
         let request_list_len = request_list.len();
         for (i, request) in request_list.into_iter().enumerate() {
-            let result = transport.send(&request);
+            let result = transport.send(&request, timeout);
 
             match result {
                 Ok(mut response) => {

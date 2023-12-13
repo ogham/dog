@@ -2,6 +2,7 @@
 
 use std::io::{Read, Write};
 use std::net::TcpStream;
+use std::time::Duration;
 
 use log::*;
 
@@ -38,74 +39,41 @@ use tls_stream::TlsStream;
 impl Transport for HttpsTransport {
 
     #[cfg(any(feature = "with_https"))]
-    fn send(&self, request: &Request) -> Result<Response, Error> {
-        let (domain, path) = self.split_domain().expect("Invalid HTTPS nameserver");
-
-        info!("Opening TLS socket to {:?}", domain);
-        let mut stream = Self::stream(&domain, 443)?;
+    fn send(&self, request: &Request, timeout: Option<Duration>) -> Result<Response, Error> {
+        let client = reqwest::blocking::Client::builder()
+            .connect_timeout(timeout)
+            .timeout(timeout)
+            .build()?;
 
         debug!("Connected");
 
         let request_bytes = request.to_bytes().expect("failed to serialise request");
-        let mut bytes_to_send = format!("\
-            POST {} HTTP/1.1\r\n\
-            Host: {}\r\n\
-            Content-Type: application/dns-message\r\n\
-            Accept: application/dns-message\r\n\
-            User-Agent: {}\r\n\
-            Content-Length: {}\r\n\r\n",
-            path, domain, USER_AGENT, request_bytes.len()).into_bytes();
-        bytes_to_send.extend(request_bytes);
+        let response = client.post(&self.url)
+            .header("Content-Type", "application/dns-message")
+            .header("Accept", "application/dns-message")
+            .header("User-Agent", USER_AGENT)
+            .body(request_bytes)
+            .send()?;
 
-        info!("Sending {} bytes of data to {:?} over HTTPS", bytes_to_send.len(), self.url);
-        stream.write_all(&bytes_to_send)?;
-        debug!("Wrote all bytes");
-
-        info!("Waiting to receive...");
-        let mut buf = [0; 4096];
-        let mut read_len = stream.read(&mut buf)?;
-        while !contains_header(&buf[0..read_len]) {
-            if read_len == buf.len() {
-                return Err(Error::WireError(WireError::IO));
-            }
-            read_len += stream.read(&mut buf[read_len..])?;
-        }
-        let mut expected_len = read_len;
-        info!("Received {} bytes of data", read_len);
-
-        let mut headers = [httparse::EMPTY_HEADER; 16];
-        let mut response = httparse::Response::new(&mut headers);
-        let index: usize = response.parse(&buf)?.unwrap();
-
-        if response.code != Some(200) {
-            let reason = response.reason.map(str::to_owned);
-            return Err(Error::WrongHttpStatus(response.code.unwrap(), reason));
+        let status = response.status();
+        if !status.is_success() {
+            return Err(Error::WrongHttpStatus(status.as_u16(), Some(status.to_string())));
         }
 
-        for header in response.headers {
-            let str_value = String::from_utf8_lossy(header.value);
-            debug!("Header {:?} -> {:?}", header.name, str_value);
-            if header.name == "Content-Length" {
-                let content_length: usize = str_value.parse().unwrap();
-                expected_len = index + content_length;
-            }
-        }
+        let headers = response.headers();
+        let content_length = headers.get("Content-Length")
+            .and_then(|value| value.to_str().ok())
+            .and_then(|value| value.parse().ok())
+            .unwrap_or(0);
 
-        while read_len < expected_len {
-            if read_len == buf.len() {
-                return Err(Error::WireError(WireError::IO));
-            }
-            read_len += stream.read(&mut buf[read_len..])?;
-        }
+        debug!("HTTP body has {} bytes", content_length);
 
-        let body = &buf[index .. read_len];
-        debug!("HTTP body has {} bytes", body.len());
-        let response = Response::from_bytes(&body)?;
+        let response = Response::from_bytes(&response.bytes()?)?;
         Ok(response)
     }
 
     #[cfg(not(feature = "with_https"))]
-    fn send(&self, request: &Request) -> Result<Response, Error> {
+    fn send(&self, request: &Request, timeout: Option<Duration>) -> Result<Response, Error> {
         unreachable!("HTTPS feature disabled")
     }
 }

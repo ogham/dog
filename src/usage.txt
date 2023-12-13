@@ -19,6 +19,7 @@
   \1;33m--edns\0m=\33mSETTING\0m           Whether to OPT in to EDNS (disable, hide, show)
   \1;33m--txid\0m=\33mNUMBER\0m            Set the transaction ID to a specific value
   \1;33m-Z\0m=\33mTWEAKS\0m                Set uncommon protocol-level tweaks
+  \1;33m--timeout\0m=\33mNUMBER\0m         Time-out for the request
 
 \4mProtocol options:\0m
   \1;33m-U\0m, \1;33m--udp\0m                Use the DNS protocol over UDP

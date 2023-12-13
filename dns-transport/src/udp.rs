@@ -1,9 +1,11 @@
 use std::net::{Ipv4Addr, UdpSocket};
+use std::time::Duration;
 
 use log::*;
 
 use dns::{Request, Response};
 use super::{Transport, Error};
+use super::to_socket_addr;
 
 
 /// The **UDP transport**, which sends DNS wire data inside a UDP datagram.
@@ -26,17 +28,20 @@ impl UdpTransport {
 
 
 impl Transport for UdpTransport {
-    fn send(&self, request: &Request) -> Result<Response, Error> {
+    fn send(&self, request: &Request, timeout: Option<Duration>) -> Result<Response, Error> {
         info!("Opening UDP socket");
         // TODO: This will need to be changed for IPv6 support.
         let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0))?;
 
-        if self.addr.contains(':') {
-            socket.connect(&*self.addr)?;
+        let result = socket.set_read_timeout(timeout);
+        match result {
+            Ok(()) => (),
+            Err(err) => return Err(Error::NetworkError(err)),
         }
-        else {
-            socket.connect((&*self.addr, 53))?;
-        }
+
+        let sock_addr = to_socket_addr(&self.addr, 53)?;
+
+        socket.connect(sock_addr)?;
         debug!("Opened");
 
         let bytes_to_send = request.to_bytes().expect("failed to serialise request");

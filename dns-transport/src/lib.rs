@@ -9,7 +9,7 @@
 #![warn(rust_2018_idioms)]
 #![warn(single_use_lifetimes)]
 #![warn(trivial_casts, trivial_numeric_casts)]
-#![warn(unused)]
+#![warn(unused_imports)]
 
 #![warn(clippy::all, clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
@@ -44,7 +44,12 @@ mod error;
 
 mod tls_stream;
 
+mod tls_proxy;
+
 pub use self::error::Error;
+
+pub use std::time::Duration;
+use std::net::{SocketAddr, ToSocketAddrs, IpAddr};
 
 /// The trait implemented by all transport types.
 pub trait Transport {
@@ -58,5 +63,32 @@ pub trait Transport {
     /// receiving data, or the DNS packet in the response contained invalid
     /// bytes and failed to parse, or if there was a protocol-level error for
     /// the TLS and HTTPS transports.
-    fn send(&self, request: &dns::Request) -> Result<dns::Response, Error>;
+    fn send(&self, request: &dns::Request, timeout: Option<Duration>) -> Result<dns::Response, Error>;
+}
+
+/// Parse a string to return a SocketAddr. If the string contains only an IP or a domain,
+/// the default port is used.
+/// 
+/// # Errors
+/// 
+/// Returns an 'Error' error if the string cannot by parsed
+pub fn to_socket_addr(s: &str, default_port: u16) -> Result<SocketAddr, Error> {
+
+    match s.parse::<IpAddr>() {
+        Ok(addr) => return Ok(SocketAddr::new(addr, default_port)),
+        Err(_) => {
+            let addresses = if s.contains(':') {
+                s.to_socket_addrs()
+            } else {
+                (s, default_port).to_socket_addrs()
+            };
+
+            let addr = match addresses {
+                Ok(mut a) => a.next().unwrap(),
+                Err(error) => return Err(Error::AddrParseError(error)),
+            };
+            return Ok(addr);
+        }
+    };
+
 }

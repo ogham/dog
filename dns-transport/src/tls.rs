@@ -2,12 +2,14 @@
 
 use std::net::TcpStream;
 use std::io::Write;
+use std::time::Duration;
 
 use log::*;
 
 use dns::{Request, Response};
 use super::{Transport, Error, TcpTransport};
 use super::tls_stream::TlsStream;
+use super::to_socket_addr;
 
 
 /// The **TLS transport**, which sends DNS wire data using TCP through an
@@ -29,7 +31,7 @@ impl TlsTransport {
 impl Transport for TlsTransport {
 
     #[cfg(feature = "with_tls")]
-    fn send(&self, request: &Request) -> Result<Response, Error> {
+    fn send(&self, request: &Request, timeout: Option<Duration>) -> Result<Response, Error> {
         info!("Opening TLS socket");
 
         let domain = self.sni_domain();
@@ -40,10 +42,10 @@ impl Transport for TlsTransport {
                 let domain = parts.nth(0).unwrap();
                 let port = parts.last().unwrap().parse::<u16>().expect("Invalid port number");
 
-                Self::stream(domain, port)?
+                Self::stream(domain, port, timeout)?
             }
             else {
-                Self::stream(&*self.addr, 853)?
+                Self::stream(&*self.addr, 853, timeout)?
             };
 
 
@@ -64,7 +66,7 @@ impl Transport for TlsTransport {
     }
 
     #[cfg(not(feature = "with_tls"))]
-    fn send(&self, request: &Request) -> Result<Response, Error> {
+    fn send(&self, request: &Request, timeout: Option<Duration>) -> Result<Response, Error> {
         unreachable!("TLS feature disabled")
     }
 }
