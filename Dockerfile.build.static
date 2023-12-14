@@ -1,0 +1,15 @@
+FROM alpine:3.18 as build
+
+COPY ./ /source
+WORKDIR /source
+
+RUN apk update && \
+    apk add rustup git gcc lld openssl1.1-compat-dev openssl1.1-compat-libs-static && \
+    rustup-init -y && \
+    source "$HOME/.cargo/env" && \
+    RUSTFLAGS="-C link-args=-fuse-ld=lld" cargo build && \
+    strip target/debug/dog
+
+FROM scratch AS export-stage
+ARG TARGETARCH
+COPY --from=build /source/target/debug/dog ./dog_linux_$TARGETARCH
