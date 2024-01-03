@@ -75,6 +75,7 @@ To install dog, you can download a pre-compiled binary, or you can compile it fr
 - For Arch Linux, install the [`dog`](https://www.archlinux.org/packages/community/x86_64/dog/) package.
 - For Homebrew on macOS, install the [`dog`](https://formulae.brew.sh/formula/dog) formula.
 - For NixOS, install the [`dogdns`](https://search.nixos.org/packages?channel=unstable&show=dogdns&query=dogdns) package.
+- For Snap, install the [`dog`](https://snapcraft.io/install/dog/ubuntu)
 
 
 ### Downloads
