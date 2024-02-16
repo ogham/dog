@@ -2,7 +2,7 @@
 # But beware that in Windows PowerShell 5.1, it has issues with completing args if they start with '-'.
 # For more information about the bug, see: https://github.com/PowerShell/PowerShell/issues/2912
 # In PowerShell 7+, it should work correctly.
-Register-ArgumentCompleter -Native -CommandName 'dog' -ScriptBlock {
+Register-ArgumentCompleter -Native -CommandName 'doge' -ScriptBlock {
     param($wordToComplete, $commandAst, $cursorPosition)
 
     [string]$argsString = $commandAst.ToString()

@@ -1,6 +1,6 @@
-#compdef dog
+#compdef doge
 
-__dog() {
+__doge() {
     _arguments \
         "(- 1 *)"{-v,--version}"[Show version of dog]" \
         "(- 1 *)"{-\?,--help}"[Show list of command-line options]" \
@@ -23,4 +23,4 @@ __dog() {
         '*:filename:_hosts'
 }
 
-__dog
+__doge

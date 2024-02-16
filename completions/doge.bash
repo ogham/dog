@@ -1,4 +1,4 @@
-_dog()
+_doge()
 {
     cur=${COMP_WORDS[COMP_CWORD]}
     prev=${COMP_WORDS[COMP_CWORD-1]}
