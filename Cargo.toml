@@ -11,7 +11,7 @@ exclude = [
 ]
 homepage = "https://dns.lookup.dog/"
 license = "MIT"
-version = "0.2.0-pre"
+version = "0.2.1-beta"
 
 
 [[bin]]
@@ -29,7 +29,7 @@ members = [
 
 # make dev builds faster by excluding debug symbols
 [profile.dev]
-debug = false
+debug = true
 
 # use LTO for smaller binaries (that take longer to build)
 [profile.release]
