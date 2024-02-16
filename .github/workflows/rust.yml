@@ -1,0 +1,92 @@
+name: build static binary
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    tags:
+      - 'latest'
+jobs:  
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: openssl dependency
+        run: |
+          sudo apt-get install libssl-dev
+      - name: Updating cargo
+        run: | 
+          cargo update
+      - name: Build
+        run: |
+          cargo build --target=x86_64-unknown-linux-gnu --release 
+          mkdir out
+          mv -v target/x86_64-unknown-linux-gnu/release/doge out/doge_linux_64bit
+      - name: Upload to artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: binary_linux
+          path: ./out/*
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Updating cargo
+        run: | 
+          cargo update
+      - name: Setup Dependencies
+        run: |
+          rustup target add aarch64-apple-darwin
+      - name: Build
+        run: |
+          cargo build --target=aarch64-apple-darwin --release
+          cargo build --target=x86_64-apple-darwin --release
+          mkdir out
+          mv -v target/aarch64-apple-darwin/release/doge out/doge_darwin_arm64
+          mv -v target/x86_64-apple-darwin/release/doge out/doge_darwin_x86_64
+      - name: Upload to artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: binary_macos
+          path: ./out/*
+  build-windows:
+     runs-on: windows-latest
+     steps:
+       - name: Checkout
+         uses: actions/checkout@v4
+       - name: Setup rust
+         run: |
+           rustup target add aarch64-pc-windows-msvc
+       - name: Build
+         run: |
+           cargo build --release --target x86_64-pc-windows-msvc
+           mkdir out
+           move target\x86_64-pc-windows-msvc\release\doge.exe out\doge_windows_x86_64.exe
+       - name: Upload to artifact
+         uses: actions/upload-artifact@v3
+         with:
+           name: binary_windows
+           path: ./out/*
+  release:
+      runs-on: ubuntu-latest
+      needs: 
+        - build-linux
+        - build-windows
+        - build-macos
+      steps:
+        - name: Download Artifact
+          uses: actions/download-artifact@v3
+          with:
+            path: ./artifacts
+        - name: organize files
+          run: |
+            tree artifacts
+            mkdir out
+            mv -v artifacts/**/doge_* out/
+        - name: Release
+          if: startsWith(github.ref, 'refs/tags/')
+          uses: softprops/action-gh-release@v1
+          with:
+            files: ./out/doge_* 
