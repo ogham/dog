@@ -26,15 +26,15 @@ fn main() -> io::Result<()> {
     #![allow(clippy::write_with_newline)]
 
     let usage   = include_str!("src/usage.txt");
-    let tagline = "dog \\1;32m●\\0m command-line DNS client";
+    let tagline = "doge \\1;32m\\0m command-line DNS client";
     let url     = "https://dns.lookup.dog/";
 
     let ver =
         if is_debug_build() {
-            format!("{}\nv{} \\1;31m(pre-release debug build!)\\0m\n\\1;4;34m{}\\0m", tagline, version_string(), url)
+            format!("{}\nv{} \\1;31m(beta debug build!)\\0m\n\\1;4;34m{}\\0m", tagline, version_string(), url)
         }
         else if is_development_version() {
-            format!("{}\nv{} [{}] built on {} \\1;31m(pre-release!)\\0m\n\\1;4;34m{}\\0m", tagline, version_string(), git_hash(), build_date(), url)
+            format!("{}\nv{} [{}] built on {} \\1;31m(beta-release!)\\0m\n\\1;4;34m{}\\0m", tagline, version_string(), git_hash(), build_date(), url)
         }
         else {
             format!("{}\nv{}\n\\1;4;34m{}\\0m", tagline, version_string(), url)
@@ -100,7 +100,7 @@ fn git_hash() -> String {
 /// Both weekly releases and actual releases are --release releases,
 /// but actual releases will have a proper version number.
 fn is_development_version() -> bool {
-    cargo_version().ends_with("-pre") || env::var("PROFILE").unwrap() == "debug"
+    cargo_version().ends_with("-beta") || env::var("PROFILE").unwrap() == "debug"
 }
 
 /// Whether we are building in debug mode.
