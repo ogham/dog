@@ -1,21 +1,21 @@
 [package]
-name = "dog"
+name = "doge"
 description = "A command-line DNS client"
 
-authors = ["Benjamin Sago <ogham@bsago.me>"]
+authors = ["Darrion Whitfield <dwhitfield@ramfield.net>"]
 categories = ["command-line-utilities"]
-edition = "2018"
+edition = "2021"
 exclude = [
     "/completions/*", "/man/*", "/xtests/*",
     "/dog-screenshot.png", "/Justfile", "/README.md", "/.rustfmt.toml", "/.travis.yml",
 ]
 homepage = "https://dns.lookup.dog/"
-license = "EUPL-1.2"
+license = "MIT"
 version = "0.2.0-pre"
 
 
 [[bin]]
-name = "dog"
+name = "doge"
 path = "src/main.rs"
 doctest = false
 
