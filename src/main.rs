@@ -85,12 +85,12 @@ fn main() {
         }
 
         OptionsResult::InvalidOptionsFormat(oe) => {
-            eprintln!("dog: Invalid options: {}", oe);
+            eprintln!("dog: Invalid options: {oe}");
             exit(exits::OPTIONS_ERROR);
         }
 
         OptionsResult::InvalidOptions(why) => {
-            eprintln!("dog: Invalid options: {}", why);
+            eprintln!("dog: Invalid options: {why}");
             exit(exits::OPTIONS_ERROR);
         }
     }
@@ -118,14 +118,14 @@ fn run(Options { requests, format, measure_time }: Options) -> i32 {
 
     for hostname_in_query in &requests.inputs.domains {
         if local_host_hints.contains(hostname_in_query) {
-            eprintln!("warning: domain '{}' also exists in hosts file", hostname_in_query);
+            eprintln!("warning: domain '{hostname_in_query}' also exists in hosts file");
         }
     }
 
     let request_tuples = match requests.generate() {
         Ok(rt) => rt,
         Err(e) => {
-            eprintln!("Unable to obtain resolver: {}", e);
+            eprintln!("Unable to obtain resolver: {e}");
             return exits::SYSTEM_ERROR;
         }
     };

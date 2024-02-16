@@ -61,7 +61,7 @@ impl Table {
                 let qname = qname.to_string();
                 let summary = self.text_format.record_payload_summary(record);
                 let ttl = Some(self.text_format.format_duration(ttl));
-                self.rows.push(Row { qtype, qname, ttl, summary, section });
+                self.rows.push(Row { qtype, qname, ttl, section, summary });
             }
             Answer::Pseudo { qname, opt } => {
                 let qtype = self.colours.opt.paint("OPT");
@@ -95,7 +95,7 @@ impl Table {
                         print!(" ");
                     }
 
-                    print!("{}", ttl);
+                    print!("{ttl}");
                 }
                 else {
                     for _ in 0 .. ttl_len {

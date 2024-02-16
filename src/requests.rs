@@ -115,7 +115,7 @@ impl RequestGenerator {
                             let mut request_list = Vec::new();
                             for qname in resolver.name_list(domain) {
                                 let transaction_id = self.txid_generator.generate();
-                                let query = dns::Query { qname, qtype, qclass };
+                                let query = dns::Query { qname, qclass, qtype };
                                 let request = dns::Request { transaction_id, flags, query, additional: additional.clone() };
                                 request_list.push(request);
                             }

@@ -492,12 +492,12 @@ pub enum OptionsError {
 impl fmt::Display for OptionsError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::InvalidDomain(domain)  => write!(f, "Invalid domain {:?}", domain),
-            Self::InvalidEDNS(edns)      => write!(f, "Invalid EDNS setting {:?}", edns),
-            Self::InvalidQueryType(qt)   => write!(f, "Invalid query type {:?}", qt),
-            Self::InvalidQueryClass(qc)  => write!(f, "Invalid query class {:?}", qc),
-            Self::InvalidTxid(txid)      => write!(f, "Invalid transaction ID {:?}", txid),
-            Self::InvalidTweak(tweak)    => write!(f, "Invalid protocol tweak {:?}", tweak),
+            Self::InvalidDomain(domain)  => write!(f, "Invalid domain {domain:?}"),
+            Self::InvalidEDNS(edns)      => write!(f, "Invalid EDNS setting {edns:?}"),
+            Self::InvalidQueryType(qt)   => write!(f, "Invalid query type {qt:?}"),
+            Self::InvalidQueryClass(qc)  => write!(f, "Invalid query class {qc:?}"),
+            Self::InvalidTxid(txid)      => write!(f, "Invalid transaction ID {txid:?}"),
+            Self::InvalidTweak(tweak)    => write!(f, "Invalid protocol tweak {tweak:?}"),
             Self::QueryTypeOPT           => write!(f, "OPT request is sent by default (see -Z flag)"),
             Self::MissingHttpsUrl        => write!(f, "You must pass a URL as a nameserver when using --https"),
         }
