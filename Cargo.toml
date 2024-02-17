@@ -60,7 +60,7 @@ log = "0.4"
 
 # Git workflows as well as my sanity will fail without this
 [dependencies.openssl-sys]
-version = "0.10"
+version = "0.9.99"
 features = ["vendored"]
 
 # windows default nameserver determination
