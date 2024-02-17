@@ -14,13 +14,18 @@ use super::tls_stream;
 /// encrypted with TLS, using TCP.
 pub struct HttpsTransport {
     url: String,
+    custom_port: u16
 }
 
 impl HttpsTransport {
 
     /// Creates a new HTTPS transport that connects to the given URL.
-    pub fn new(url: String) -> Self {
-        Self { url }
+    pub fn new(url: String, port: Option<u16>) -> Self {
+        let custom_port: u16 = match port {
+            Some(port) => port,
+            None => 443,
+        };
+        Self { url, custom_port }
     }
 }
 
@@ -42,7 +47,7 @@ impl Transport for HttpsTransport {
         let (domain, path) = self.split_domain().expect("Invalid HTTPS nameserver");
 
         info!("Opening TLS socket to {:?}", domain);
-        let mut stream = Self::stream(&domain, 443)?;
+        let mut stream = Self::stream(&domain, *&self.custom_port)?;
 
         debug!("Connected");
 
@@ -123,5 +128,5 @@ impl HttpsTransport {
 }
 
 /// The User-Agent header sent with HTTPS requests.
-static USER_AGENT: &str = concat!("dog/", env!("CARGO_PKG_VERSION"));
+static USER_AGENT: &str = concat!("doge/", env!("CARGO_PKG_VERSION"));
 

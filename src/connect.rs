@@ -45,7 +45,7 @@ impl TransportType {
             Self::UDP(p)        => Box::new(UdpTransport::new(param, p)),
             Self::TCP(p)        => Box::new(TcpTransport::new(param, p)),
             Self::TLS(p)        => Box::new(TlsTransport::new(param, p)),
-            Self::HTTPS(p)      => Box::new(HttpsTransport::new(param)),
+            Self::HTTPS(p)      => Box::new(HttpsTransport::new(param, p)),
         }
     }
 }
