@@ -47,6 +47,7 @@ impl Options {
 
         // Query options
         opts.optmulti("q", "query",       "Host name or domain name to query", "HOST");
+        opts.optmulti ("p", "port",         "Specify using a non-standart port", "port");
         opts.optmulti("t", "type",        "Type of the DNS record being queried (A, MX, NS...)", "TYPE");
         opts.optmulti("n", "nameserver",  "Address of the nameserver to send packets to", "ADDR");
         opts.optmulti("",  "class",       "Network class of the DNS record being queried (IN, CH, HS)", "CLASS");
@@ -56,11 +57,11 @@ impl Options {
         opts.optopt  ("",  "txid",         "Set the transaction ID to a specific value", "NUMBER");
         opts.optmulti("Z", "",             "Set uncommon protocol tweaks", "TWEAKS");
 
-        // Protocol options
-        opts.optflag ("U", "udp",          "Use the DNS protocol over UDP");
-        opts.optflag ("T", "tcp",          "Use the DNS protocol over TCP");
-        opts.optflag ("S", "tls",          "Use the DNS-over-TLS protocol");
-        opts.optflag ("H", "https",        "Use the DNS-over-HTTPS protocol");
+        // Protocol and options
+        opts.optflag  ("U", "udp",          "Use the DNS protocol over UDP");
+        opts.optflag  ("T", "tcp",          "Use the DNS protocol over TCP");
+        opts.optflag  ("S", "tls",          "Use the DNS-over-TLS protocol");
+        opts.optflag  ("H", "https",        "Use the DNS-over-HTTPS protocol");
 
         // Output options
         opts.optopt  ("",  "color",        "When to use terminal colors",  "WHEN");
@@ -138,20 +139,28 @@ impl Inputs {
     }
 
     fn load_transport_types(&mut self, matches: &getopts::Matches) {
+
+        
+        let ports: Vec<String> = matches.opt_strs("port");
+        let port: Option<u16> = match ports.len() == 1{
+            true => Some(ports[0].parse::<u16>().unwrap()),
+            false => None, // TODO add warning that multiple ports can't be given
+        };
+
         if matches.opt_present("https") {
-            self.transport_types.push(TransportType::HTTPS);
+            self.transport_types.push(TransportType::HTTPS(port));
         }
-
+        
         if matches.opt_present("tls") {
-            self.transport_types.push(TransportType::TLS);
+            self.transport_types.push(TransportType::TLS(port));
         }
-
+        
         if matches.opt_present("tcp") {
-            self.transport_types.push(TransportType::TCP);
+            self.transport_types.push(TransportType::TCP(port));
         }
-
+        
         if matches.opt_present("udp") {
-            self.transport_types.push(TransportType::UDP);
+            self.transport_types.push(TransportType::UDP(port));
         }
     }
 
@@ -227,7 +236,7 @@ impl Inputs {
     }
 
     fn check_for_missing_nameserver(&self) -> Result<(), OptionsError> {
-        if self.resolver_types.is_empty() && self.transport_types == [TransportType::HTTPS] {
+        if self.resolver_types.is_empty() && self.transport_types == [TransportType::HTTPS(None)] {
             Err(OptionsError::MissingHttpsUrl)
         }
         else {
@@ -249,7 +258,7 @@ impl Inputs {
         }
 
         if self.transport_types.is_empty() {
-            self.transport_types.push(TransportType::Automatic);
+            self.transport_types.push(TransportType::Automatic(None));
         }
     }
 
@@ -518,7 +527,7 @@ mod test {
                 record_types:    vec![ RecordType::A ],
                 classes:         vec![ QClass::IN ],
                 resolver_types:  vec![ ResolverType::SystemDefault ],
-                transport_types: vec![ TransportType::Automatic ],
+                transport_types: vec![ TransportType::Automatic(None) ],
             }
         }
     }
@@ -815,13 +824,15 @@ mod test {
                    TxidGenerator::Sequence(1234));
     }
 
+    // TODO add tests to ensure something happenes if multiple ports are given
+
     #[test]
     fn all_transport_types() {
         use crate::connect::TransportType::*;
 
         let options = Options::getopts(&[ "dom.ain", "--https", "--tls", "--tcp", "--udp" ]).unwrap();
         assert_eq!(options.requests.inputs.transport_types,
-                   vec![ HTTPS, TLS, TCP, UDP ]);
+                   vec![ HTTPS(None), TLS(None), TCP(None), UDP(None) ]);
     }
 
     // invalid options tests

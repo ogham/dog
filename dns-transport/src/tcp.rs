@@ -18,13 +18,18 @@ use super::{Transport, Error};
 ///   TCP, Implementation Requirements (March 2016)
 pub struct TcpTransport {
     addr: String,
+    custom_port: u16
 }
 
 impl TcpTransport {
 
     /// Creates a new TCP transport that connects to the given host.
-    pub fn new(addr: String) -> Self {
-        Self { addr }
+    pub fn new(addr: String, port: Option<u16>) -> Self {
+        let custom_port: u16 = match port {
+            Some(port) => port,
+            None => 53,
+        };
+        Self { addr, custom_port }
     }
 }
 
@@ -34,10 +39,10 @@ impl Transport for TcpTransport {
         info!("Opening TCP stream");
         let mut stream =
             if self.addr.contains(':') {
-                TcpStream::connect(&*self.addr)?
+                TcpStream::connect((&*self.addr, self.custom_port))?
             }
             else {
-                TcpStream::connect((&*self.addr, 53))?
+                TcpStream::connect((&*self.addr, self.custom_port))?
             };
         debug!("Opened");
 

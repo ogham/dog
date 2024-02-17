@@ -11,20 +11,25 @@ use super::{Transport, Error, UdpTransport, TcpTransport};
 /// This is the default behaviour for many DNS clients.
 pub struct AutoTransport {
     addr: String,
+    custom_port: u16
 }
 
 impl AutoTransport {
 
     /// Creates a new automatic transport that connects to the given host.
-    pub fn new(addr: String) -> Self {
-        Self { addr }
+    pub fn new(addr: String, port: Option<u16>) -> Self {
+        let custom_port: u16 = match port {
+            Some(port) => port,
+            None => 53,
+        };
+        Self { addr, custom_port }
     }
 }
 
 
 impl Transport for AutoTransport {
     fn send(&self, request: &Request) -> Result<Response, Error> {
-        let udp_transport = UdpTransport::new(self.addr.clone());
+        let udp_transport = UdpTransport::new(self.addr.clone(), Some(self.custom_port.clone()));
         let udp_response = udp_transport.send(&request)?;
 
         if ! udp_response.flags.truncated {
@@ -33,7 +38,7 @@ impl Transport for AutoTransport {
 
         debug!("Truncated flag set, so switching to TCP");
 
-        let tcp_transport = TcpTransport::new(self.addr.clone());
+        let tcp_transport = TcpTransport::new(self.addr.clone(), Some(self.custom_port.clone()));
         let tcp_response = tcp_transport.send(&request)?;
         Ok(tcp_response)
     }

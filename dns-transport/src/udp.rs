@@ -14,13 +14,19 @@ use super::{Transport, Error};
 ///   Implementation and Specification (November 1987)
 pub struct UdpTransport {
     addr: String,
+    custom_port: u16
 }
 
 impl UdpTransport {
 
     /// Creates a new UDP transport that connects to the given host.
-    pub fn new(addr: String) -> Self {
-        Self { addr }
+    pub fn new(addr: String, port: Option<u16>) -> Self {
+        let custom_port: u16 = match port {
+            Some(p) => p,
+            None => 53,
+        };
+        // info!("Running on nonstandart port");
+        Self { addr, custom_port }
     }
 }
 
@@ -32,10 +38,10 @@ impl Transport for UdpTransport {
         let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0))?;
 
         if self.addr.contains(':') {
-            socket.connect(&*self.addr)?;
+            socket.connect( (&*self.addr, self.custom_port))?;
         }
         else {
-            socket.connect((&*self.addr, 53))?;
+            socket.connect((&*self.addr, self.custom_port))?;
         }
         debug!("Opened");
 
