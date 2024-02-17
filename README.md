@@ -27,6 +27,7 @@ It has colourful output, understands normal command-line argument syntax, suppor
     doge example.net MX                       ...looking up MX records instead
     doge example.net MX @1.1.1.1              ...using a specific nameserver instead
     doge example.net MX @1.1.1.1 -T           ...using TCP rather than UDP
+    doge exapple.net MX @1.1.1.1 -p 53        ...using a nonstandart port
     doge -q example.net -t MX -n 1.1.1.1 -T   As above, but using explicit arguments
 
 ---
@@ -39,6 +40,7 @@ It has colourful output, understands normal command-line argument syntax, suppor
     -q, --query=HOST         Host name or domain name to query
     -t, --type=TYPE          Type of the DNS record being queried (A, MX, NS...)
     -n, --nameserver=ADDR    Address of the nameserver to send packets to
+    -p, --port=69            Port options for sending queries on nonstandart ports
     --class=CLASS            Network class of the DNS record being queried (IN, CH, HS)
 
 ### Sending options
