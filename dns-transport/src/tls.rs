@@ -14,13 +14,18 @@ use super::tls_stream::TlsStream;
 /// encrypted TLS connection.
 pub struct TlsTransport {
     addr: String,
+    custom_port: u16
 }
 
 impl TlsTransport {
 
     /// Creates a new TLS transport that connects to the given host.
-    pub fn new(addr: String) -> Self {
-        Self { addr }
+    pub fn new(addr: String, port: Option<u16>) -> Self {
+        let custom_port: u16 = match port {
+            Some(p) => p,
+            None => 853,
+        };
+        Self { addr, custom_port }
     }
 }
 
@@ -30,22 +35,14 @@ impl Transport for TlsTransport {
 
     #[cfg(feature = "with_tls")]
     fn send(&self, request: &Request) -> Result<Response, Error> {
+        use native_tls::TlsStream;
+
         info!("Opening TLS socket");
 
         let domain = self.sni_domain();
         info!("Connecting using domain {:?}", domain);
-        let mut stream =
-            if self.addr.contains(':') {
-                let mut parts = self.addr.split(":");
-                let domain = parts.nth(0).unwrap();
-                let port = parts.last().unwrap().parse::<u16>().expect("Invalid port number");
-
-                Self::stream(domain, port)?
-            }
-            else {
-                Self::stream(&*self.addr, 853)?
-            };
-
+        // comminicate that the port must EXPLICATLY BE SEPERATE
+        let mut stream: TlsStream<TcpStream> = Self::stream(&self.addr, *&self.custom_port)?;
 
         debug!("Connected");
 

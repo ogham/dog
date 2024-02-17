@@ -38,12 +38,8 @@ impl Transport for TcpTransport {
     fn send(&self, request: &Request) -> Result<Response, Error> {
         info!("Opening TCP stream");
         let mut stream =
-            if self.addr.contains(':') {
-                TcpStream::connect((&*self.addr, self.custom_port))?
-            }
-            else {
-                TcpStream::connect((&*self.addr, self.custom_port))?
-            };
+                TcpStream::connect((&*self.addr, self.custom_port)).unwrap();
+   
         debug!("Opened");
 
         // The message is prepended with the length when sent over TCP,

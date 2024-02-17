@@ -36,13 +36,8 @@ impl Transport for UdpTransport {
         info!("Opening UDP socket");
         // TODO: This will need to be changed for IPv6 support.
         let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0))?;
+        socket.connect( (&*self.addr, self.custom_port))?;
 
-        if self.addr.contains(':') {
-            socket.connect( (&*self.addr, self.custom_port))?;
-        }
-        else {
-            socket.connect((&*self.addr, self.custom_port))?;
-        }
         debug!("Opened");
 
         let bytes_to_send = request.to_bytes().expect("failed to serialise request");
