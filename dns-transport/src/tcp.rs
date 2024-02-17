@@ -38,7 +38,7 @@ impl Transport for TcpTransport {
     fn send(&self, request: &Request) -> Result<Response, Error> {
         info!("Opening TCP stream");
         let mut stream =
-                TcpStream::connect((&*self.addr, self.custom_port)).unwrap();
+                TcpStream::connect((&*self.addr, self.custom_port))?;
    
         debug!("Opened");
 
