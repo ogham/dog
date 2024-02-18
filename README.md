@@ -40,7 +40,7 @@ It has colourful output, understands normal command-line argument syntax, suppor
     -q, --query=HOST         Host name or domain name to query
     -t, --type=TYPE          Type of the DNS record being queried (A, MX, NS...)
     -n, --nameserver=ADDR    Address of the nameserver to send packets to
-    -p, --port=69            Port options for sending queries on nonstandart ports
+    -p, --port=PORT            Port options for sending queries on nonstandart ports
     --class=CLASS            Network class of the DNS record being queried (IN, CH, HS)
 
 ### Sending options
