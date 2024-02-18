@@ -9,6 +9,7 @@
   \1mdoge\0m \1;33m-q\0m \33mexample.net\0m \1;33m-t\0m \33mMX\0m \1;33m-n\0m \33m1.1.1.1\0m \1;33m-T\0m   As above, but using explicit arguments
   \1mdoge\0m \36mexample.net\0m \32mMX\0m \36m@1.1.1.1\0m\1;33m -p 67\0m           ...using a non standart port
 \4mQuery options:\0m
+
   \32m<arguments>\0m              Human-readable host names, nameservers, types, or classes
   \1;33m-q\0m, \1;33m--query\0m=\33mHOST\0m         Host name or domain name to query
   \1;33m-t\0m, \1;33m--type\0m=\33mTYPE\0m          Type of the DNS record being queried (A, MX, NS...)
