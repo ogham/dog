@@ -39,6 +39,8 @@ panic = "abort"
 
 
 [dependencies]
+#Set OpenSSL version to work
+openssl = { version = "0.10", features = ["vendored"] }
 
 # dns stuff
 dns = { path = "./dns" }
