@@ -1,4 +1,3 @@
-use std::convert::TryFrom;
 use std::io;
 
 use log::*;
@@ -62,26 +61,25 @@ impl OPT {
     /// See §6.1.3 of the RFC, “OPT Record TTL Field Use”.
     ///
     /// Unlike the `Wire::read` function, this does not require a length.
-    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     pub fn read(c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let udp_payload_size = c.read_u16::<BigEndian>()?;  // replaces the class field
-        trace!("Parsed UDP payload size -> {:?}", udp_payload_size);
+        trace!("Parsed UDP payload size -> {udp_payload_size:?}");
 
         let higher_bits = c.read_u8()?;  // replaces the ttl field...
-        trace!("Parsed higher bits -> {:#08b}", higher_bits);
+        trace!("Parsed higher bits -> {higher_bits:#08b}");
 
         let edns0_version = c.read_u8()?;  // ...as does this...
-        trace!("Parsed EDNS(0) version -> {:?}", edns0_version);
+        trace!("Parsed EDNS(0) version -> {edns0_version:?}");
 
         let flags = c.read_u16::<BigEndian>()?;  // ...as does this
-        trace!("Parsed flags -> {:#08b}", flags);
+        trace!("Parsed flags -> {flags:#08b}");
 
         let data_length = c.read_u16::<BigEndian>()?;
-        trace!("Parsed data length -> {:?}", data_length);
+        trace!("Parsed data length -> {data_length:?}");
 
         let mut data = vec![0_u8; usize::from(data_length)];
         c.read_exact(&mut data)?;
-        trace!("Parsed data -> {:#x?}", data);
+        trace!("Parsed data -> {data:#x?}");
 
         Ok(Self { udp_payload_size, higher_bits, edns0_version, flags, data })
     }
@@ -98,9 +96,10 @@ impl OPT {
         bytes.write_u8(self.edns0_version)?;
         bytes.write_u16::<BigEndian>(self.flags)?;
 
-        // We should not be sending any data at all in the request, really,
-        // so sending too much data is downright nonsensical
-        let data_len = u16::try_from(self.data.len()).expect("Sending too much data");
+        // Requests carry no option data, so data too long for its length
+        // field is a mistake by the caller; it is reported, not panicked on.
+        let data_len = u16::try_from(self.data.len())
+            .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "OPT record data is too long"))?;
         bytes.write_u16::<BigEndian>(data_len)?;
 
         for b in &self.data {
@@ -116,6 +115,18 @@ impl OPT {
 mod test {
     use super::*;
     use pretty_assertions::assert_eq;
+
+    #[test]
+    fn serialises() {
+        let opt = OPT { udp_payload_size: 1232, higher_bits: 0, edns0_version: 0, flags: 0x8000, data: vec![ 7 ] };
+        assert_eq!(opt.to_bytes().unwrap(), [ 0x04, 0xd0, 0, 0, 0x80, 0, 0, 1, 7 ]);
+    }
+
+    #[test]
+    fn data_too_long_for_its_length_field() {
+        let opt = OPT { udp_payload_size: 512, higher_bits: 0, edns0_version: 0, flags: 0, data: vec![ 0; 65536 ] };
+        assert_eq!(opt.to_bytes().unwrap_err().kind(), io::ErrorKind::InvalidInput);
+    }
 
     #[test]
     fn parses_no_data() {

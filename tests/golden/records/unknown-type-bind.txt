@@ -1,0 +1,26 @@
+== dog -U --colour=never -q unknown.dogtest.example -t 65280 --class IN
+-- status 0
+-- stdout
+65280 unknown.dogtest.example. 1h00m00s   [222, 173, 190, 239]
+-- stderr
+== dog -U --colour=always -q unknown.dogtest.example -t 65280 --class IN
+-- status 0
+-- stdout
+[41;37m65280[0m [1;34munknown.dogtest.example.[0m 1h00m00s   [222, 173, 190, 239]
+-- stderr
+== dog -U --short -q unknown.dogtest.example -t 65280 --class IN
+-- status 0
+-- stdout
+[222, 173, 190, 239]
+-- stderr
+== dog -U --json -q unknown.dogtest.example -t 65280 --class IN
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":true,"tc":false,"rd":true,"ra":false,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"unknown.dogtest.example.","class":"IN","type":65280}],"answers":[{"name":"unknown.dogtest.example.","class":"IN","ttl":3600,"type":65280,"data":{"bytes":[222,173,190,239]}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q unknown.dogtest.example -t 65280 --class IN
+-- status 0
+-- stdout
+65280 unknown.dogtest.example. 1h00m00s   [222, 173, 190, 239]
+  OPT .                                 + 4096 0 0 0 []
+-- stderr

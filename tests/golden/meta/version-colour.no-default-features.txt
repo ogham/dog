@@ -1,0 +1,6 @@
+-- status 0
+-- stdout
+dog [1;32m●[0m command-line DNS client
+v0.2.0-pre [-idna, -tls, -https] [1;31m(pre-release debug build!)[0m
+[1;4;34mhttps://dns.lookup.dog/[0m
+-- stderr

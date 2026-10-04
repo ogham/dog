@@ -1,0 +1,26 @@
+== dog -T --colour=never -q a-example.lookup.dog -t 1 --class IN
+-- status 0
+-- stdout
+A a-example.lookup.dog. 1h00m00s   10.20.30.40
+-- stderr
+== dog -T --colour=always -q a-example.lookup.dog -t 1 --class IN
+-- status 0
+-- stdout
+[1;32mA[0m [1;34ma-example.lookup.dog.[0m 1h00m00s   10.20.30.40
+-- stderr
+== dog -T --short -q a-example.lookup.dog -t 1 --class IN
+-- status 0
+-- stdout
+10.20.30.40
+-- stderr
+== dog -T --json -q a-example.lookup.dog -t 1 --class IN
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":false,"tc":false,"rd":true,"ra":true,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"a-example.lookup.dog.","class":"IN","type":"A"}],"answers":[{"name":"a-example.lookup.dog.","class":"IN","ttl":3600,"type":"A","data":{"address":"10.20.30.40"}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -T --edns show --colour=never -q a-example.lookup.dog -t 1 --class IN
+-- status 0
+-- stdout
+  A a-example.lookup.dog. 1h00m00s   10.20.30.40
+OPT .                              + 1232 0 0 0 []
+-- stderr

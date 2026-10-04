@@ -1,0 +1,1 @@
+loc-se.dogtest.example.	IN	LOC	33 51 35.900 S 151 12 40.100 E 58.00m 10m 100m 10m

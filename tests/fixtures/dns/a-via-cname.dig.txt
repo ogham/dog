@@ -1,0 +1,3 @@
+cname-example.lookup.dog. IN	CNAME	dns.lookup.dog.
+dns.lookup.dog.		IN	A	51.159.146.31
+dns.lookup.dog.		IN	A	51.159.149.163

@@ -43,7 +43,7 @@ Register-ArgumentCompleter -Native -CommandName 'dog' -ScriptBlock {
         '^(--class)'          { $isOptionValue = $true; $completions += @('IN', 'CH', 'HS') }
         '^(--edns)'           { $isOptionValue = $true; $completions += @('disable', 'hide', 'show') }
         '^(--txid)'           { $isOptionValue = $true }
-        '^(-Z)'               { $isOptionValue = $true; $completions += @('aa', 'ad', 'bufsize=', 'cd') }
+        '^(-Z)'               { $isOptionValue = $true; $completions += @('aa', 'ad', 'bufsize=', 'cd', 'do') }
         '^(--color|--colour)' { $isOptionValue = $true; $completions += @('always', 'automatic', 'never') }
     }
 

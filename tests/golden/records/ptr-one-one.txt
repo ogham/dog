@@ -1,0 +1,26 @@
+== dog -U --colour=never -q 1.1.1.1.in-addr.arpa -t 12 --class IN
+-- status 0
+-- stdout
+PTR 1.1.1.1.in-addr.arpa. 9m38s   "one.one.one.one."
+-- stderr
+== dog -U --colour=always -q 1.1.1.1.in-addr.arpa -t 12 --class IN
+-- status 0
+-- stdout
+[31mPTR[0m [1;34m1.1.1.1.in-addr.arpa.[0m 9m38s   "one.one.one.one."
+-- stderr
+== dog -U --short -q 1.1.1.1.in-addr.arpa -t 12 --class IN
+-- status 0
+-- stdout
+"one.one.one.one."
+-- stderr
+== dog -U --json -q 1.1.1.1.in-addr.arpa -t 12 --class IN
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":false,"tc":false,"rd":true,"ra":true,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"1.1.1.1.in-addr.arpa.","class":"IN","type":"PTR"}],"answers":[{"name":"1.1.1.1.in-addr.arpa.","class":"IN","ttl":578,"type":"PTR","data":{"cname":"one.one.one.one."}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q 1.1.1.1.in-addr.arpa -t 12 --class IN
+-- status 0
+-- stdout
+PTR 1.1.1.1.in-addr.arpa. 9m38s   "one.one.one.one."
+OPT .                           + 1232 0 0 0 []
+-- stderr

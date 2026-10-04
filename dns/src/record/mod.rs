@@ -15,6 +15,12 @@ pub use self::caa::CAA;
 mod cname;
 pub use self::cname::CNAME;
 
+mod dnskey;
+pub use self::dnskey::DNSKEY;
+
+mod ds;
+pub use self::ds::DS;
+
 mod eui48;
 pub use self::eui48::EUI48;
 
@@ -36,6 +42,9 @@ pub use self::naptr::NAPTR;
 mod ns;
 pub use self::ns::NS;
 
+mod nsec;
+pub use self::nsec::NSEC;
+
 mod openpgpkey;
 pub use self::openpgpkey::OPENPGPKEY;
 
@@ -44,6 +53,9 @@ pub use self::opt::OPT;
 
 mod ptr;
 pub use self::ptr::PTR;
+
+mod rrsig;
+pub use self::rrsig::RRSIG;
 
 mod sshfp;
 pub use self::sshfp::SSHFP;
@@ -67,6 +79,8 @@ pub use self::uri::URI;
 mod others;
 pub use self::others::UnknownQtype;
 
+pub(crate) mod registry;
+
 
 /// A record that’s been parsed from a byte buffer.
 #[derive(PartialEq, Debug)]
@@ -76,6 +90,8 @@ pub enum Record {
     AAAA(AAAA),
     CAA(CAA),
     CNAME(CNAME),
+    DNSKEY(DNSKEY),
+    DS(DS),
     EUI48(EUI48),
     EUI64(EUI64),
     HINFO(HINFO),
@@ -83,9 +99,11 @@ pub enum Record {
     MX(MX),
     NAPTR(NAPTR),
     NS(NS),
+    NSEC(NSEC),
     OPENPGPKEY(OPENPGPKEY),
     // OPT is not included here.
     PTR(PTR),
+    RRSIG(RRSIG),
     SSHFP(SSHFP),
     SOA(SOA),
     SRV(SRV),
@@ -114,6 +132,8 @@ pub enum RecordType {
     AAAA,
     CAA,
     CNAME,
+    DNSKEY,
+    DS,
     EUI48,
     EUI64,
     HINFO,
@@ -121,8 +141,10 @@ pub enum RecordType {
     MX,
     NAPTR,
     NS,
+    NSEC,
     OPENPGPKEY,
     PTR,
+    RRSIG,
     SSHFP,
     SOA,
     SRV,
@@ -148,6 +170,8 @@ impl From<u16> for RecordType {
         try_record!(AAAA);
         try_record!(CAA);
         try_record!(CNAME);
+        try_record!(DNSKEY);
+        try_record!(DS);
         try_record!(EUI48);
         try_record!(EUI64);
         try_record!(HINFO);
@@ -155,9 +179,11 @@ impl From<u16> for RecordType {
         try_record!(MX);
         try_record!(NAPTR);
         try_record!(NS);
+        try_record!(NSEC);
         try_record!(OPENPGPKEY);
         // OPT is handled separately
         try_record!(PTR);
+        try_record!(RRSIG);
         try_record!(SSHFP);
         try_record!(SOA);
         try_record!(SRV);
@@ -187,6 +213,8 @@ impl RecordType {
         try_record!(AAAA);
         try_record!(CAA);
         try_record!(CNAME);
+        try_record!(DNSKEY);
+        try_record!(DS);
         try_record!(EUI48);
         try_record!(EUI64);
         try_record!(HINFO);
@@ -194,9 +222,11 @@ impl RecordType {
         try_record!(MX);
         try_record!(NAPTR);
         try_record!(NS);
+        try_record!(NSEC);
         try_record!(OPENPGPKEY);
         // OPT is elsewhere
         try_record!(PTR);
+        try_record!(RRSIG);
         try_record!(SSHFP);
         try_record!(SOA);
         try_record!(SRV);
@@ -214,6 +244,8 @@ impl RecordType {
             Self::AAAA        => AAAA::RR_TYPE,
             Self::CAA         => CAA::RR_TYPE,
             Self::CNAME       => CNAME::RR_TYPE,
+            Self::DNSKEY      => DNSKEY::RR_TYPE,
+            Self::DS          => DS::RR_TYPE,
             Self::EUI48       => EUI48::RR_TYPE,
             Self::EUI64       => EUI64::RR_TYPE,
             Self::HINFO       => HINFO::RR_TYPE,
@@ -221,9 +253,11 @@ impl RecordType {
             Self::MX          => MX::RR_TYPE,
             Self::NAPTR       => NAPTR::RR_TYPE,
             Self::NS          => NS::RR_TYPE,
+            Self::NSEC        => NSEC::RR_TYPE,
             Self::OPENPGPKEY  => OPENPGPKEY::RR_TYPE,
             // Wherefore art thou, OPT
             Self::PTR         => PTR::RR_TYPE,
+            Self::RRSIG       => RRSIG::RR_TYPE,
             Self::SSHFP       => SSHFP::RR_TYPE,
             Self::SOA         => SOA::RR_TYPE,
             Self::SRV         => SRV::RR_TYPE,

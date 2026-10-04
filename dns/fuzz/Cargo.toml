@@ -1,17 +1,15 @@
 [package]
 name = "dns-fuzz"
-version = "0.0.1"
-authors = ["Automatically generated"]
+version = "0.0.0"
+edition = "2024"
 publish = false
 
 [package.metadata]
 cargo-fuzz = true
 
-[dependencies.dns]
-path = ".."
-
-[dependencies.libfuzzer-sys]
-version = "0.3.0"
+[dependencies]
+dns = { path = ".." }
+libfuzzer-sys = "0.4"
 
 # Prevent this from interfering with workspaces
 [workspace]
@@ -20,3 +18,6 @@ members = ["."]
 [[bin]]
 name = "fuzz_parsing"
 path = "fuzz_targets/fuzz_parsing.rs"
+test = false
+doc = false
+bench = false

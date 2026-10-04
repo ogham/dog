@@ -1,0 +1,4 @@
+-- status 3
+-- stdout
+-- stderr
+dog: Invalid options: Invalid domain "a..b": it has an empty label

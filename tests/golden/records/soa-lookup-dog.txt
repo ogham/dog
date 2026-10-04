@@ -1,0 +1,26 @@
+== dog -U --colour=never -q lookup.dog -t 6 --class IN
+-- status 0
+-- stdout
+SOA lookup.dog. 1h00m00s   "ns1.dnsimple.com." "admin.dnsimple.com." 1564273569 1d0h00m00s 2h00m00s 7d0h00m00s 5m00s
+-- stderr
+== dog -U --colour=always -q lookup.dog -t 6 --class IN
+-- status 0
+-- stdout
+[35mSOA[0m [1;34mlookup.dog.[0m 1h00m00s   "ns1.dnsimple.com." "admin.dnsimple.com." 1564273569 1d0h00m00s 2h00m00s 7d0h00m00s 5m00s
+-- stderr
+== dog -U --short -q lookup.dog -t 6 --class IN
+-- status 0
+-- stdout
+"ns1.dnsimple.com." "admin.dnsimple.com." 1564273569 1d0h00m00s 2h00m00s 7d0h00m00s 5m00s
+-- stderr
+== dog -U --json -q lookup.dog -t 6 --class IN
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":false,"tc":false,"rd":true,"ra":true,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"lookup.dog.","class":"IN","type":"SOA"}],"answers":[{"name":"lookup.dog.","class":"IN","ttl":3600,"type":"SOA","data":{"mname":"ns1.dnsimple.com.","rname":"admin.dnsimple.com.","serial":1564273569,"refresh":86400,"retry":7200,"expire":604800,"minimum":300}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q lookup.dog -t 6 --class IN
+-- status 0
+-- stdout
+SOA lookup.dog. 1h00m00s   "ns1.dnsimple.com." "admin.dnsimple.com." 1564273569 1d0h00m00s 2h00m00s 7d0h00m00s 5m00s
+OPT .                    + 1232 0 0 0 []
+-- stderr

@@ -3,10 +3,6 @@
 
 [dog](https://dns.lookup.dog/) is a command-line DNS client.
 
-<a href="https://travis-ci.org/github/ogham/dog">
-    <img src="https://travis-ci.org/ogham/dog.svg?branch=master" alt="Build status" />
-</a>
-
 <a href="https://saythanks.io/to/ogham%40bsago.me">
     <img src="https://img.shields.io/badge/Say%20Thanks-!-1EAEDB.svg" alt="Say thanks!" />
 </a>
@@ -45,7 +41,7 @@ It has colourful output, understands normal command-line argument syntax, suppor
 
     --edns=SETTING           Whether to OPT in to EDNS (disable, hide, show)
     --txid=NUMBER            Set the transaction ID to a specific value
-    -Z=TWEAKS                Set uncommon protocol-level tweaks
+    -Z TWEAK                 Set a protocol tweak (aa, ad, cd, do, bufsize=NUM)
 
 ### Protocol options
 
@@ -85,20 +81,23 @@ Binary downloads of dog are available from [the releases section on GitHub](http
 ### Compilation
 
 dog is written in [Rust](https://www.rust-lang.org).
-You will need rustc version [1.45.0](https://blog.rust-lang.org/2020/07/16/Rust-1.45.0.html) or higher.
-The recommended way to install Rust for development is from the [official download page](https://www.rust-lang.org/tools/install), using rustup.
+You will need rustc version 1.87 or higher; the recommended way to install Rust is from the [official download page](https://www.rust-lang.org/tools/install), using rustup.
 
-To build, download the source code and run:
+DNS-over-TLS and DNS-over-HTTPS use the system’s TLS library: OpenSSL on Linux, linked dynamically, so dog picks up the distribution’s security updates.
+On Debian or Ubuntu, install the build dependencies with:
 
-    $ cargo build
-    $ cargo test
+    $ sudo apt install build-essential pkg-config libssl-dev
+
+Then download the source code and run:
+
+    $ cargo build --release
+    $ cargo test --workspace
+
+- Copy the resulting binary, which will be in the `target/release` directory, into a folder in your `$PATH`.
+`/usr/local/bin` is usually a good choice.
 
 - The [just](https://github.com/casey/just) command runner can be used to run some helpful development commands, in a manner similar to `make`.
 Run `just --list` to get an overview of what’s available.
-
-- If you are compiling a copy for yourself, be sure to run `cargo build --release` or `just build-release` to benefit from release-mode optimisations.
-Copy the resulting binary, which will be in the `target/release` directory, into a folder in your `$PATH`.
-`/usr/local/bin` is usually a good choice.
 
 - To compile and install the manual pages, you will need [pandoc](https://pandoc.org/).
 The `just man` command will compile the Markdown into manual pages, which it will place in the `target/man` directory.
@@ -112,7 +111,7 @@ To build the container image of dog, you can use Docker or Kaniko. Here an examp
 
     $ docker build -t dog .
 
-You can then run it using the following command:
+The image runs on the current Debian stable. You can then run it using the following command:
 
     $ docker run -it --rm dog
 
@@ -121,28 +120,33 @@ To run dog directly, you can then define the following alias:
     $ alias dog="docker run -it --rm dog"
 
 
-### End-to-end testing
+### Testing
 
-dog has an integration test suite written as [Specsheet](https://specsheet.software/) check documents.
-If you have a copy installed, you can run:
+`just test` (or `cargo test --workspace`, with and without `--no-default-features`) runs the unit tests and the end-to-end tests.
+The end-to-end tests run the real dog binary against loopback servers that replay responses captured from real nameservers, so they never touch the internet.
 
-    $ just xtests
+- `just bless` rewrites the golden output files in `tests/golden/` after a deliberate change to dog’s output; review the diff before keeping it.
+- `just capture-fixtures` re-captures the responses in `tests/fixtures/` from public servers and a local BIND container (it needs `dig` and `docker`).
+- `just test-live` runs the tests that query real public servers.
+- `just coverage` measures line coverage with [cargo-llvm-cov](https://github.com/taiki-e/cargo-llvm-cov), and `just complexity` checks every function’s cyclomatic complexity with [lizard](https://github.com/terryyin/lizard).
+- `just verify` runs all of the above checks.
 
-Specsheet will test the compiled binary by making DNS requests over the network, checking that dog returns the correct results and does not crash.
-Note that this will expose your IP address.
+dog also has an older extended test suite written as [Specsheet](https://specsheet.software/) check documents.
+If you have a copy installed, you can run it with `just xtests`.
+It makes DNS requests over the network, which will expose your IP address.
 For more information, read [the xtests README](xtests/README.md).
 
 
 ### Feature toggles
 
 dog has three Cargo features that can be switched off to remove functionality.
-While doing so makes dog less useful, it results in a smaller binary that takes less time to build.
+While doing so makes dog less useful, it results in a smaller binary that takes less time to build, and one that does not need a TLS library.
 
 There are three feature toggles available, all of which are active by default:
 
 - `with_idna`, which enables [IDNA](https://en.wikipedia.org/wiki/Internationalized_domain_name) processing
 - `with_tls`, which enables DNS-over-TLS
-- `with_https`, which enables DNS-over-HTTPS (requires `with_tls`)
+- `with_https`, which enables DNS-over-HTTPS
 
 Use `cargo` to build a binary that uses feature toggles. For example, to disable TLS and HTTPS support but keep IDNA support enabled, you can run:
 

@@ -1,0 +1,1 @@
+eui48.dogtest.example.	IN	EUI48	00-00-5e-00-53-2a

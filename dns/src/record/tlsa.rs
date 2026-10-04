@@ -34,17 +34,16 @@ impl Wire for TLSA {
     const NAME: &'static str = "TLSA";
     const RR_TYPE: u16 = 52;
 
-    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
 
         let certificate_usage = c.read_u8()?;
-        trace!("Parsed certificate_usage -> {:?}", certificate_usage);
+        trace!("Parsed certificate_usage -> {certificate_usage:?}");
 
         let selector = c.read_u8()?;
-        trace!("Parsed selector -> {:?}", selector);
+        trace!("Parsed selector -> {selector:?}");
 
         let matching_type = c.read_u8()?;
-        trace!("Parsed matching type -> {:?}", matching_type);
+        trace!("Parsed matching type -> {matching_type:?}");
 
         if stated_length <= 3 {
             let mandated_length = MandatedLength::AtLeast(4);
@@ -54,7 +53,7 @@ impl Wire for TLSA {
         let certificate_data_length = stated_length - 1 - 1 - 1;
         let mut certificate_data = vec![0_u8; usize::from(certificate_data_length)];
         c.read_exact(&mut certificate_data)?;
-        trace!("Parsed fingerprint -> {:#x?}", certificate_data);
+        trace!("Parsed fingerprint -> {certificate_data:#x?}");
 
         Ok(Self { certificate_usage, selector, matching_type, certificate_data })
     }
@@ -64,9 +63,7 @@ impl TLSA {
 
     /// Returns the hexadecimal representation of the fingerprint.
     pub fn hex_certificate_data(&self) -> String {
-        self.certificate_data.iter()
-            .map(|byte| format!("{:02x}", byte))
-            .collect()
+        hex(&self.certificate_data)
     }
 }
 
@@ -84,7 +81,7 @@ mod test {
             0x05, 0x95, 0x98, 0x11, 0x22, 0x33 // data
         ];
 
-        assert_eq!(TLSA::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
+        assert_eq!(TLSA::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)).unwrap(),
                    TLSA {
                        certificate_usage: 3,
                        selector: 1,
@@ -102,7 +99,7 @@ mod test {
             0x05,  // one byte of data
         ];
 
-        assert_eq!(TLSA::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
+        assert_eq!(TLSA::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)).unwrap(),
                    TLSA {
                        certificate_usage: 3,
                        selector: 1,
@@ -119,7 +116,7 @@ mod test {
             0x01,  // matching type
         ];
 
-        assert_eq!(TLSA::read(buf.len() as _, &mut Cursor::new(buf)),
+        assert_eq!(TLSA::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)),
                    Err(WireError::WrongRecordLength { stated_length: 3, mandated_length: MandatedLength::AtLeast(4) }));
     }
 

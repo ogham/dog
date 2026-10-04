@@ -1,0 +1,3 @@
+caa.dogtest.example.	IN	CAA	128 issue "ca.example.net"
+caa.dogtest.example.	IN	CAA	0 issuewild ";"
+caa.dogtest.example.	IN	CAA	0 iodef "mailto:security@dogtest.example"

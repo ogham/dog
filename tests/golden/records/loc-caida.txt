@@ -1,0 +1,26 @@
+== dog -U --colour=never -q caida.org -t 29 --class IN
+-- status 0
+-- stdout
+LOC caida.org. 4h00m00s   30m (10m, 10m) (32°53′1″ N, 117°14′25″ W, 107m)
+-- stderr
+== dog -U --colour=always -q caida.org -t 29 --class IN
+-- status 0
+-- stdout
+[33mLOC[0m [1;34mcaida.org.[0m 4h00m00s   30m (10m, 10m) (32°53′1″ N, 117°14′25″ W, 107m)
+-- stderr
+== dog -U --short -q caida.org -t 29 --class IN
+-- status 0
+-- stdout
+30m (10m, 10m) (32°53′1″ N, 117°14′25″ W, 107m)
+-- stderr
+== dog -U --json -q caida.org -t 29 --class IN
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":false,"tc":false,"rd":true,"ra":true,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"caida.org.","class":"IN","type":"LOC"}],"answers":[{"name":"caida.org.","class":"IN","ttl":14400,"type":"LOC","data":{"size":"30m","precision":{"horizontal":"10m","vertical":"10m"},"point":{"latitude":"32°53′1″ N","longitude":"117°14′25″ W","altitude":"107m"}}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q caida.org -t 29 --class IN
+-- status 0
+-- stdout
+LOC caida.org. 4h00m00s   30m (10m, 10m) (32°53′1″ N, 117°14′25″ W, 107m)
+OPT .                   + 1232 0 0 0 []
+-- stderr

@@ -1,5 +1,7 @@
 //! Request generation based on the user’s input arguments.
 
+use std::time::Duration;
+
 use crate::connect::TransportType;
 use crate::resolve::{ResolverType, ResolverLookupError};
 use crate::txid::TxidGenerator;
@@ -21,6 +23,9 @@ pub struct RequestGenerator {
 
     /// Other weird protocol options.
     pub protocol_tweaks: ProtocolTweaks,
+
+    /// How long each transport waits for a nameserver before giving up.
+    pub timeout: Duration,
 }
 
 /// Which things the user has specified they want queried.
@@ -45,6 +50,7 @@ pub struct Inputs {
 
 /// Weird protocol options that are allowed by the spec but are not common.
 #[derive(PartialEq, Debug, Default, Copy, Clone)]
+#[allow(clippy::struct_excessive_bools)]  // one for each flag the user can set
 pub struct ProtocolTweaks {
 
     /// Set the `AA` (Authoritative Answer) flag in the header of each request.
@@ -55,6 +61,9 @@ pub struct ProtocolTweaks {
 
     /// Set the `CD` (Checking Disabled) flag in the header of each request.
     pub set_checking_disabled_flag: bool,
+
+    /// Set the `DO` (DNSSEC OK) flag in the EDNS OPT record of each request.
+    pub set_dnssec_ok_flag: bool,
 
     /// Set the buffer size field in the OPT record of each request.
     pub udp_payload_size: Option<u16>,
@@ -86,11 +95,11 @@ impl RequestGenerator {
 
     /// Iterate through the inputs matrix, returning pairs of DNS request list
     /// and the details of the transport to send them down.
-    pub fn generate(self) -> Result<Vec<RequestSet>, ResolverLookupError> {
+    pub fn generate(self, paths: &crate::system::SystemPaths) -> Result<Vec<RequestSet>, ResolverLookupError> {
         let mut requests = Vec::new();
 
         let resolvers = self.inputs.resolver_types.into_iter()
-            .map(ResolverType::obtain)
+            .map(|resolver_type| resolver_type.obtain(paths))
             .collect::<Result<Vec<_>, _>>()?;
 
         for domain in &self.inputs.domains {
@@ -109,8 +118,7 @@ impl RequestGenerator {
                                 additional = Some(opt);
                             }
 
-                            let nameserver = resolver.nameserver();
-                            let transport = transport_type.make_transport(nameserver);
+                            let transport = transport_type.make_transport_to(resolver.nameservers(), self.timeout);
 
                             let mut request_list = Vec::new();
                             for qname in resolver.name_list(domain) {
@@ -160,9 +168,12 @@ impl ProtocolTweaks {
         }
     }
 
-    /// Set the payload size field in the outgoing OPT record, if the user has
-    /// requested to do so.
+    /// Set fields in the outgoing OPT record based on the user's requested tweaks.
     pub fn set_request_opt_fields(self, opt: &mut dns::record::OPT) {
+        if self.set_dnssec_ok_flag {
+            opt.flags |= 0x8000;
+        }
+
         if let Some(bufsize) = self.udp_payload_size {
             opt.udp_payload_size = bufsize;
         }

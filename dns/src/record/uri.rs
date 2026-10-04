@@ -32,13 +32,12 @@ impl Wire for URI {
     const NAME: &'static str = "URI";
     const RR_TYPE: u16 = 256;
 
-    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let priority = c.read_u16::<BigEndian>()?;
-        trace!("Parsed priority -> {:?}", priority);
+        trace!("Parsed priority -> {priority:?}");
 
         let weight = c.read_u16::<BigEndian>()?;
-        trace!("Parsed weight -> {:?}", weight);
+        trace!("Parsed weight -> {weight:?}");
 
         // The target must not be empty.
         if stated_length <= 4 {
@@ -70,7 +69,7 @@ mod test {
             0x73, 0x2e, 0x69, 0x6f, 0x2f,  // uri
         ];
 
-        assert_eq!(URI::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
+        assert_eq!(URI::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)).unwrap(),
                    URI {
                        priority: 10,
                        weight: 16,
@@ -86,7 +85,7 @@ mod test {
             0x2f,  // one byte of uri (invalid but still a legitimate DNS record)
         ];
 
-        assert_eq!(URI::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
+        assert_eq!(URI::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)).unwrap(),
                    URI {
                        priority: 10,
                        weight: 16,
@@ -101,7 +100,7 @@ mod test {
             0x00, 0x10,  // weight
         ];
 
-        assert_eq!(URI::read(buf.len() as _, &mut Cursor::new(buf)),
+        assert_eq!(URI::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)),
                    Err(WireError::WrongRecordLength { stated_length: 4, mandated_length: MandatedLength::AtLeast(5) }));
     }
 

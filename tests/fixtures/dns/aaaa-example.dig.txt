@@ -1,0 +1,1 @@
+aaaa-example.lookup.dog. IN	AAAA	::1

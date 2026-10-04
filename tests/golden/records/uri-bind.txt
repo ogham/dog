@@ -1,0 +1,26 @@
+== dog -U --colour=never -q _http._tcp.dogtest.example -t 256 --class IN
+-- status 0
+-- stdout
+URI _http._tcp.dogtest.example. 1h00m00s   10 1 "https://dogtest.example/"
+-- stderr
+== dog -U --colour=always -q _http._tcp.dogtest.example -t 256 --class IN
+-- status 0
+-- stdout
+[33mURI[0m [1;34m_http._tcp.dogtest.example.[0m 1h00m00s   10 1 "https://dogtest.example/"
+-- stderr
+== dog -U --short -q _http._tcp.dogtest.example -t 256 --class IN
+-- status 0
+-- stdout
+10 1 "https://dogtest.example/"
+-- stderr
+== dog -U --json -q _http._tcp.dogtest.example -t 256 --class IN
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":true,"tc":false,"rd":true,"ra":false,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"_http._tcp.dogtest.example.","class":"IN","type":"URI"}],"answers":[{"name":"_http._tcp.dogtest.example.","class":"IN","ttl":3600,"type":"URI","data":{"priority":10,"weight":1,"target":"https://dogtest.example/"}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q _http._tcp.dogtest.example -t 256 --class IN
+-- status 0
+-- stdout
+URI _http._tcp.dogtest.example. 1h00m00s   10 1 "https://dogtest.example/"
+OPT .                                    + 4096 0 0 0 []
+-- stderr

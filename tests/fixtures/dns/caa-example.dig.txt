@@ -1,0 +1,1 @@
+caa-example.lookup.dog.	IN	CAA	0 issue "some.certificate.authority"

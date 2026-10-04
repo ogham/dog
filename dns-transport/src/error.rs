@@ -1,3 +1,6 @@
+use std::time::Duration;
+
+
 /// Something that can go wrong making a DNS request.
 #[derive(Debug)]
 pub enum Error {
@@ -9,21 +12,27 @@ pub enum Error {
     /// There was a problem with the network making a TCP or UDP request.
     NetworkError(std::io::Error),
 
-    /// Not enough information was received from the server before a `read`
-    /// call returned zero bytes.
+    /// Not enough information was received from the server before the
+    /// connection was closed.
     TruncatedResponse,
 
+    /// The server did not accept the connection, or did not answer, within
+    /// this time.
+    Timeout(Duration),
+
+    /// A response arrived that does not answer the request that was sent.
+    MismatchedResponse(dns::Mismatch),
+
+    /// The nameserver cannot be used as an address, with the reason why.
+    InvalidNameserver(String),
+
     /// There was a problem making a TLS request.
-    #[cfg(feature = "with_nativetls")]
+    #[cfg(any(feature = "with_tls", feature = "with_https"))]
     TlsError(native_tls::Error),
 
     /// There was a problem _establishing_ a TLS request.
-    #[cfg(feature = "with_nativetls")]
-    TlsHandshakeError(native_tls::HandshakeError<std::net::TcpStream>),
-
-    /// Provided dns name is not valid
-    #[cfg(feature = "with_rustls")]
-    RustlsInvalidDnsNameError(webpki::InvalidDNSNameError),
+    #[cfg(any(feature = "with_tls", feature = "with_https"))]
+    TlsHandshakeError(native_tls::Error),
 
     /// There was a problem decoding the response HTTP headers or body.
     #[cfg(feature = "with_https")]
@@ -33,6 +42,10 @@ pub enum Error {
     /// response code text, if present.
     #[cfg(feature = "with_https")]
     WrongHttpStatus(u16, Option<String>),
+
+    /// The HTTP response cannot be read as a DNS answer, with the reason why.
+    #[cfg(feature = "with_https")]
+    MalformedHttp(String),
 }
 
 
@@ -50,24 +63,9 @@ impl From<std::io::Error> for Error {
     }
 }
 
-#[cfg(feature = "with_nativetls")]
-impl From<native_tls::Error> for Error {
-    fn from(inner: native_tls::Error) -> Self {
-        Self::TlsError(inner)
-    }
-}
-
-#[cfg(feature = "with_nativetls")]
-impl From<native_tls::HandshakeError<std::net::TcpStream>> for Error {
-    fn from(inner: native_tls::HandshakeError<std::net::TcpStream>) -> Self {
-        Self::TlsHandshakeError(inner)
-    }
-}
-
-#[cfg(feature = "with_rustls")]
-impl From<webpki::InvalidDNSNameError> for Error {
-    fn from(inner: webpki::InvalidDNSNameError) -> Self {
-        Self::RustlsInvalidDnsNameError(inner)
+impl From<dns::Mismatch> for Error {
+    fn from(inner: dns::Mismatch) -> Self {
+        Self::MismatchedResponse(inner)
     }
 }
 

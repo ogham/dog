@@ -1,0 +1,4 @@
+-- status 3
+-- stdout
+-- stderr
+dog: Invalid options: Invalid DNS-over-HTTPS URL "https://localhost/x\r\nX-Evil: 1": it contains a space, a control character, or a character that is not ASCII

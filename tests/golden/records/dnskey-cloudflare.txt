@@ -1,0 +1,34 @@
+== dog -U --colour=never -q cloudflare.com -t 48 --class IN -Z do -Z bufsize=1232
+-- status 0
+-- stdout
+DNSKEY cloudflare.com. 30m13s   256 3 13 oJMRESz5E4gYzS/q6XDrvU1qMPYIjCWzJaOau8XNEZeqCYKD5ar0IRd8KqXXFJkqmVfRvMGPmM1x8fGAa2XhSA==
+DNSKEY cloudflare.com. 30m13s   257 3 13 mdsswUyr3DPW132mOi8V9xESWE8jTo0dxCjjnopKl+GqJxpVXckHAeF+KkxLbxILfDLUT0rAK9iUzy1L53eKGQ==
+ RRSIG cloudflare.com. 30m13s   DNSKEY 13 2371 "cloudflare.com." UtBdBTGVDdJ6i/RB6xW8UFf9Vt+oRC9h8xUrbE0FHy7yKGKuxOv1mw/s9Kha2Phfyqj2IbskFxPoPlp/sQlJ3g==
+-- stderr
+== dog -U --colour=always -q cloudflare.com -t 48 --class IN -Z do -Z bufsize=1232
+-- status 0
+-- stdout
+[35mDNSKEY[0m [1;34mcloudflare.com.[0m 30m13s   256 3 13 oJMRESz5E4gYzS/q6XDrvU1qMPYIjCWzJaOau8XNEZeqCYKD5ar0IRd8KqXXFJkqmVfRvMGPmM1x8fGAa2XhSA==
+[35mDNSKEY[0m [1;34mcloudflare.com.[0m 30m13s   257 3 13 mdsswUyr3DPW132mOi8V9xESWE8jTo0dxCjjnopKl+GqJxpVXckHAeF+KkxLbxILfDLUT0rAK9iUzy1L53eKGQ==
+ [35mRRSIG[0m [1;34mcloudflare.com.[0m 30m13s   DNSKEY 13 2371 "cloudflare.com." UtBdBTGVDdJ6i/RB6xW8UFf9Vt+oRC9h8xUrbE0FHy7yKGKuxOv1mw/s9Kha2Phfyqj2IbskFxPoPlp/sQlJ3g==
+-- stderr
+== dog -U --short -q cloudflare.com -t 48 --class IN -Z do -Z bufsize=1232
+-- status 0
+-- stdout
+256 3 13 oJMRESz5E4gYzS/q6XDrvU1qMPYIjCWzJaOau8XNEZeqCYKD5ar0IRd8KqXXFJkqmVfRvMGPmM1x8fGAa2XhSA==
+257 3 13 mdsswUyr3DPW132mOi8V9xESWE8jTo0dxCjjnopKl+GqJxpVXckHAeF+KkxLbxILfDLUT0rAK9iUzy1L53eKGQ==
+DNSKEY 13 2371 "cloudflare.com." UtBdBTGVDdJ6i/RB6xW8UFf9Vt+oRC9h8xUrbE0FHy7yKGKuxOv1mw/s9Kha2Phfyqj2IbskFxPoPlp/sQlJ3g==
+-- stderr
+== dog -U --json -q cloudflare.com -t 48 --class IN -Z do -Z bufsize=1232
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":false,"tc":false,"rd":true,"ra":true,"ad":true,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"cloudflare.com.","class":"IN","type":"DNSKEY"}],"answers":[{"name":"cloudflare.com.","class":"IN","ttl":1813,"type":"DNSKEY","data":{"flags":256,"protocol":3,"algorithm":13,"algorithm_name":"ECDSAP256SHA256","public_key":"oJMRESz5E4gYzS/q6XDrvU1qMPYIjCWzJaOau8XNEZeqCYKD5ar0IRd8KqXXFJkqmVfRvMGPmM1x8fGAa2XhSA=="}},{"name":"cloudflare.com.","class":"IN","ttl":1813,"type":"DNSKEY","data":{"flags":257,"protocol":3,"algorithm":13,"algorithm_name":"ECDSAP256SHA256","public_key":"mdsswUyr3DPW132mOi8V9xESWE8jTo0dxCjjnopKl+GqJxpVXckHAeF+KkxLbxILfDLUT0rAK9iUzy1L53eKGQ=="}},{"name":"cloudflare.com.","class":"IN","ttl":1813,"type":"RRSIG","data":{"type_covered":48,"type_covered_name":"DNSKEY","algorithm":13,"algorithm_name":"ECDSAP256SHA256","labels":2,"original_ttl":3600,"signature_expiration":1792990537,"signature_inception":1787720137,"key_tag":2371,"signer_name":"cloudflare.com.","signature":"UtBdBTGVDdJ6i/RB6xW8UFf9Vt+oRC9h8xUrbE0FHy7yKGKuxOv1mw/s9Kha2Phfyqj2IbskFxPoPlp/sQlJ3g=="}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q cloudflare.com -t 48 --class IN -Z do -Z bufsize=1232
+-- status 0
+-- stdout
+DNSKEY cloudflare.com. 30m13s   256 3 13 oJMRESz5E4gYzS/q6XDrvU1qMPYIjCWzJaOau8XNEZeqCYKD5ar0IRd8KqXXFJkqmVfRvMGPmM1x8fGAa2XhSA==
+DNSKEY cloudflare.com. 30m13s   257 3 13 mdsswUyr3DPW132mOi8V9xESWE8jTo0dxCjjnopKl+GqJxpVXckHAeF+KkxLbxILfDLUT0rAK9iUzy1L53eKGQ==
+ RRSIG cloudflare.com. 30m13s   DNSKEY 13 2371 "cloudflare.com." UtBdBTGVDdJ6i/RB6xW8UFf9Vt+oRC9h8xUrbE0FHy7yKGKuxOv1mw/s9Kha2Phfyqj2IbskFxPoPlp/sQlJ3g==
+   OPT .                      + 1232 0 0 32768 []
+-- stderr

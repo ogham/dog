@@ -1,0 +1,1 @@
+lookup.dog.		IN	SOA	ns1.dnsimple.com. admin.dnsimple.com. 1564273569 86400 7200 604800 300

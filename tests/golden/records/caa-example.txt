@@ -1,0 +1,26 @@
+== dog -U --colour=never -q caa-example.lookup.dog -t 257 --class IN
+-- status 0
+-- stdout
+CAA caa-example.lookup.dog. 1h00m00s   "issue" "some.certificate.authority" (non-critical)
+-- stderr
+== dog -U --colour=always -q caa-example.lookup.dog -t 257 --class IN
+-- status 0
+-- stdout
+[31mCAA[0m [1;34mcaa-example.lookup.dog.[0m 1h00m00s   "issue" "some.certificate.authority" (non-critical)
+-- stderr
+== dog -U --short -q caa-example.lookup.dog -t 257 --class IN
+-- status 0
+-- stdout
+"issue" "some.certificate.authority" (non-critical)
+-- stderr
+== dog -U --json -q caa-example.lookup.dog -t 257 --class IN
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":false,"tc":false,"rd":true,"ra":true,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"caa-example.lookup.dog.","class":"IN","type":"CAA"}],"answers":[{"name":"caa-example.lookup.dog.","class":"IN","ttl":3600,"type":"CAA","data":{"critical":false,"tag":"issue","value":"some.certificate.authority"}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q caa-example.lookup.dog -t 257 --class IN
+-- status 0
+-- stdout
+CAA caa-example.lookup.dog. 1h00m00s   "issue" "some.certificate.authority" (non-critical)
+OPT .                                + 1232 0 0 0 []
+-- stderr

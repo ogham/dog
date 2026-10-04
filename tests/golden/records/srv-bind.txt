@@ -1,0 +1,26 @@
+== dog -U --colour=never -q _sip._udp.dogtest.example -t 33 --class IN
+-- status 0
+-- stdout
+SRV _sip._udp.dogtest.example. 1h00m00s   10 60 "a.dogtest.example.":5060
+-- stderr
+== dog -U --colour=always -q _sip._udp.dogtest.example -t 33 --class IN
+-- status 0
+-- stdout
+[36mSRV[0m [1;34m_sip._udp.dogtest.example.[0m 1h00m00s   10 60 "a.dogtest.example.":5060
+-- stderr
+== dog -U --short -q _sip._udp.dogtest.example -t 33 --class IN
+-- status 0
+-- stdout
+10 60 "a.dogtest.example.":5060
+-- stderr
+== dog -U --json -q _sip._udp.dogtest.example -t 33 --class IN
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":true,"tc":false,"rd":true,"ra":false,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"_sip._udp.dogtest.example.","class":"IN","type":"SRV"}],"answers":[{"name":"_sip._udp.dogtest.example.","class":"IN","ttl":3600,"type":"SRV","data":{"priority":10,"weight":60,"port":5060,"target":"a.dogtest.example."}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q _sip._udp.dogtest.example -t 33 --class IN
+-- status 0
+-- stdout
+SRV _sip._udp.dogtest.example. 1h00m00s   10 60 "a.dogtest.example.":5060
+OPT .                                   + 4096 0 0 0 []
+-- stderr

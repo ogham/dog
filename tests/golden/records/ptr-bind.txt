@@ -1,0 +1,26 @@
+== dog -U --colour=never -q ptr.dogtest.example -t 12 --class IN
+-- status 0
+-- stdout
+PTR ptr.dogtest.example. 1h00m00s   "a.dogtest.example."
+-- stderr
+== dog -U --colour=always -q ptr.dogtest.example -t 12 --class IN
+-- status 0
+-- stdout
+[31mPTR[0m [1;34mptr.dogtest.example.[0m 1h00m00s   "a.dogtest.example."
+-- stderr
+== dog -U --short -q ptr.dogtest.example -t 12 --class IN
+-- status 0
+-- stdout
+"a.dogtest.example."
+-- stderr
+== dog -U --json -q ptr.dogtest.example -t 12 --class IN
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":true,"tc":false,"rd":true,"ra":false,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"ptr.dogtest.example.","class":"IN","type":"PTR"}],"answers":[{"name":"ptr.dogtest.example.","class":"IN","ttl":3600,"type":"PTR","data":{"cname":"a.dogtest.example."}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q ptr.dogtest.example -t 12 --class IN
+-- status 0
+-- stdout
+PTR ptr.dogtest.example. 1h00m00s   "a.dogtest.example."
+OPT .                             + 4096 0 0 0 []
+-- stderr

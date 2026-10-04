@@ -21,6 +21,7 @@ complete -c dog -s 'Z'                 -d "Configure uncommon protocol-level twe
     ad\t'Set the AD (Authentic Data) query bit'
     bufsize=\t'Set the UDP payload size'
     cd\t'Set the CD (Checking Disabled) query bit'
+    do\t'Set the DO (DNSSEC OK) bit, asking for DNSSEC records'
 "
 
 # Protocol options

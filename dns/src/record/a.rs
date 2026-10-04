@@ -22,10 +22,9 @@ impl Wire for A {
     const NAME: &'static str = "A";
     const RR_TYPE: u16 = 1;
 
-    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         if stated_length != 4 {
-            warn!("Length is incorrect (record length {:?}, but should be four)", stated_length);
+            warn!("Length is incorrect (record length {stated_length:?}, but should be four)");
             let mandated_length = MandatedLength::Exactly(4);
             return Err(WireError::WrongRecordLength { stated_length, mandated_length });
         }
@@ -34,7 +33,7 @@ impl Wire for A {
         c.read_exact(&mut buf)?;
 
         let address = Ipv4Addr::from(buf);
-        trace!("Parsed IPv4 address -> {:?}", address);
+        trace!("Parsed IPv4 address -> {address:?}");
 
         Ok(Self { address })
     }
@@ -52,8 +51,8 @@ mod test {
             0x7F, 0x00, 0x00, 0x01,  // IPv4 address
         ];
 
-        assert_eq!(A::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
-                   A { address: Ipv4Addr::new(127, 0, 0, 1) });
+        assert_eq!(A::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)).unwrap(),
+                   A { address: Ipv4Addr::LOCALHOST });
     }
 
     #[test]
@@ -62,7 +61,7 @@ mod test {
             0x7F, 0x00, 0x00,  // Too short IPv4 address
         ];
 
-        assert_eq!(A::read(buf.len() as _, &mut Cursor::new(buf)),
+        assert_eq!(A::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)),
                    Err(WireError::WrongRecordLength { stated_length: 3, mandated_length: MandatedLength::Exactly(4) }));
     }
 
@@ -73,7 +72,7 @@ mod test {
             0x01,  // Unexpected extra byte
         ];
 
-        assert_eq!(A::read(buf.len() as _, &mut Cursor::new(buf)),
+        assert_eq!(A::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)),
                    Err(WireError::WrongRecordLength { stated_length: 5, mandated_length: MandatedLength::Exactly(4) }));
     }
 

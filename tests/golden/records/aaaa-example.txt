@@ -1,0 +1,26 @@
+== dog -U --colour=never -q aaaa-example.lookup.dog -t 28 --class IN
+-- status 0
+-- stdout
+AAAA aaaa-example.lookup.dog. 1h00m00s   ::1
+-- stderr
+== dog -U --colour=always -q aaaa-example.lookup.dog -t 28 --class IN
+-- status 0
+-- stdout
+[1;32mAAAA[0m [1;34maaaa-example.lookup.dog.[0m 1h00m00s   ::1
+-- stderr
+== dog -U --short -q aaaa-example.lookup.dog -t 28 --class IN
+-- status 0
+-- stdout
+::1
+-- stderr
+== dog -U --json -q aaaa-example.lookup.dog -t 28 --class IN
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":false,"tc":false,"rd":true,"ra":true,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"aaaa-example.lookup.dog.","class":"IN","type":"AAAA"}],"answers":[{"name":"aaaa-example.lookup.dog.","class":"IN","ttl":3600,"type":"AAAA","data":{"address":"::1"}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q aaaa-example.lookup.dog -t 28 --class IN
+-- status 0
+-- stdout
+AAAA aaaa-example.lookup.dog. 1h00m00s   ::1
+ OPT .                                 + 1232 0 0 0 []
+-- stderr

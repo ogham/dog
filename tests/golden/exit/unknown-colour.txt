@@ -1,0 +1,4 @@
+-- status 3
+-- stdout
+-- stderr
+dog: Invalid options: Invalid colour setting "sometimes" (use always, automatic, or never)

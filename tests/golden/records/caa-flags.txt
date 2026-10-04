@@ -1,0 +1,34 @@
+== dog -U --colour=never -q caa.dogtest.example -t 257 --class IN
+-- status 0
+-- stdout
+CAA caa.dogtest.example. 1h00m00s   "issue" "ca.example.net" (critical)
+CAA caa.dogtest.example. 1h00m00s   "issuewild" ";" (non-critical)
+CAA caa.dogtest.example. 1h00m00s   "iodef" "mailto:security@dogtest.example" (non-critical)
+-- stderr
+== dog -U --colour=always -q caa.dogtest.example -t 257 --class IN
+-- status 0
+-- stdout
+[31mCAA[0m [1;34mcaa.dogtest.example.[0m 1h00m00s   "issue" "ca.example.net" (critical)
+[31mCAA[0m [1;34mcaa.dogtest.example.[0m 1h00m00s   "issuewild" ";" (non-critical)
+[31mCAA[0m [1;34mcaa.dogtest.example.[0m 1h00m00s   "iodef" "mailto:security@dogtest.example" (non-critical)
+-- stderr
+== dog -U --short -q caa.dogtest.example -t 257 --class IN
+-- status 0
+-- stdout
+"issue" "ca.example.net" (critical)
+"issuewild" ";" (non-critical)
+"iodef" "mailto:security@dogtest.example" (non-critical)
+-- stderr
+== dog -U --json -q caa.dogtest.example -t 257 --class IN
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":true,"tc":false,"rd":true,"ra":false,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"caa.dogtest.example.","class":"IN","type":"CAA"}],"answers":[{"name":"caa.dogtest.example.","class":"IN","ttl":3600,"type":"CAA","data":{"critical":true,"tag":"issue","value":"ca.example.net"}},{"name":"caa.dogtest.example.","class":"IN","ttl":3600,"type":"CAA","data":{"critical":false,"tag":"issuewild","value":";"}},{"name":"caa.dogtest.example.","class":"IN","ttl":3600,"type":"CAA","data":{"critical":false,"tag":"iodef","value":"mailto:security@dogtest.example"}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q caa.dogtest.example -t 257 --class IN
+-- status 0
+-- stdout
+CAA caa.dogtest.example. 1h00m00s   "issue" "ca.example.net" (critical)
+CAA caa.dogtest.example. 1h00m00s   "issuewild" ";" (non-critical)
+CAA caa.dogtest.example. 1h00m00s   "iodef" "mailto:security@dogtest.example" (non-critical)
+OPT .                             + 4096 0 0 0 []
+-- stderr

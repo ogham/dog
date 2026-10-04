@@ -1,0 +1,1 @@
+loc.dogtest.example.	IN	LOC	51 30 12.748 N 0 7 39.611 W 0.00m 0.00m 0.00m 0.00m

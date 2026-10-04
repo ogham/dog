@@ -1,5 +1,7 @@
 use std::fmt;
 
+use super::registry;
+
 
 /// A number representing a record type dog can’t deal with.
 #[derive(PartialEq, Debug, Copy, Clone)]
@@ -14,11 +16,11 @@ pub enum UnknownQtype {
 
 impl UnknownQtype {
 
-    /// Searches the list for an unknown type with the given name, returning a
+    /// Searches the registry for a type with the given name, returning a
     /// `HeardOf` variant if one is found, and `None` otherwise.
     pub fn from_type_name(type_name: &str) -> Option<Self> {
-        let (name, num) = TYPES.iter().find(|t| t.0.eq_ignore_ascii_case(type_name))?;
-        Some(Self::HeardOf(name, *num))
+        let (number, name) = registry::record_type_by_name(type_name)?;
+        Some(Self::HeardOf(name, number))
     }
 
     /// Returns the type number behind this unknown type.
@@ -32,9 +34,9 @@ impl UnknownQtype {
 
 impl From<u16> for UnknownQtype {
     fn from(qtype: u16) -> Self {
-        match TYPES.iter().find(|t| t.1 == qtype) {
-            Some(tuple)  => Self::HeardOf(tuple.0, qtype),
-            None         => Self::UnheardOf(qtype),
+        match registry::record_type_name(qtype) {
+            Some(name)  => Self::HeardOf(name, qtype),
+            None        => Self::UnheardOf(qtype),
         }
     }
 }
@@ -42,46 +44,11 @@ impl From<u16> for UnknownQtype {
 impl fmt::Display for UnknownQtype {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::HeardOf(name, _)  => write!(f, "{}", name),
-            Self::UnheardOf(num)    => write!(f, "{}", num),
+            Self::HeardOf(name, _)  => write!(f, "{name}"),
+            Self::UnheardOf(num)    => write!(f, "{num}"),
         }
     }
 }
-
-
-/// Mapping of record type names to their assigned numbers.
-static TYPES: &[(&str, u16)] = &[
-    ("AFSDB",      18),
-    ("ANY",       255),
-    ("APL",        42),
-    ("AXFR",      252),
-    ("CDNSKEY",    60),
-    ("CDS",        59),
-    ("CERT",       37),
-    ("CSYNC",      62),
-    ("DHCID",      49),
-    ("DLV",     32769),
-    ("DNAME",      39),
-    ("DNSKEEYE",   48),
-    ("DS",         43),
-    ("HIP",        55),
-    ("IPSECKEY",   45),
-    ("IXFR",      251),
-    ("KEY",        25),
-    ("KX",         36),
-    ("NSEC",       47),
-    ("NSEC3",      50),
-    ("NSEC3PARAM", 51),
-    ("OPENPGPKEY", 61),
-    ("RRSIG",      46),
-    ("RP",         17),
-    ("SIG",        24),
-    ("SMIMEA",     53),
-    ("TA",      32768),
-    ("TKEY",      249),
-    ("TSIG",      250),
-    ("URI",       256),
-];
 
 
 #[cfg(test)]
@@ -90,13 +57,25 @@ mod test {
 
     #[test]
     fn known() {
-        assert_eq!(UnknownQtype::from(46).to_string(),
-                   String::from("RRSIG"));
+        assert_eq!(UnknownQtype::from(50).to_string(),
+                   String::from("NSEC3"));
     }
 
     #[test]
     fn unknown() {
         assert_eq!(UnknownQtype::from(4444).to_string(),
                    String::from("4444"));
+    }
+
+    #[test]
+    fn by_name() {
+        assert_eq!(UnknownQtype::from_type_name("svcb"), Some(UnknownQtype::HeardOf("SVCB", 64)));
+        assert_eq!(UnknownQtype::from_type_name("wibble"), None);
+    }
+
+    #[test]
+    fn numbers() {
+        assert_eq!(UnknownQtype::HeardOf("HTTPS", 65).type_number(), 65);
+        assert_eq!(UnknownQtype::UnheardOf(4444).type_number(), 4444);
     }
 }

@@ -1,0 +1,1 @@
+escapes.dogtest.example. IN	TXT	"tab\009nul\000esc\027[31mred\027[0m quote\" backslash\\ del\127 high\255"

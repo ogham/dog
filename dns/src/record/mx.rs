@@ -26,13 +26,12 @@ impl Wire for MX {
     const NAME: &'static str = "MX";
     const RR_TYPE: u16 = 15;
 
-    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let preference = c.read_u16::<BigEndian>()?;
-        trace!("Parsed preference -> {:?}", preference);
+        trace!("Parsed preference -> {preference:?}");
 
         let (exchange, exchange_length) = c.read_labels()?;
-        trace!("Parsed exchange -> {:?}", exchange);
+        trace!("Parsed exchange -> {exchange:?}");
 
         let length_after_labels = 2 + exchange_length;
         if stated_length == length_after_labels {
@@ -40,7 +39,7 @@ impl Wire for MX {
             Ok(Self { preference, exchange })
         }
         else {
-            warn!("Length is incorrect (stated length {:?}, preference plus exchange length {:?}", stated_length, length_after_labels);
+            warn!("Length is incorrect (stated length {stated_length:?}, preference plus exchange length {length_after_labels:?}");
             Err(WireError::WrongLabelLength { stated_length, length_after_labels })
         }
     }
@@ -60,7 +59,7 @@ mod test {
             0x00,  // exchange terminator
         ];
 
-        assert_eq!(MX::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
+        assert_eq!(MX::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)).unwrap(),
                    MX {
                        preference: 10,
                        exchange: Labels::encode("bsago.me").unwrap(),

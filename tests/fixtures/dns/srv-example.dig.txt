@@ -1,0 +1,1 @@
+srv-example.lookup.dog.	IN	SRV	10 20 5000 dns.lookup.dog.

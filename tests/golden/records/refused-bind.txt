@@ -1,0 +1,26 @@
+== dog -U --colour=never -q example.com -t 1 --class IN
+-- status 0
+-- stdout
+Status: Query Refused
+-- stderr
+== dog -U --colour=always -q example.com -t 1 --class IN
+-- status 0
+-- stdout
+Status: Query Refused
+-- stderr
+== dog -U --short -q example.com -t 1 --class IN
+-- status 2
+-- stdout
+-- stderr
+No results
+== dog -U --json -q example.com -t 1 --class IN
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":false,"tc":false,"rd":true,"ra":false,"ad":false,"cd":false,"rcode":"REFUSED"},"queries":[{"name":"example.com.","class":"IN","type":"A"}],"answers":[],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q example.com -t 1 --class IN
+-- status 0
+-- stdout
+Status: Query Refused
+OPT .  + 4096 0 0 0 [0, 15, 0, 20, 0, 20, 114, 101, 99, 117, 114, 115, 105, 111, 110, 32, 100, 105, 115, 97, 98, 108, 101, 100]
+-- stderr

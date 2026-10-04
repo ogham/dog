@@ -1,0 +1,3 @@
+nameserver 192.0.2.53
+# nameserver 2001:db8::53
+search corp.example. example.org.

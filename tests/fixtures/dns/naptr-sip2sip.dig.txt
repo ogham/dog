@@ -1,0 +1,3 @@
+sip2sip.info.		IN	NAPTR	10 100 "s" "SIP+D2T" "" _sip._tcp.sip2sip.info.
+sip2sip.info.		IN	NAPTR	20 100 "s" "SIP+D2U" "" _sip._udp.sip2sip.info.
+sip2sip.info.		IN	NAPTR	25 100 "s" "SIPS+D2T" "" _sips._tcp.sip2sip.info.

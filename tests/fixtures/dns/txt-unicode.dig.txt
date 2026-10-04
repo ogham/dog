@@ -1,0 +1,1 @@
+unicode.dogtest.example. IN	TXT	"snowman \226\152\131 caf\195\169"

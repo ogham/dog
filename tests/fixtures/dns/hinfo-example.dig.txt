@@ -1,0 +1,1 @@
+hinfo-example.lookup.dog. IN	HINFO	"some-kinda-cpu" "some-kinda-os"

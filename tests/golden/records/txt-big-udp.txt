@@ -1,0 +1,28 @@
+== dog -U --colour=never -q big.dogtest.example -t 16 --class IN -Z bufsize=4096
+-- status 0
+-- stdout
+-- stderr
+warning: the response was truncated, so records may be missing; use --tcp to get them all
+== dog -U --colour=always -q big.dogtest.example -t 16 --class IN -Z bufsize=4096
+-- status 0
+-- stdout
+-- stderr
+warning: the response was truncated, so records may be missing; use --tcp to get them all
+== dog -U --short -q big.dogtest.example -t 16 --class IN -Z bufsize=4096
+-- status 2
+-- stdout
+-- stderr
+warning: the response was truncated, so records may be missing; use --tcp to get them all
+No results
+== dog -U --json -q big.dogtest.example -t 16 --class IN -Z bufsize=4096
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":true,"tc":true,"rd":true,"ra":false,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"big.dogtest.example.","class":"IN","type":"TXT"}],"answers":[],"authorities":[],"additionals":[]}]}
+-- stderr
+warning: the response was truncated, so records may be missing; use --tcp to get them all
+== dog -U --edns show --colour=never -q big.dogtest.example -t 16 --class IN -Z bufsize=4096
+-- status 0
+-- stdout
+OPT .  + 4096 0 0 0 []
+-- stderr
+warning: the response was truncated, so records may be missing; use --tcp to get them all

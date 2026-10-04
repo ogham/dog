@@ -27,17 +27,16 @@ impl Wire for PTR {
     const NAME: &'static str = "PTR";
     const RR_TYPE: u16 = 12;
 
-    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let (cname, cname_length) = c.read_labels()?;
-        trace!("Parsed cname -> {:?}", cname);
+        trace!("Parsed cname -> {cname:?}");
 
         if stated_length == cname_length {
             trace!("Length is correct");
             Ok(Self { cname })
         }
         else {
-            warn!("Length is incorrect (stated length {:?}, cname length {:?}", stated_length, cname_length);
+            warn!("Length is incorrect (stated length {stated_length:?}, cname length {cname_length:?}");
             Err(WireError::WrongLabelLength { stated_length, length_after_labels: cname_length })
         }
     }
@@ -56,7 +55,7 @@ mod test {
             0x00,  // cname terminator
         ];
 
-        assert_eq!(PTR::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
+        assert_eq!(PTR::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)).unwrap(),
                    PTR {
                        cname: Labels::encode("dns.google").unwrap(),
                    });

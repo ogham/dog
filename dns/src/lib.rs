@@ -36,9 +36,12 @@ mod types;
 pub use self::types::*;
 
 mod strings;
-pub use self::strings::Labels;
+pub use self::strings::{Labels, InvalidName};
 
 mod wire;
 pub use self::wire::{Wire, WireError, MandatedLength};
+
+mod validate;
+pub use self::validate::Mismatch;
 
 pub mod record;

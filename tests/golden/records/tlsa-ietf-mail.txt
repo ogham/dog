@@ -1,0 +1,26 @@
+== dog -U --colour=never -q _25._tcp.mail.ietf.org -t 52 --class IN
+-- status 0
+-- stdout
+TLSA _25._tcp.mail.ietf.org. 5m00s   3 1 1 "38a88126a15ae8e643ce9447c3ce9a874ea0e05255d07ee12227809edbe5c7f1"
+-- stderr
+== dog -U --colour=always -q _25._tcp.mail.ietf.org -t 52 --class IN
+-- status 0
+-- stdout
+[33mTLSA[0m [1;34m_25._tcp.mail.ietf.org.[0m 5m00s   3 1 1 "38a88126a15ae8e643ce9447c3ce9a874ea0e05255d07ee12227809edbe5c7f1"
+-- stderr
+== dog -U --short -q _25._tcp.mail.ietf.org -t 52 --class IN
+-- status 0
+-- stdout
+3 1 1 "38a88126a15ae8e643ce9447c3ce9a874ea0e05255d07ee12227809edbe5c7f1"
+-- stderr
+== dog -U --json -q _25._tcp.mail.ietf.org -t 52 --class IN
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":false,"tc":false,"rd":true,"ra":true,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"_25._tcp.mail.ietf.org.","class":"IN","type":"TLSA"}],"answers":[{"name":"_25._tcp.mail.ietf.org.","class":"IN","ttl":300,"type":"TLSA","data":{"certificate_usage":3,"selector":1,"matching_type":1,"certificate_data":"38a88126a15ae8e643ce9447c3ce9a874ea0e05255d07ee12227809edbe5c7f1"}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q _25._tcp.mail.ietf.org -t 52 --class IN
+-- status 0
+-- stdout
+TLSA _25._tcp.mail.ietf.org. 5m00s   3 1 1 "38a88126a15ae8e643ce9447c3ce9a874ea0e05255d07ee12227809edbe5c7f1"
+ OPT .                             + 1232 0 0 0 []
+-- stderr

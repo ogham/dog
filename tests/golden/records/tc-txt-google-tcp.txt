@@ -1,0 +1,73 @@
+== dog -T --colour=never -q google.com -t 16 --class IN --edns disable
+-- status 0
+-- stdout
+TXT google.com. 1m52s   "facebook-domain-verification=22rm551cu4k0ab0bxsw536tlds4h95"
+TXT google.com. 1m52s   "google-site-verification=wD8N7i1JTNTkezJ49swvWW48f8_9xveREV4oB-0Hf5o"
+TXT google.com. 1m52s   "globalsign-smime-dv=CDYX+XFHUw2wml6/Gb8+59BsH31KzUr6c1l2BPvqKX8="
+TXT google.com. 1m52s   "work-accounts-domain-verification=Tcj6JjIMZOw2KsSEw2Nt2rLae89tN6"
+TXT google.com. 1m52s   "MS=E4A68B9AB2BB9670BCE15412F62916164C0B20BB"
+TXT google.com. 1m52s   "google-site-verification=TV9-DBe4R80X4v0M4U_bd_J9cpOJM0nikft0jAgjmsQ"
+TXT google.com. 1m52s   "arcules-domain-verification=2R4t5G7nI6tRCo61lpxxbLksPYstxhGmtV75cpr8x9K"
+TXT google.com. 1m52s   "apple-domain-verification=30afIBcvSuDV2PLX"
+TXT google.com. 1m52s   "_r4rd1pvwyrpi7sw4a3hzmw8e51yh9td"
+TXT google.com. 1m52s   "docusign=05958488-4752-4ef2-95eb-aa7ba8a3bd0e"
+TXT google.com. 1m52s   "docusign=1b0a6754-49b1-4db5-8540-d2c12664b289"
+TXT google.com. 1m52s   "cisco-ci-domain-verification=47c38bc8c4b74b7233e9053220c1bbe76bcc1cd33c7acf7acd36cd6a5332004b"
+TXT google.com. 1m52s   "v=spf1 include:_spf.google.com ~all"
+TXT google.com. 1m52s   "google-site-verification=4ibFUgB-wXLQ_S7vsXVomSTVamuOXBiVAzpR5IZ87D0"
+TXT google.com. 1m52s   "Z29vZ2xl"
+TXT google.com. 1m52s   "onetrust-domain-verification=6d685f1d41a94696ad7ef771f68993e0"
+TXT google.com. 1m52s   "onetrust-domain-verification=0d477fe608074e6f9c12bca7826035cc"
+-- stderr
+== dog -T --colour=always -q google.com -t 16 --class IN --edns disable
+-- status 0
+-- stdout
+[33mTXT[0m [1;34mgoogle.com.[0m 1m52s   "facebook-domain-verification=22rm551cu4k0ab0bxsw536tlds4h95"
+[33mTXT[0m [1;34mgoogle.com.[0m 1m52s   "google-site-verification=wD8N7i1JTNTkezJ49swvWW48f8_9xveREV4oB-0Hf5o"
+[33mTXT[0m [1;34mgoogle.com.[0m 1m52s   "globalsign-smime-dv=CDYX+XFHUw2wml6/Gb8+59BsH31KzUr6c1l2BPvqKX8="
+[33mTXT[0m [1;34mgoogle.com.[0m 1m52s   "work-accounts-domain-verification=Tcj6JjIMZOw2KsSEw2Nt2rLae89tN6"
+[33mTXT[0m [1;34mgoogle.com.[0m 1m52s   "MS=E4A68B9AB2BB9670BCE15412F62916164C0B20BB"
+[33mTXT[0m [1;34mgoogle.com.[0m 1m52s   "google-site-verification=TV9-DBe4R80X4v0M4U_bd_J9cpOJM0nikft0jAgjmsQ"
+[33mTXT[0m [1;34mgoogle.com.[0m 1m52s   "arcules-domain-verification=2R4t5G7nI6tRCo61lpxxbLksPYstxhGmtV75cpr8x9K"
+[33mTXT[0m [1;34mgoogle.com.[0m 1m52s   "apple-domain-verification=30afIBcvSuDV2PLX"
+[33mTXT[0m [1;34mgoogle.com.[0m 1m52s   "_r4rd1pvwyrpi7sw4a3hzmw8e51yh9td"
+[33mTXT[0m [1;34mgoogle.com.[0m 1m52s   "docusign=05958488-4752-4ef2-95eb-aa7ba8a3bd0e"
+[33mTXT[0m [1;34mgoogle.com.[0m 1m52s   "docusign=1b0a6754-49b1-4db5-8540-d2c12664b289"
+[33mTXT[0m [1;34mgoogle.com.[0m 1m52s   "cisco-ci-domain-verification=47c38bc8c4b74b7233e9053220c1bbe76bcc1cd33c7acf7acd36cd6a5332004b"
+[33mTXT[0m [1;34mgoogle.com.[0m 1m52s   "v=spf1 include:_spf.google.com ~all"
+[33mTXT[0m [1;34mgoogle.com.[0m 1m52s   "google-site-verification=4ibFUgB-wXLQ_S7vsXVomSTVamuOXBiVAzpR5IZ87D0"
+[33mTXT[0m [1;34mgoogle.com.[0m 1m52s   "Z29vZ2xl"
+[33mTXT[0m [1;34mgoogle.com.[0m 1m52s   "onetrust-domain-verification=6d685f1d41a94696ad7ef771f68993e0"
+[33mTXT[0m [1;34mgoogle.com.[0m 1m52s   "onetrust-domain-verification=0d477fe608074e6f9c12bca7826035cc"
+-- stderr
+== dog -T --short -q google.com -t 16 --class IN --edns disable
+-- status 0
+-- stdout
+"facebook-domain-verification=22rm551cu4k0ab0bxsw536tlds4h95"
+"google-site-verification=wD8N7i1JTNTkezJ49swvWW48f8_9xveREV4oB-0Hf5o"
+"globalsign-smime-dv=CDYX+XFHUw2wml6/Gb8+59BsH31KzUr6c1l2BPvqKX8="
+"work-accounts-domain-verification=Tcj6JjIMZOw2KsSEw2Nt2rLae89tN6"
+"MS=E4A68B9AB2BB9670BCE15412F62916164C0B20BB"
+"google-site-verification=TV9-DBe4R80X4v0M4U_bd_J9cpOJM0nikft0jAgjmsQ"
+"arcules-domain-verification=2R4t5G7nI6tRCo61lpxxbLksPYstxhGmtV75cpr8x9K"
+"apple-domain-verification=30afIBcvSuDV2PLX"
+"_r4rd1pvwyrpi7sw4a3hzmw8e51yh9td"
+"docusign=05958488-4752-4ef2-95eb-aa7ba8a3bd0e"
+"docusign=1b0a6754-49b1-4db5-8540-d2c12664b289"
+"cisco-ci-domain-verification=47c38bc8c4b74b7233e9053220c1bbe76bcc1cd33c7acf7acd36cd6a5332004b"
+"v=spf1 include:_spf.google.com ~all"
+"google-site-verification=4ibFUgB-wXLQ_S7vsXVomSTVamuOXBiVAzpR5IZ87D0"
+"Z29vZ2xl"
+"onetrust-domain-verification=6d685f1d41a94696ad7ef771f68993e0"
+"onetrust-domain-verification=0d477fe608074e6f9c12bca7826035cc"
+-- stderr
+== dog -T --json -q google.com -t 16 --class IN --edns disable
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":false,"tc":false,"rd":true,"ra":true,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"google.com.","class":"IN","type":"TXT"}],"answers":[{"name":"google.com.","class":"IN","ttl":112,"type":"TXT","data":{"messages":["facebook-domain-verification=22rm551cu4k0ab0bxsw536tlds4h95"]}},{"name":"google.com.","class":"IN","ttl":112,"type":"TXT","data":{"messages":["google-site-verification=wD8N7i1JTNTkezJ49swvWW48f8_9xveREV4oB-0Hf5o"]}},{"name":"google.com.","class":"IN","ttl":112,"type":"TXT","data":{"messages":["globalsign-smime-dv=CDYX+XFHUw2wml6/Gb8+59BsH31KzUr6c1l2BPvqKX8="]}},{"name":"google.com.","class":"IN","ttl":112,"type":"TXT","data":{"messages":["work-accounts-domain-verification=Tcj6JjIMZOw2KsSEw2Nt2rLae89tN6"]}},{"name":"google.com.","class":"IN","ttl":112,"type":"TXT","data":{"messages":["MS=E4A68B9AB2BB9670BCE15412F62916164C0B20BB"]}},{"name":"google.com.","class":"IN","ttl":112,"type":"TXT","data":{"messages":["google-site-verification=TV9-DBe4R80X4v0M4U_bd_J9cpOJM0nikft0jAgjmsQ"]}},{"name":"google.com.","class":"IN","ttl":112,"type":"TXT","data":{"messages":["arcules-domain-verification=2R4t5G7nI6tRCo61lpxxbLksPYstxhGmtV75cpr8x9K"]}},{"name":"google.com.","class":"IN","ttl":112,"type":"TXT","data":{"messages":["apple-domain-verification=30afIBcvSuDV2PLX"]}},{"name":"google.com.","class":"IN","ttl":112,"type":"TXT","data":{"messages":["_r4rd1pvwyrpi7sw4a3hzmw8e51yh9td"]}},{"name":"google.com.","class":"IN","ttl":112,"type":"TXT","data":{"messages":["docusign=05958488-4752-4ef2-95eb-aa7ba8a3bd0e"]}},{"name":"google.com.","class":"IN","ttl":112,"type":"TXT","data":{"messages":["docusign=1b0a6754-49b1-4db5-8540-d2c12664b289"]}},{"name":"google.com.","class":"IN","ttl":112,"type":"TXT","data":{"messages":["cisco-ci-domain-verification=47c38bc8c4b74b7233e9053220c1bbe76bcc1cd33c7acf7acd36cd6a5332004b"]}},{"name":"google.com.","class":"IN","ttl":112,"type":"TXT","data":{"messages":["v=spf1 include:_spf.google.com ~all"]}},{"name":"google.com.","class":"IN","ttl":112,"type":"TXT","data":{"messages":["google-site-verification=4ibFUgB-wXLQ_S7vsXVomSTVamuOXBiVAzpR5IZ87D0"]}},{"name":"google.com.","class":"IN","ttl":112,"type":"TXT","data":{"messages":["Z29vZ2xl"]}},{"name":"google.com.","class":"IN","ttl":112,"type":"TXT","data":{"messages":["onetrust-domain-verification=6d685f1d41a94696ad7ef771f68993e0"]}},{"name":"google.com.","class":"IN","ttl":112,"type":"TXT","data":{"messages":["onetrust-domain-verification=0d477fe608074e6f9c12bca7826035cc"]}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -T --edns show --colour=never -q google.com -t 16 --class IN --edns disable
+-- status 3
+-- stdout
+-- stderr
+dog: Invalid options: Option 'edns' given more than once

@@ -1,0 +1,4 @@
+-- status 3
+-- stdout
+-- stderr
+dog: Invalid options: Invalid domain "\u{1b}[31mred.example": its label "\u{1b}[31mred" contains a space or a control character

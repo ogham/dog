@@ -1,0 +1,26 @@
+== dog -U --colour=never -q _kerberos.fedoraproject.org -t 256 --class IN
+-- status 0
+-- stdout
+URI _kerberos.fedoraproject.org. 5m00s   10 1 "krb5srv:m:kkdcp:https://id.fedoraproject.org/KdcProxy/"
+-- stderr
+== dog -U --colour=always -q _kerberos.fedoraproject.org -t 256 --class IN
+-- status 0
+-- stdout
+[33mURI[0m [1;34m_kerberos.fedoraproject.org.[0m 5m00s   10 1 "krb5srv:m:kkdcp:https://id.fedoraproject.org/KdcProxy/"
+-- stderr
+== dog -U --short -q _kerberos.fedoraproject.org -t 256 --class IN
+-- status 0
+-- stdout
+10 1 "krb5srv:m:kkdcp:https://id.fedoraproject.org/KdcProxy/"
+-- stderr
+== dog -U --json -q _kerberos.fedoraproject.org -t 256 --class IN
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":false,"tc":false,"rd":true,"ra":true,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"_kerberos.fedoraproject.org.","class":"IN","type":"URI"}],"answers":[{"name":"_kerberos.fedoraproject.org.","class":"IN","ttl":300,"type":"URI","data":{"priority":10,"weight":1,"target":"krb5srv:m:kkdcp:https://id.fedoraproject.org/KdcProxy/"}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q _kerberos.fedoraproject.org -t 256 --class IN
+-- status 0
+-- stdout
+URI _kerberos.fedoraproject.org. 5m00s   10 1 "krb5srv:m:kkdcp:https://id.fedoraproject.org/KdcProxy/"
+OPT .                                  + 1232 0 0 0 []
+-- stderr

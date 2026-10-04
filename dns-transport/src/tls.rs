@@ -1,81 +1,53 @@
-#![cfg_attr(not(feature = "tls"), allow(unused))]
-
-use std::net::TcpStream;
-use std::io::Write;
+use std::time::Duration;
 
 use log::*;
 
 use dns::{Request, Response};
-use super::{Transport, Error, TcpTransport};
-use super::tls_stream::TlsStream;
+use super::{Transport, Error, DEFAULT_TIMEOUT};
+use super::{address, tcp, tls_stream};
+use super::net::Deadline;
 
 
 /// The **TLS transport**, which sends DNS wire data using TCP through an
-/// encrypted TLS connection.
+/// encrypted TLS connection (DNS-over-TLS).
+///
+/// # References
+///
+/// - [RFC 7858](https://tools.ietf.org/html/rfc7858) — Specification for
+///   DNS over Transport Layer Security (May 2016)
 pub struct TlsTransport {
     addr: String,
+    timeout: Duration,
 }
 
 impl TlsTransport {
 
-    /// Creates a new TLS transport that connects to the given host.
+    /// Creates a new TLS transport that connects to the given host, and
+    /// waits for it for the default time.
     pub fn new(addr: String) -> Self {
-        Self { addr }
+        Self::with_timeout(addr, DEFAULT_TIMEOUT)
+    }
+
+    /// Creates a new TLS transport that connects to the given host, and
+    /// gives up if the whole exchange has not finished within `timeout`.
+    pub fn with_timeout(addr: String, timeout: Duration) -> Self {
+        Self { addr, timeout }
     }
 }
-
 
 
 impl Transport for TlsTransport {
-
-    #[cfg(feature = "with_tls")]
     fn send(&self, request: &Request) -> Result<Response, Error> {
+        let deadline = Deadline::after(self.timeout);
+
         info!("Opening TLS socket");
+        let (host, port) = address::parse_host_port(&self.addr, 853)?;
 
-        let domain = self.sni_domain();
-        info!("Connecting using domain {:?}", domain);
-        let mut stream =
-            if self.addr.contains(':') {
-                let mut parts = self.addr.split(":");
-                let domain = parts.nth(0).unwrap();
-                let port = parts.last().unwrap().parse::<u16>().expect("Invalid port number");
-
-                Self::stream(domain, port)?
-            }
-            else {
-                Self::stream(&*self.addr, 853)?
-            };
-
-
+        info!("Connecting using domain {host:?}");
+        let mut stream = tls_stream::connect(host, port, deadline, &[])?;
         debug!("Connected");
 
-        // The message is prepended with the length when sent over TCP,
-        // so the server knows how long it is (RFC 1035 §4.2.2)
-        let mut bytes_to_send = request.to_bytes().expect("failed to serialise request");
-        TcpTransport::prefix_with_length(&mut bytes_to_send);
-
-        info!("Sending {} bytes of data to {} over TLS", bytes_to_send.len(), self.addr);
-        stream.write_all(&bytes_to_send)?;
-        debug!("Wrote all bytes");
-
-        let read_bytes = TcpTransport::length_prefixed_read(&mut stream)?;
-        let response = Response::from_bytes(&read_bytes)?;
-        Ok(response)
-    }
-
-    #[cfg(not(feature = "with_tls"))]
-    fn send(&self, request: &Request) -> Result<Response, Error> {
-        unreachable!("TLS feature disabled")
-    }
-}
-
-impl TlsTransport {
-    fn sni_domain(&self) -> &str {
-        if let Some(colon_index) = self.addr.find(':') {
-            &self.addr[.. colon_index]
-        }
-        else {
-            &self.addr[..]
-        }
+        info!("Sending a request to {:?} over TLS", self.addr);
+        tcp::exchange(&mut stream, request, self.timeout)
     }
 }

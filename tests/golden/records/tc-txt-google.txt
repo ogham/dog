@@ -1,0 +1,27 @@
+== dog -U --colour=never -q google.com -t 16 --class IN --edns disable
+-- status 0
+-- stdout
+-- stderr
+warning: the response was truncated, so records may be missing; use --tcp to get them all
+== dog -U --colour=always -q google.com -t 16 --class IN --edns disable
+-- status 0
+-- stdout
+-- stderr
+warning: the response was truncated, so records may be missing; use --tcp to get them all
+== dog -U --short -q google.com -t 16 --class IN --edns disable
+-- status 2
+-- stdout
+-- stderr
+warning: the response was truncated, so records may be missing; use --tcp to get them all
+No results
+== dog -U --json -q google.com -t 16 --class IN --edns disable
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":false,"tc":true,"rd":true,"ra":true,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"google.com.","class":"IN","type":"TXT"}],"answers":[],"authorities":[],"additionals":[]}]}
+-- stderr
+warning: the response was truncated, so records may be missing; use --tcp to get them all
+== dog -U --edns show --colour=never -q google.com -t 16 --class IN --edns disable
+-- status 3
+-- stdout
+-- stderr
+dog: Invalid options: Option 'edns' given more than once

@@ -1,0 +1,1 @@
+multi.dogtest.example.	IN	TXT	"first string" "second string" ""

@@ -1,0 +1,5 @@
+-- status 0
+-- stdout
+A a-example.lookup.dog. 3600   10.20.30.40
+Ran in Nms
+-- stderr

@@ -1,0 +1,9 @@
+HTTP/1.1 200 OK
+Date: Fri, 11 Sep 2026 19:07:01 GMT
+Content-Type: text/html; charset=utf-8
+Content-Length: 0
+Connection: keep-alive
+Server: gunicorn/19.9.0
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Credentials: true
+

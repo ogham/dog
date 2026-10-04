@@ -47,28 +47,27 @@ impl Wire for SOA {
     const RR_TYPE: u16 = 6;
 
     #[allow(clippy::similar_names)]
-    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let (mname, mname_length) = c.read_labels()?;
-        trace!("Parsed mname -> {:?}", mname);
+        trace!("Parsed mname -> {mname:?}");
 
         let (rname, rname_length) = c.read_labels()?;
-        trace!("Parsed rname -> {:?}", rname);
+        trace!("Parsed rname -> {rname:?}");
 
         let serial = c.read_u32::<BigEndian>()?;
-        trace!("Parsed serial -> {:?}", serial);
+        trace!("Parsed serial -> {serial:?}");
 
         let refresh_interval = c.read_u32::<BigEndian>()?;
-        trace!("Parsed refresh interval -> {:?}", refresh_interval);
+        trace!("Parsed refresh interval -> {refresh_interval:?}");
 
         let retry_interval = c.read_u32::<BigEndian>()?;
-        trace!("Parsed retry interval -> {:?}", retry_interval);
+        trace!("Parsed retry interval -> {retry_interval:?}");
 
         let expire_limit = c.read_u32::<BigEndian>()?;
-        trace!("Parsed expire limit -> {:?}", expire_limit);
+        trace!("Parsed expire limit -> {expire_limit:?}");
 
         let minimum_ttl = c.read_u32::<BigEndian>()?;
-        trace!("Parsed minimum TTL -> {:?}", minimum_ttl);
+        trace!("Parsed minimum TTL -> {minimum_ttl:?}");
 
         let length_after_labels = 4 * 5 + mname_length + rname_length;
         if stated_length == length_after_labels {
@@ -79,7 +78,7 @@ impl Wire for SOA {
             })
         }
         else {
-            warn!("Length is incorrect (stated length {:?}, mname plus rname plus fields length {:?})", stated_length, length_after_labels);
+            warn!("Length is incorrect (stated length {stated_length:?}, mname plus rname plus fields length {length_after_labels:?})");
             Err(WireError::WrongLabelLength { stated_length, length_after_labels })
         }
     }
@@ -105,14 +104,14 @@ mod test {
             0x00, 0x00, 0x01, 0x2c,  // Minimum TTL
         ];
 
-        assert_eq!(SOA::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
+        assert_eq!(SOA::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)).unwrap(),
                    SOA {
                        mname: Labels::encode("bsago.me").unwrap(),
                        rname: Labels::encode("bsago.me").unwrap(),
-                       serial: 1564274434,
+                       serial: 1_564_274_434,
                        refresh_interval: 86400,
                        retry_interval: 7200,
-                       expire_limit: 604800,
+                       expire_limit: 604_800,
                        minimum_ttl: 300,
                    });
     }

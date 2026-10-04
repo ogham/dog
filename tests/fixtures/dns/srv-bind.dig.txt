@@ -1,0 +1,1 @@
+_sip._udp.dogtest.example. IN	SRV	10 60 5060 a.dogtest.example.

@@ -1,0 +1,4 @@
+lookup.dog.		IN	NS	ns1.dnsimple.com.
+lookup.dog.		IN	NS	ns2.dnsimple.com.
+lookup.dog.		IN	NS	ns3.dnsimple.com.
+lookup.dog.		IN	NS	ns4.dnsimple.com.

@@ -21,17 +21,16 @@ impl Wire for CNAME {
     const NAME: &'static str = "CNAME";
     const RR_TYPE: u16 = 5;
 
-    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let (domain, domain_length) = c.read_labels()?;
-        trace!("Parsed domain -> {:?}", domain);
+        trace!("Parsed domain -> {domain:?}");
 
         if stated_length == domain_length {
             trace!("Length is correct");
             Ok(Self { domain })
         }
         else {
-            warn!("Length is incorrect (stated length {:?}, domain length {:?})", stated_length, domain_length);
+            warn!("Length is incorrect (stated length {stated_length:?}, domain length {domain_length:?})");
             Err(WireError::WrongLabelLength { stated_length, length_after_labels: domain_length })
         }
     }
@@ -50,7 +49,7 @@ mod test {
             0x00,  // domain terminator
         ];
 
-        assert_eq!(CNAME::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
+        assert_eq!(CNAME::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)).unwrap(),
                    CNAME {
                        domain: Labels::encode("bsago.me").unwrap(),
                    });

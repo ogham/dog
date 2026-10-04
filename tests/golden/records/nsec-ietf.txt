@@ -1,0 +1,30 @@
+== dog -U --colour=never -q ietf.org -t 47 --class IN -Z do -Z bufsize=1232
+-- status 0
+-- stdout
+ NSEC ietf.org. 30m00s   "\000.ietf.org." A NS SOA PTR HINFO MX TXT AAAA LOC SRV NAPTR CERT SSHFP RRSIG NSEC DNSKEY TLSA SMIMEA HIP CDS CDNSKEY OPENPGPKEY SVCB HTTPS URI CAA
+RRSIG ietf.org. 30m00s   NSEC 13 34505 "ietf.org." Z/CNwWZyJANTGdl6HbBkNAsKbrTN07lFYw/JKbbARxrhrhhF/FclJXvjikXmzVkKaurPE9iL6nWx6L8NWrP3WQ==
+-- stderr
+== dog -U --colour=always -q ietf.org -t 47 --class IN -Z do -Z bufsize=1232
+-- status 0
+-- stdout
+ [35mNSEC[0m [1;34mietf.org.[0m 30m00s   "\000.ietf.org." A NS SOA PTR HINFO MX TXT AAAA LOC SRV NAPTR CERT SSHFP RRSIG NSEC DNSKEY TLSA SMIMEA HIP CDS CDNSKEY OPENPGPKEY SVCB HTTPS URI CAA
+[35mRRSIG[0m [1;34mietf.org.[0m 30m00s   NSEC 13 34505 "ietf.org." Z/CNwWZyJANTGdl6HbBkNAsKbrTN07lFYw/JKbbARxrhrhhF/FclJXvjikXmzVkKaurPE9iL6nWx6L8NWrP3WQ==
+-- stderr
+== dog -U --short -q ietf.org -t 47 --class IN -Z do -Z bufsize=1232
+-- status 0
+-- stdout
+"\000.ietf.org." A NS SOA PTR HINFO MX TXT AAAA LOC SRV NAPTR CERT SSHFP RRSIG NSEC DNSKEY TLSA SMIMEA HIP CDS CDNSKEY OPENPGPKEY SVCB HTTPS URI CAA
+NSEC 13 34505 "ietf.org." Z/CNwWZyJANTGdl6HbBkNAsKbrTN07lFYw/JKbbARxrhrhhF/FclJXvjikXmzVkKaurPE9iL6nWx6L8NWrP3WQ==
+-- stderr
+== dog -U --json -q ietf.org -t 47 --class IN -Z do -Z bufsize=1232
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":false,"tc":false,"rd":true,"ra":true,"ad":true,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"ietf.org.","class":"IN","type":"NSEC"}],"answers":[{"name":"ietf.org.","class":"IN","ttl":1800,"type":"NSEC","data":{"next_domain":"\\000.ietf.org.","types":["A","NS","SOA","PTR","HINFO","MX","TXT","AAAA","LOC","SRV","NAPTR","CERT","SSHFP","RRSIG","NSEC","DNSKEY","TLSA","SMIMEA","HIP","CDS","CDNSKEY","OPENPGPKEY","SVCB","HTTPS","URI","CAA"]}},{"name":"ietf.org.","class":"IN","ttl":1800,"type":"RRSIG","data":{"type_covered":47,"type_covered_name":"NSEC","algorithm":13,"algorithm_name":"ECDSAP256SHA256","labels":2,"original_ttl":1800,"signature_expiration":1789243619,"signature_inception":1789063619,"key_tag":34505,"signer_name":"ietf.org.","signature":"Z/CNwWZyJANTGdl6HbBkNAsKbrTN07lFYw/JKbbARxrhrhhF/FclJXvjikXmzVkKaurPE9iL6nWx6L8NWrP3WQ=="}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q ietf.org -t 47 --class IN -Z do -Z bufsize=1232
+-- status 0
+-- stdout
+ NSEC ietf.org. 30m00s   "\000.ietf.org." A NS SOA PTR HINFO MX TXT AAAA LOC SRV NAPTR CERT SSHFP RRSIG NSEC DNSKEY TLSA SMIMEA HIP CDS CDNSKEY OPENPGPKEY SVCB HTTPS URI CAA
+RRSIG ietf.org. 30m00s   NSEC 13 34505 "ietf.org." Z/CNwWZyJANTGdl6HbBkNAsKbrTN07lFYw/JKbbARxrhrhhF/FclJXvjikXmzVkKaurPE9iL6nWx6L8NWrP3WQ==
+  OPT .                + 1232 0 0 32768 []
+-- stderr

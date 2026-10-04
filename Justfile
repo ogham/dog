@@ -4,6 +4,13 @@ all-quick: build-quick test-quick xtests-quick
 
 export DOG_DEBUG := ""
 
+# the lizard complexity checker; set LIZARD if it lives in a virtualenv
+lizard := env_var_or_default("LIZARD", "lizard")
+
+# files that are not dog’s own code: test code, and the build script
+# (whose logic lives in build-support/, which is measured)
+coverage-ignore := '(^|/)(build\.rs|test-support/|tests/)'
+
 
 #----------#
 # building #
@@ -27,31 +34,53 @@ export DOG_DEBUG := ""
 @build-quick:
     cargo build --no-default-features
 
-# check that the dog binary can compile
+# check that everything can compile, tests included
 @check:
-    cargo check
+    cargo check --workspace --all-targets
+
+# check that the Windows-only code still compiles
+@check-windows:
+    cargo check --workspace --all-targets --target x86_64-pc-windows-gnu
 
 
 #---------------#
 # running tests #
 #---------------#
 
-# run unit tests
+# run the unit, integration and end-to-end tests, with and without the optional features
 @test:
     cargo test --workspace -- --quiet
+    cargo test --workspace --no-default-features -- --quiet
 
-# run unit tests (in release mode)
+# run the tests (in release mode)
 @test-release:
     cargo test --workspace --release --verbose
 
-# run unit tests (without some features)
+# run the tests (without some features)
 @test-quick:
     cargo test --workspace --no-default-features -- --quiet
 
-# run mutation tests
-@test-mutation:
-    cargo +nightly test    --package dns --features=dns/with_mutagen -- --quiet
-    cargo +nightly mutagen --package dns --features=dns/with_mutagen
+# run the tests that talk to real servers on the internet
+@test-live:
+    cargo test --workspace -- --ignored
+
+# rewrite the golden output files from the current behaviour, then review the diff
+@bless:
+    DOG_BLESS=1 cargo test --workspace -- --quiet
+    DOG_BLESS=1 cargo test --workspace --no-default-features -- --quiet
+
+
+#----------#
+# fixtures #
+#----------#
+
+# capture DNS and DNS-over-HTTPS responses from real servers into tests/fixtures
+@capture-fixtures *args:
+    python3 tests/capture/capture.py {{args}}
+
+# regenerate the throwaway TLS certificates the tests trust
+@gen-test-certs:
+    sh tests/fixtures/tls/make-certs.sh
 
 
 #------------------------#
@@ -83,6 +112,12 @@ export DOG_DEBUG := ""
 @count-xtests:
     grep -F '[[cmd]]' -R xtests | wc -l
 
+# builds dog and runs extended tests with features disabled
+@feature-checks *args:
+    cargo build --no-default-features
+    specsheet xtests/features/none.toml -shide {{args}} \
+        -O cmd.target.dog="${CARGO_TARGET_DIR:-../../target}/debug/dog"
+
 
 #---------#
 # fuzzing #
@@ -106,14 +141,27 @@ export DOG_DEBUG := ""
 # code quality and misc #
 #-----------------------#
 
-# lint the code
+# lint the code, with and without the optional features
 @clippy:
-    touch dns/src/lib.rs
-    cargo clippy
+    cargo clippy --workspace --all-targets -- -D warnings
+    cargo clippy --workspace --all-targets --no-default-features -- -D warnings
 
-# generate a code coverage report using tarpaulin via docker
-@coverage-docker:
-    docker run --security-opt seccomp=unconfined -v "${PWD}:/volume" xd009642/tarpaulin cargo tarpaulin --all --out Html
+# fail if any function’s cyclomatic complexity is over 10, tests included
+@complexity:
+    command -v {{lizard}} >/dev/null || (echo "lizard not found: python3 -m venv ~/.venvs/lizard && ~/.venvs/lizard/bin/pip install lizard, then set LIZARD=~/.venvs/lizard/bin/lizard" && exit 1)
+    {{lizard}} -l rust -l python -C 10 -w -x './target/*' -x './dns/fuzz/target/*' .
+
+# measure test coverage of both feature sets together; fail under 99% of lines
+@coverage:
+    command -v cargo-llvm-cov >/dev/null || (echo "cargo-llvm-cov not installed: rustup component add llvm-tools-preview && cargo install cargo-llvm-cov" && exit 1)
+    cargo llvm-cov clean --workspace
+    cargo llvm-cov --no-report --workspace
+    cargo llvm-cov --no-report --workspace --no-default-features
+    cargo llvm-cov report --workspace --html --output-dir target/coverage --ignore-filename-regex '{{coverage-ignore}}'
+    cargo llvm-cov report --workspace --summary-only --fail-under-lines 99 --ignore-filename-regex '{{coverage-ignore}}'
+
+# run every check: tests, lints, complexity, coverage, and the Windows build
+verify: test clippy complexity coverage check-windows
 
 # update dependency versions, and check for outdated ones
 @update-deps:
@@ -125,12 +173,6 @@ export DOG_DEBUG := ""
 @unused-deps:
     command -v cargo-udeps >/dev/null || (echo "cargo-udeps not installed" && exit 1)
     cargo +nightly udeps
-
-# builds dog and runs extended tests with features disabled
-@feature-checks *args:
-    cargo build --no-default-features
-    specsheet xtests/features/none.toml -shide {{args}} \
-        -O cmd.target.dog="${CARGO_TARGET_DIR:-../../target}/debug/dog"
 
 # print versions of the necessary build tools
 @versions:

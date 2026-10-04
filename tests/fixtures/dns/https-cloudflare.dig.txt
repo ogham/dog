@@ -1,0 +1,1 @@
+cloudflare.com.		IN	HTTPS	1 . alpn="h3,h2" ipv4hint=104.16.132.229,104.16.133.229 ipv6hint=2606:4700::6810:84e5,2606:4700::6810:85e5

@@ -1,0 +1,26 @@
+== dog -U --colour=never -q cloudflare.com -t 65 --class IN
+-- status 0
+-- stdout
+HTTPS cloudflare.com. 42s   [0, 1, 0, 0, 1, 0, 6, 2, 104, 51, 2, 104, 50, 0, 4, 0, 8, 104, 16, 132, 229, 104, 16, 133, 229, 0, 6, 0, 32, 38, 6, 71, 0, 0, 0, 0, 0, 0, 0, 0, 0, 104, 16, 132, 229, 38, 6, 71, 0, 0, 0, 0, 0, 0, 0, 0, 0, 104, 16, 133, 229]
+-- stderr
+== dog -U --colour=always -q cloudflare.com -t 65 --class IN
+-- status 0
+-- stdout
+[41;37mHTTPS[0m [1;34mcloudflare.com.[0m 42s   [0, 1, 0, 0, 1, 0, 6, 2, 104, 51, 2, 104, 50, 0, 4, 0, 8, 104, 16, 132, 229, 104, 16, 133, 229, 0, 6, 0, 32, 38, 6, 71, 0, 0, 0, 0, 0, 0, 0, 0, 0, 104, 16, 132, 229, 38, 6, 71, 0, 0, 0, 0, 0, 0, 0, 0, 0, 104, 16, 133, 229]
+-- stderr
+== dog -U --short -q cloudflare.com -t 65 --class IN
+-- status 0
+-- stdout
+[0, 1, 0, 0, 1, 0, 6, 2, 104, 51, 2, 104, 50, 0, 4, 0, 8, 104, 16, 132, 229, 104, 16, 133, 229, 0, 6, 0, 32, 38, 6, 71, 0, 0, 0, 0, 0, 0, 0, 0, 0, 104, 16, 132, 229, 38, 6, 71, 0, 0, 0, 0, 0, 0, 0, 0, 0, 104, 16, 133, 229]
+-- stderr
+== dog -U --json -q cloudflare.com -t 65 --class IN
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":false,"tc":false,"rd":true,"ra":true,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"cloudflare.com.","class":"IN","type":"HTTPS"}],"answers":[{"name":"cloudflare.com.","class":"IN","ttl":42,"type":"HTTPS","data":{"bytes":[0,1,0,0,1,0,6,2,104,51,2,104,50,0,4,0,8,104,16,132,229,104,16,133,229,0,6,0,32,38,6,71,0,0,0,0,0,0,0,0,0,104,16,132,229,38,6,71,0,0,0,0,0,0,0,0,0,104,16,133,229]}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q cloudflare.com -t 65 --class IN
+-- status 0
+-- stdout
+HTTPS cloudflare.com. 42s   [0, 1, 0, 0, 1, 0, 6, 2, 104, 51, 2, 104, 50, 0, 4, 0, 8, 104, 16, 132, 229, 104, 16, 133, 229, 0, 6, 0, 32, 38, 6, 71, 0, 0, 0, 0, 0, 0, 0, 0, 0, 104, 16, 132, 229, 38, 6, 71, 0, 0, 0, 0, 0, 0, 0, 0, 0, 104, 16, 133, 229]
+  OPT .                   + 1232 0 0 0 []
+-- stderr

@@ -28,18 +28,17 @@ impl Wire for HINFO {
     const NAME: &'static str = "HINFO";
     const RR_TYPE: u16 = 13;
 
-    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
 
         let cpu_length = c.read_u8()?;
-        trace!("Parsed CPU length -> {:?}", cpu_length);
+        trace!("Parsed CPU length -> {cpu_length:?}");
 
         let mut cpu = vec![0_u8; usize::from(cpu_length)].into_boxed_slice();
         c.read_exact(&mut cpu)?;
         trace!("Parsed CPU -> {:?}", String::from_utf8_lossy(&cpu));
 
         let os_length = c.read_u8()?;
-        trace!("Parsed OS length -> {:?}", os_length);
+        trace!("Parsed OS length -> {os_length:?}");
 
         let mut os = vec![0_u8; usize::from(os_length)].into_boxed_slice();
         c.read_exact(&mut os)?;
@@ -51,7 +50,7 @@ impl Wire for HINFO {
             Ok(Self { cpu, os })
         }
         else {
-            warn!("Length is incorrect (stated length {:?}, cpu plus length {:?}", stated_length, length_after_labels);
+            warn!("Length is incorrect (stated length {stated_length:?}, cpu plus length {length_after_labels:?}");
             Err(WireError::WrongLabelLength { stated_length, length_after_labels })
         }
     }
@@ -74,7 +73,7 @@ mod test {
             0x6f, 0x73,  // os
         ];
 
-        assert_eq!(HINFO::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
+        assert_eq!(HINFO::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)).unwrap(),
                    HINFO {
                        cpu: Box::new(*b"some-kinda-cpu"),
                        os: Box::new(*b"some-kinda-os"),

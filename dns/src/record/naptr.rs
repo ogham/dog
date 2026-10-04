@@ -40,46 +40,28 @@ impl Wire for NAPTR {
     const NAME: &'static str = "NAPTR";
     const RR_TYPE: u16 = 35;
 
-    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let order = c.read_u16::<BigEndian>()?;
-        trace!("Parsed order -> {:?}", order);
+        trace!("Parsed order -> {order:?}");
 
-        // preference
         let preference = c.read_u16::<BigEndian>()?;
-        trace!("Parsed preference -> {:?}", preference);
+        trace!("Parsed preference -> {preference:?}");
 
-        // flags
-        let flags_length = c.read_u8()?;
-        trace!("Parsed flags length -> {:?}", flags_length);
-
-        let mut flags = vec![0_u8; usize::from(flags_length)].into_boxed_slice();
-        c.read_exact(&mut flags)?;
+        let (flags, flags_length) = read_character_string(c)?;
         trace!("Parsed flags -> {:?}", String::from_utf8_lossy(&flags));
 
-        // service
-        let service_length = c.read_u8()?;
-        trace!("Parsed service length -> {:?}", service_length);
-
-        let mut service = vec![0_u8; usize::from(service_length)].into_boxed_slice();
-        c.read_exact(&mut service)?;
+        let (service, service_length) = read_character_string(c)?;
         trace!("Parsed service -> {:?}", String::from_utf8_lossy(&service));
 
-        // regex
-        let regex_length = c.read_u8()?;
-        trace!("Parsed regex length -> {:?}", regex_length);
-
-        let mut regex = vec![0_u8; usize::from(regex_length)].into_boxed_slice();
-        c.read_exact(&mut regex)?;
+        let (regex, regex_length) = read_character_string(c)?;
         trace!("Parsed regex -> {:?}", String::from_utf8_lossy(&regex));
 
-        // replacement
         let (replacement, replacement_length) = c.read_labels()?;
-        trace!("Parsed replacement -> {:?}", replacement);
+        trace!("Parsed replacement -> {replacement:?}");
 
-        let length_after_labels = 2 + 2 +
-            1 + u16::from(flags_length) + 1 + u16::from(service_length) +
-            1 + u16::from(regex_length) + replacement_length;
+        // The two numbers, the three strings with their length bytes, and the name.
+        let length_after_labels = (2 + 2 + flags_length + service_length + regex_length)
+            .saturating_add(replacement_length);
 
         if stated_length == length_after_labels {
             Ok(Self { order, preference, flags, service, regex, replacement })
@@ -113,7 +95,7 @@ mod test {
             0x67, 0x00,  // replacement
         ];
 
-        assert_eq!(NAPTR::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
+        assert_eq!(NAPTR::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)).unwrap(),
                    NAPTR {
                        order: 5,
                        preference: 10,

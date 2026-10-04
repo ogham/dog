@@ -1,0 +1,1 @@
+a-example.lookup.dog.	IN	A	10.20.30.40

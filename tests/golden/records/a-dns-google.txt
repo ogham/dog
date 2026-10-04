@@ -1,0 +1,30 @@
+== dog -U --colour=never -q dns.google -t 1 --class IN
+-- status 0
+-- stdout
+A dns.google. 48s   8.8.4.4
+A dns.google. 48s   8.8.8.8
+-- stderr
+== dog -U --colour=always -q dns.google -t 1 --class IN
+-- status 0
+-- stdout
+[1;32mA[0m [1;34mdns.google.[0m 48s   8.8.4.4
+[1;32mA[0m [1;34mdns.google.[0m 48s   8.8.8.8
+-- stderr
+== dog -U --short -q dns.google -t 1 --class IN
+-- status 0
+-- stdout
+8.8.4.4
+8.8.8.8
+-- stderr
+== dog -U --json -q dns.google -t 1 --class IN
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":false,"tc":false,"rd":true,"ra":true,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"dns.google.","class":"IN","type":"A"}],"answers":[{"name":"dns.google.","class":"IN","ttl":48,"type":"A","data":{"address":"8.8.4.4"}},{"name":"dns.google.","class":"IN","ttl":48,"type":"A","data":{"address":"8.8.8.8"}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q dns.google -t 1 --class IN
+-- status 0
+-- stdout
+  A dns.google. 48s   8.8.4.4
+  A dns.google. 48s   8.8.8.8
+OPT .               + 1232 0 0 0 []
+-- stderr

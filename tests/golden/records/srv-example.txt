@@ -1,0 +1,26 @@
+== dog -U --colour=never -q srv-example.lookup.dog -t 33 --class IN
+-- status 0
+-- stdout
+SRV srv-example.lookup.dog. 1h00m00s   10 20 "dns.lookup.dog.":5000
+-- stderr
+== dog -U --colour=always -q srv-example.lookup.dog -t 33 --class IN
+-- status 0
+-- stdout
+[36mSRV[0m [1;34msrv-example.lookup.dog.[0m 1h00m00s   10 20 "dns.lookup.dog.":5000
+-- stderr
+== dog -U --short -q srv-example.lookup.dog -t 33 --class IN
+-- status 0
+-- stdout
+10 20 "dns.lookup.dog.":5000
+-- stderr
+== dog -U --json -q srv-example.lookup.dog -t 33 --class IN
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":false,"tc":false,"rd":true,"ra":true,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"srv-example.lookup.dog.","class":"IN","type":"SRV"}],"answers":[{"name":"srv-example.lookup.dog.","class":"IN","ttl":3600,"type":"SRV","data":{"priority":10,"weight":20,"port":5000,"target":"dns.lookup.dog."}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q srv-example.lookup.dog -t 33 --class IN
+-- status 0
+-- stdout
+SRV srv-example.lookup.dog. 1h00m00s   10 20 "dns.lookup.dog.":5000
+OPT .                                + 1232 0 0 0 []
+-- stderr

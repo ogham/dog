@@ -1,0 +1,90 @@
+; Zone for dog's tier-2 test fixtures, served by a local BIND 9 container
+; started by tests/capture/capture.py. It holds the record types that no
+; public server reliably provides, and the awkward data worth seeing encoded
+; by a real server implementation rather than by hand.
+;
+; The SSHFP records fingerprint a throwaway ed25519 host key, the TLSA record
+; pins the public key of tests/fixtures/tls/localhost.pem, and the OPENPGPKEY
+; is a throwaway ed25519 key with no secret material kept anywhere.
+
+$TTL 3600
+$ORIGIN dogtest.example.
+
+@           IN SOA    ns1 hostmaster (
+                      2026091101 ; serial
+                      7200       ; refresh
+                      3600       ; retry
+                      1209600    ; expire
+                      300 )      ; negative-caching TTL
+            IN NS     ns1
+
+ns1         IN A      127.0.0.1
+a           IN A      192.0.2.1
+aaaa        IN AAAA   2001:db8::1
+alias       IN CNAME  a
+ptr         IN PTR    a.dogtest.example.
+hinfo       IN HINFO  "x86_64" "Linux"
+nullmx      IN MX     0 .
+
+eui48       IN EUI48  00-00-5e-00-53-2a
+eui64       IN EUI64  00-00-5e-ef-10-00-00-2a
+
+sshfp       IN SSHFP  4 1 86494ad0038a7b904b29206597d55aaeeda2d21b
+sshfp       IN SSHFP  4 2 e0ac1a52a4909c5fcaae921116a5629d4482c75a2505ecc02f377535ce105d0a
+
+openpgpkey  IN OPENPGPKEY (
+                      mDMEaqRRLxYJKwYBBAHaRw8BAQdAwI0icRHrMgwLIG8F4ACwRJvC2D4LBKHT
+                      vQeIwb1wTq60I2RvZyB0ZXN0IGtleSA8dGVzdEBkb2d0ZXN0LmV4YW1wbGU+
+                      iJAEExYIADgWIQQbX3MK9vSGW+hi9MaSImWx0G0yYAUCaqRRLwIbAwULCQgH
+                      AgYVCgkICwIEFgIDAQIeAQIXgAAKCRCSImWx0G0yYJCkAQCtbSokO/DmnNDR
+                      nO6lKSTCIg3/DQntvf726zlj6wzqzAD/dCCzYUnhVYhsaHmfULDgLw+vPDKP
+                      7pN+CpIvQNN4wwA= )
+
+caa         IN CAA    128 issue "ca.example.net"
+caa         IN CAA    0 issuewild ";"
+caa         IN CAA    0 iodef "mailto:security@dogtest.example"
+
+loc         IN LOC    51 30 12.748 N 0 7 39.611 W 0.00m 0.00m 0.00m 0.00m
+loc-se      IN LOC    33 51 35.9 S 151 12 40.1 E 58m 10m 100m 10m
+
+naptr       IN NAPTR  100 10 "S" "SIP+D2U" "" _sip._udp.dogtest.example.
+naptr       IN NAPTR  102 10 "U" "E2U+sip" "!^.*$!sip:info@dogtest.example!" .
+
+_http._tcp  IN URI    10 1 "https://dogtest.example/"
+_443._tcp   IN TLSA   3 1 1 8e9dde48d06c51adc3e12d7da1166da8bf7a926eb32a1215830fa354653101e9
+_sip._udp   IN SRV    10 60 5060 a.dogtest.example.
+
+; Bytes that must never reach a terminal unescaped: tab, NUL, ESC, DEL,
+; quote, backslash, and a byte that is not valid UTF-8.
+escapes     IN TXT    "tab\009nul\000esc\027[31mred\027[0m quote\" backslash\\ del\127 high\255"
+
+; Valid UTF-8, written as the bytes a zone file holds.
+unicode     IN TXT    "snowman \226\152\131 caf\195\169"
+
+; Several strings in one record, including an empty one.
+multi       IN TXT    "first string" "second string" ""
+
+; A type number with no name, in RFC 3597 generic form.
+unknown     IN TYPE65280 \# 4 deadbeef
+
+; An RRset too big for a 4096-byte UDP answer, so BIND sets TC.
+big         IN TXT    "big-01-abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijk"
+big         IN TXT    "big-02-abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijk"
+big         IN TXT    "big-03-abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijk"
+big         IN TXT    "big-04-abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijk"
+big         IN TXT    "big-05-abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijk"
+big         IN TXT    "big-06-abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijk"
+big         IN TXT    "big-07-abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijk"
+big         IN TXT    "big-08-abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijk"
+big         IN TXT    "big-09-abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijk"
+big         IN TXT    "big-10-abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijk"
+big         IN TXT    "big-11-abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijk"
+big         IN TXT    "big-12-abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijk"
+big         IN TXT    "big-13-abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijk"
+big         IN TXT    "big-14-abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijk"
+big         IN TXT    "big-15-abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijk"
+big         IN TXT    "big-16-abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijk"
+big         IN TXT    "big-17-abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijk"
+big         IN TXT    "big-18-abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijk"
+big         IN TXT    "big-19-abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijk"
+big         IN TXT    "big-20-abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijk"

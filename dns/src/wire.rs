@@ -17,21 +17,22 @@ impl Request {
     pub fn to_bytes(&self) -> io::Result<Vec<u8>> {
         let mut bytes = Vec::with_capacity(32);
 
-        bytes.write_u16::<BigEndian>(self.transaction_id)?;
-        bytes.write_u16::<BigEndian>(self.flags.to_u16())?;
+        bytes.extend_from_slice(&self.transaction_id.to_be_bytes());
+        bytes.extend_from_slice(&self.flags.to_u16().to_be_bytes());
 
-        bytes.write_u16::<BigEndian>(1)?;  // query count
-        bytes.write_u16::<BigEndian>(0)?;  // answer count
-        bytes.write_u16::<BigEndian>(0)?;  // authority RR count
-        bytes.write_u16::<BigEndian>(if self.additional.is_some() { 1 } else { 0 })?;  // additional RR count
+        // One query, no answers or authorities, and the OPT record if any.
+        let additional_count = u16::from(self.additional.is_some());
+        for count in [ 1, 0, 0, additional_count ] {
+            bytes.extend_from_slice(&u16::to_be_bytes(count));
+        }
 
         bytes.write_labels(&self.query.qname)?;
-        bytes.write_u16::<BigEndian>(self.query.qtype.type_number())?;
-        bytes.write_u16::<BigEndian>(self.query.qclass.to_u16())?;
+        bytes.extend_from_slice(&self.query.qtype.type_number().to_be_bytes());
+        bytes.extend_from_slice(&self.query.qclass.to_u16().to_be_bytes());
 
         if let Some(opt) = &self.additional {
-            bytes.write_u8(0)?;  // usually a name
-            bytes.write_u16::<BigEndian>(OPT::RR_TYPE)?;
+            bytes.push(0);  // the root name
+            bytes.extend_from_slice(&OPT::RR_TYPE.to_be_bytes());
             bytes.extend(opt.to_bytes()?);
         }
 
@@ -54,59 +55,74 @@ impl Request {
 impl Response {
 
     /// Reads bytes off of the given slice, parsing them into a response.
-    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, WireError> {
         info!("Parsing response");
-        trace!("Bytes -> {:?}", bytes);
+        trace!("Bytes -> {bytes:?}");
         let mut c = Cursor::new(bytes);
 
         let transaction_id = c.read_u16::<BigEndian>()?;
-        trace!("Read txid -> {:?}", transaction_id);
+        trace!("Read txid -> {transaction_id:?}");
 
-        let flags = Flags::from_u16(c.read_u16::<BigEndian>()?);
-        trace!("Read flags -> {:#?}", flags);
+        let flag_bits = c.read_u16::<BigEndian>()?;
+        let mut flags = Flags::from_u16(flag_bits);
+        trace!("Read flags -> {flags:#?}");
 
-        let query_count      = c.read_u16::<BigEndian>()?;
-        let answer_count     = c.read_u16::<BigEndian>()?;
-        let authority_count  = c.read_u16::<BigEndian>()?;
-        let additional_count = c.read_u16::<BigEndian>()?;
+        let [ query_count, answer_count, authority_count, additional_count ] = read_counts(&mut c)?;
 
-        // We can pre-allocate these vectors by giving them an initial
-        // capacity based on the count fields. But because the count fields
-        // are user-controlled (with a maximum of 2^16 - 1) we cannot trust
-        // them _entirely_, so cap the pre-allocation if the count looks
-        // arbitrarily large (9 seems about right).
+        let queries     = read_section(&mut c, query_count,      "query",             Query::from_bytes)?;
+        let answers     = read_section(&mut c, answer_count,     "answer",            Answer::from_bytes)?;
+        let authorities = read_section(&mut c, authority_count,  "authority",         Answer::from_bytes)?;
+        let additionals = read_section(&mut c, additional_count, "additional answer", Answer::from_bytes)?;
 
-        let mut queries = Vec::with_capacity(usize::from(query_count.min(9)));
-        debug!("Reading {}x query from response", query_count);
-        for _ in 0 .. query_count {
-            let (qname, _) = c.read_labels()?;
-            queries.push(Query::from_bytes(qname, &mut c)?);
-        }
-
-        let mut answers = Vec::with_capacity(usize::from(answer_count.min(9)));
-        debug!("Reading {}x answer from response", answer_count);
-        for _ in 0 .. answer_count {
-            let (qname, _) = c.read_labels()?;
-            answers.push(Answer::from_bytes(qname, &mut c)?);
-        }
-
-        let mut authorities = Vec::with_capacity(usize::from(authority_count.min(9)));
-        debug!("Reading {}x authority from response", authority_count);
-        for _ in 0 .. authority_count {
-            let (qname, _) = c.read_labels()?;
-            authorities.push(Answer::from_bytes(qname, &mut c)?);
-        }
-
-        let mut additionals = Vec::with_capacity(usize::from(additional_count.min(9)));
-        debug!("Reading {}x additional answer from response", additional_count);
-        for _ in 0 .. additional_count {
-            let (qname, _) = c.read_labels()?;
-            additionals.push(Answer::from_bytes(qname, &mut c)?);
+        if let Some(rcode) = extended_rcode(flag_bits, &additionals) {
+            flags.error_code = ErrorCode::from_bits(rcode);
         }
 
         Ok(Self { transaction_id, flags, queries, answers, authorities, additionals })
     }
+}
+
+/// Reads the four section counts that follow the flags in the header.
+fn read_counts(c: &mut Cursor<&[u8]>) -> Result<[u16; 4], WireError> {
+    Ok([
+        c.read_u16::<BigEndian>()?,
+        c.read_u16::<BigEndian>()?,
+        c.read_u16::<BigEndian>()?,
+        c.read_u16::<BigEndian>()?,
+    ])
+}
+
+/// Reads one section of a response: `count` entries, each starting with a
+/// name, the rest read by `read_entry`.
+fn read_section<T>(
+    c: &mut Cursor<&[u8]>,
+    count: u16,
+    what: &str,
+    read_entry: fn(Labels, &mut Cursor<&[u8]>) -> Result<T, WireError>,
+) -> Result<Vec<T>, WireError> {
+
+    // The vector can be pre-allocated from the count. But because the count
+    // is attacker-controlled (up to 2^16 - 1), it cannot be trusted
+    // _entirely_, so cap the pre-allocation if it looks arbitrarily large
+    // (9 seems about right).
+    let mut entries = Vec::with_capacity(usize::from(count.min(9)));
+    debug!("Reading {count}x {what} from response");
+
+    for _ in 0 .. count {
+        let (qname, _) = c.read_labels()?;
+        entries.push(read_entry(qname, c)?);
+    }
+
+    Ok(entries)
+}
+
+/// The full twelve-bit response code, when an OPT record extends the four
+/// bits in the header with eight more (RFC 6891 §6.1.3).
+fn extended_rcode(flag_bits: u16, additionals: &[Answer]) -> Option<u16> {
+    additionals.iter().find_map(|answer| match answer {
+        Answer::Pseudo { opt, .. }  => Some((u16::from(opt.higher_bits) << 4) | (flag_bits & 0b_1111)),
+        Answer::Standard { .. }     => None,
+    })
 }
 
 
@@ -114,18 +130,17 @@ impl Query {
 
     /// Reads bytes from the given cursor, and parses them into a query with
     /// the given domain name.
-    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn from_bytes(qname: Labels, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let qtype_number = c.read_u16::<BigEndian>()?;
-        trace!("Read qtype number -> {:?}", qtype_number );
+        trace!("Read qtype number -> {qtype_number:?}" );
 
         let qtype = RecordType::from(qtype_number);
-        trace!("Found qtype -> {:?}", qtype );
+        trace!("Found qtype -> {qtype:?}" );
 
         let qclass = QClass::from_u16(c.read_u16::<BigEndian>()?);
-        trace!("Read qclass -> {:?}", qtype);
+        trace!("Read qclass -> {qtype:?}");
 
-        Ok(Self { qtype, qclass, qname })
+        Ok(Self { qname, qclass, qtype })
     }
 }
 
@@ -134,10 +149,9 @@ impl Answer {
 
     /// Reads bytes from the given cursor, and parses them into an answer with
     /// the given domain name.
-    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn from_bytes(qname: Labels, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let qtype_number = c.read_u16::<BigEndian>()?;
-        trace!("Read qtype number -> {:?}", qtype_number );
+        trace!("Read qtype number -> {qtype_number:?}" );
 
         if qtype_number == OPT::RR_TYPE {
             let opt = OPT::read(c)?;
@@ -145,16 +159,16 @@ impl Answer {
         }
         else {
             let qtype = RecordType::from(qtype_number);
-            trace!("Found qtype -> {:?}", qtype );
+            trace!("Found qtype -> {qtype:?}" );
 
             let qclass = QClass::from_u16(c.read_u16::<BigEndian>()?);
-            trace!("Read qclass -> {:?}", qtype);
+            trace!("Read qclass -> {qtype:?}");
 
             let ttl = c.read_u32::<BigEndian>()?;
-            trace!("Read TTL -> {:?}", ttl);
+            trace!("Read TTL -> {ttl:?}");
 
             let record_length = c.read_u16::<BigEndian>()?;
-            trace!("Read record length -> {:?}", record_length);
+            trace!("Read record length -> {record_length:?}");
 
             let record = Record::from_bytes(qtype, record_length, c)?;
             Ok(Self::Standard { qclass, qname, record, ttl })
@@ -167,12 +181,7 @@ impl Record {
 
     /// Reads at most `len` bytes from the given curser, and parses them into
     /// a record structure depending on the type number, which has already been read.
-    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn from_bytes(record_type: RecordType, len: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
-        if cfg!(feature = "with_mutagen") {
-            warn!("Mutation is enabled!");
-        }
-
         macro_rules! read_record {
             ($record:tt) => { {
                 info!("Parsing {} record (type {}, len {})", crate::record::$record::NAME, record_type.type_number(), len);
@@ -185,6 +194,8 @@ impl Record {
             RecordType::AAAA        => read_record!(AAAA),
             RecordType::CAA         => read_record!(CAA),
             RecordType::CNAME       => read_record!(CNAME),
+            RecordType::DNSKEY      => read_record!(DNSKEY),
+            RecordType::DS          => read_record!(DS),
             RecordType::EUI48       => read_record!(EUI48),
             RecordType::EUI64       => read_record!(EUI64),
             RecordType::HINFO       => read_record!(HINFO),
@@ -192,30 +203,68 @@ impl Record {
             RecordType::MX          => read_record!(MX),
             RecordType::NAPTR       => read_record!(NAPTR),
             RecordType::NS          => read_record!(NS),
+            RecordType::NSEC        => read_record!(NSEC),
             RecordType::OPENPGPKEY  => read_record!(OPENPGPKEY),
             RecordType::PTR         => read_record!(PTR),
+            RecordType::RRSIG       => read_record!(RRSIG),
             RecordType::SSHFP       => read_record!(SSHFP),
             RecordType::SOA         => read_record!(SOA),
             RecordType::SRV         => read_record!(SRV),
             RecordType::TLSA        => read_record!(TLSA),
             RecordType::TXT         => read_record!(TXT),
             RecordType::URI         => read_record!(URI),
-
-            RecordType::Other(type_number) => {
-                let mut bytes = Vec::new();
-                for _ in 0 .. len {
-                    bytes.push(c.read_u8()?);
-                }
-
-                Ok(Self::Other { type_number, bytes })
-            }
+            RecordType::Other(type_number) => Ok(Self::Other { type_number, bytes: read_bytes(len, c)? }),
         }
+    }
+}
+
+/// Reads exactly `len` bytes.
+fn read_bytes(len: u16, c: &mut Cursor<&[u8]>) -> Result<Vec<u8>, WireError> {
+    let mut bytes = vec![0_u8; usize::from(len)];
+    c.read_exact(&mut bytes)?;
+    Ok(bytes)
+}
+
+/// Reads a `<character-string>` (RFC 1035 §3.3): a length byte, then that
+/// many bytes. Returns the bytes, and how many bytes were read in total,
+/// counting the length byte.
+pub(crate) fn read_character_string(c: &mut Cursor<&[u8]>) -> Result<(Box<[u8]>, u16), WireError> {
+    let length = c.read_u8()?;
+    let mut bytes = vec![0_u8; usize::from(length)].into_boxed_slice();
+    c.read_exact(&mut bytes)?;
+    Ok((bytes, 1 + u16::from(length)))
+}
+
+/// Bytes as lowercase hexadecimal, two digits each.
+pub(crate) fn hex(bytes: &[u8]) -> String {
+    const DIGITS: &[u8; 16] = b"0123456789abcdef";
+    let mut text = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        text.push(char::from(DIGITS[usize::from(byte >> 4)]));
+        text.push(char::from(DIGITS[usize::from(byte & 0xF)]));
+    }
+    text
+}
+
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn hexadecimal() {
+        assert_eq!(hex(&[]), "");
+        assert_eq!(hex(&[ 0x00, 0x0f, 0xa0, 0xff ]), "000fa0ff");
     }
 }
 
 
 impl QClass {
-    fn from_u16(uu: u16) -> Self {
+
+    /// The class with this number, by name if it has one. A class given as
+    /// a number must go through this, or it would not be equal to the same
+    /// class read from a response.
+    pub fn from_u16(uu: u16) -> Self {
         match uu {
             0x0001 => Self::IN,
             0x0003 => Self::CH,
@@ -247,14 +296,12 @@ impl Flags {
         Self::from_u16(0b_1000_0001_1000_0000)
     }
 
-    /// Converts the flags into a two-byte number.
+    /// Converts the flags into a two-byte number. The response code is not
+    /// included: dog only ever encodes queries.
     pub fn to_u16(self) -> u16 {                 // 0123 4567 89AB CDEF
         let mut                          bits  = 0b_0000_0000_0000_0000;
         if self.response               { bits |= 0b_1000_0000_0000_0000; }
-        match self.opcode {
-            Opcode::Query     =>       { bits |= 0b_0000_0000_0000_0000; }
-            Opcode::Other(_)  =>       { unimplemented!(); }
-        }
+        bits |= u16::from(self.opcode.to_bits()) << 11;
         if self.authoritative          { bits |= 0b_0000_0100_0000_0000; }
         if self.truncated              { bits |= 0b_0000_0010_0000_0000; }
         if self.recursion_desired      { bits |= 0b_0000_0001_0000_0000; }
@@ -287,15 +334,20 @@ impl Flags {
 
 impl Opcode {
 
-    /// Extracts the opcode from this four-bit number, which should have been
-    /// extracted from the packet and shifted to be in the range 0–15.
+    /// Extracts the opcode from the four bits it occupies in the header.
+    /// Higher bits are ignored.
     fn from_bits(bits: u8) -> Self {
-        if bits == 0 {
-            Self::Query
+        match bits & 0b_1111 {
+            0     => Self::Query,
+            other => Self::Other(other),
         }
-        else {
-            assert!(bits <= 15, "bits {:#08b} out of range", bits);
-            Self::Other(bits)
+    }
+
+    /// The four bits this opcode occupies in the header.
+    fn to_bits(self) -> u8 {
+        match self {
+            Self::Query     => 0,
+            Self::Other(n)  => n & 0b_1111,
         }
     }
 }
@@ -303,9 +355,10 @@ impl Opcode {
 
 impl ErrorCode {
 
-    /// Extracts the rcode from the last four bits of the flags field.
+    /// Interprets a response code: the four bits of the header, or the
+    /// twelve bits of an extended response code.
     fn from_bits(bits: u16) -> Option<Self> {
-        if (0x0F01 .. 0x0FFF).contains(&bits) {
+        if (0x0F01 ..= 0x0FFF).contains(&bits) {
             return Some(Self::Private(bits));
         }
 
@@ -439,7 +492,7 @@ pub enum MandatedLength {
 
 impl From<io::Error> for WireError {
     fn from(ioe: io::Error) -> Self {
-        error!("IO error -> {:?}", ioe);
+        error!("IO error -> {ioe:?}");
         Self::IO
     }
 }

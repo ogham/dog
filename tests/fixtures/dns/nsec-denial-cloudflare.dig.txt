@@ -1,0 +1,4 @@
+cloudflare.com.		IN	SOA	ns3.cloudflare.com. dns.cloudflare.com. 2414136692 10000 2400 604800 300
+cloudflare.com.		IN	RRSIG	SOA 13 2 300 20260912200659 20260910180659 34505 cloudflare.com. nKWDlabaG51fHmMzoG5Ma0UTS2eGWFDQlZnNNoZ7UTpGutaKgG7Q+TFE fTZo7yxAArMmJ4WI3UH8MVd3tkOhEQ==
+dogtest-nonexistent.cloudflare.com. IN NSEC \000.dogtest-nonexistent.cloudflare.com. RRSIG NSEC TYPE128
+dogtest-nonexistent.cloudflare.com. IN RRSIG NSEC 13 3 300 20260912200659 20260910180659 34505 cloudflare.com. 2YhafnpyKhVP5Yx9cJVN6j2haNC6yCcxc+Vto7M/nUvxz9OUNJ0Rxw+0 L9nmHRPDrJxqfAinYQeDPbtzrX785w==

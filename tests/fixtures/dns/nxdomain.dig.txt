@@ -1,0 +1,1 @@
+.			IN	SOA	a.root-servers.net. nstld.verisign-grs.com. 2026091101 1800 900 604800 86400

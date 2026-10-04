@@ -1,0 +1,1 @@
+cname-example.lookup.dog. IN	CNAME	dns.lookup.dog.

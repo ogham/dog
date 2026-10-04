@@ -1,0 +1,26 @@
+== dog -U --colour=never -q cname-example.lookup.dog -t 5 --class IN
+-- status 0
+-- stdout
+CNAME cname-example.lookup.dog. 1h00m00s   "dns.lookup.dog."
+-- stderr
+== dog -U --colour=always -q cname-example.lookup.dog -t 5 --class IN
+-- status 0
+-- stdout
+[33mCNAME[0m [1;34mcname-example.lookup.dog.[0m 1h00m00s   "dns.lookup.dog."
+-- stderr
+== dog -U --short -q cname-example.lookup.dog -t 5 --class IN
+-- status 0
+-- stdout
+"dns.lookup.dog."
+-- stderr
+== dog -U --json -q cname-example.lookup.dog -t 5 --class IN
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":false,"tc":false,"rd":true,"ra":true,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"cname-example.lookup.dog.","class":"IN","type":"CNAME"}],"answers":[{"name":"cname-example.lookup.dog.","class":"IN","ttl":3600,"type":"CNAME","data":{"domain":"dns.lookup.dog."}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q cname-example.lookup.dog -t 5 --class IN
+-- status 0
+-- stdout
+CNAME cname-example.lookup.dog. 1h00m00s   "dns.lookup.dog."
+  OPT .                                  + 1232 0 0 0 []
+-- stderr

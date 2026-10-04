@@ -4,10 +4,11 @@ description = "A command-line DNS client"
 
 authors = ["Benjamin Sago <ogham@bsago.me>"]
 categories = ["command-line-utilities"]
-edition = "2018"
+edition.workspace = true
+rust-version.workspace = true
 exclude = [
-    "/completions/*", "/man/*", "/xtests/*",
-    "/dog-screenshot.png", "/Justfile", "/README.md", "/.rustfmt.toml", "/.travis.yml",
+    "/completions/*", "/man/*", "/xtests/*", "/tests/*",
+    "/dog-screenshot.png", "/Justfile", "/README.md", "/.rustfmt.toml",
 ]
 homepage = "https://dns.lookup.dog/"
 license = "EUPL-1.2"
@@ -24,7 +25,20 @@ doctest = false
 members = [
   "dns",
   "dns-transport",
+  "test-support",
 ]
+resolver = "3"
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.87"
+
+[workspace.dependencies]
+dns = { path = "dns" }
+dns-transport = { path = "dns-transport" }
+test-support = { path = "test-support" }
+log = "0.4"
+pretty_assertions = "1"
 
 
 # make dev builds faster by excluding debug symbols
@@ -41,40 +55,32 @@ panic = "abort"
 [dependencies]
 
 # dns stuff
-dns = { path = "./dns" }
-dns-transport = { path = "./dns-transport" }
+dns.workspace = true
+dns-transport.workspace = true
 
 # command-line
-ansi_term = "0.12"
-atty = "0.2"
 getopts = "0.2"
+nu-ansi-term = "0.50"
 
 # transaction ID generation
-rand = "0.8"
+rand = "0.10"
 
-# json output
-json = "0.12"
+# json output, keeping keys in the order they are written
+serde_json = { version = "1", features = ["preserve_order"] }
 
 # logging
-log = "0.4"
+log.workspace = true
 
 # windows default nameserver determination
 [target.'cfg(windows)'.dependencies]
-ipconfig = { version = "0.2" }
-
-[build-dependencies]
-datetime = { version = "0.5.1", default_features = false }
+ipconfig = "0.3"
 
 [dev-dependencies]
-pretty_assertions = "0.7"
+pretty_assertions.workspace = true
+test-support = { workspace = true, features = ["tls"] }
 
 [features]
-default = ["with_idna", "with_tls", "with_https", "with_nativetls"]
+default = ["with_idna", "with_tls", "with_https"]
 with_idna = ["dns/with_idna"]
-
 with_tls = ["dns-transport/with_tls"]
 with_https = ["dns-transport/with_https"]
-
-with_nativetls = ["dns-transport/with_nativetls"]
-with_nativetls_vendored = ["with_nativetls", "dns-transport/with_nativetls", "dns-transport/with_nativetls_vendored"]
-with_rustls = ["dns-transport/with_rustls"]

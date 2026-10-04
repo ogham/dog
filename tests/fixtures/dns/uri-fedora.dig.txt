@@ -1,0 +1,1 @@
+_kerberos.fedoraproject.org. IN	URI	10 1 "krb5srv:m:kkdcp:https://id.fedoraproject.org/KdcProxy/"

@@ -1,0 +1,1 @@
+mx-example.lookup.dog.	IN	MX	10 some.mail.server.

@@ -1,0 +1,1 @@
+hinfo.dogtest.example.	IN	HINFO	"x86_64" "Linux"

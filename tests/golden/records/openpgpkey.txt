@@ -1,0 +1,26 @@
+== dog -U --colour=never -q openpgpkey.dogtest.example -t 61 --class IN
+-- status 0
+-- stdout
+OPENPGPKEY openpgpkey.dogtest.example. 1h00m00s   "mDMEaqRRLxYJKwYBBAHaRw8BAQdAwI0icRHrMgwLIG8F4ACwRJvC2D4LBKHTvQeIwb1wTq60I2RvZyB0ZXN0IGtleSA8dGVzdEBkb2d0ZXN0LmV4YW1wbGU+iJAEExYIADgWIQQbX3MK9vSGW+hi9MaSImWx0G0yYAUCaqRRLwIbAwULCQgHAgYVCgkICwIEFgIDAQIeAQIXgAAKCRCSImWx0G0yYJCkAQCtbSokO/DmnNDRnO6lKSTCIg3/DQntvf726zlj6wzqzAD/dCCzYUnhVYhsaHmfULDgLw+vPDKP7pN+CpIvQNN4wwA="
+-- stderr
+== dog -U --colour=always -q openpgpkey.dogtest.example -t 61 --class IN
+-- status 0
+-- stdout
+[36mOPENPGPKEY[0m [1;34mopenpgpkey.dogtest.example.[0m 1h00m00s   "mDMEaqRRLxYJKwYBBAHaRw8BAQdAwI0icRHrMgwLIG8F4ACwRJvC2D4LBKHTvQeIwb1wTq60I2RvZyB0ZXN0IGtleSA8dGVzdEBkb2d0ZXN0LmV4YW1wbGU+iJAEExYIADgWIQQbX3MK9vSGW+hi9MaSImWx0G0yYAUCaqRRLwIbAwULCQgHAgYVCgkICwIEFgIDAQIeAQIXgAAKCRCSImWx0G0yYJCkAQCtbSokO/DmnNDRnO6lKSTCIg3/DQntvf726zlj6wzqzAD/dCCzYUnhVYhsaHmfULDgLw+vPDKP7pN+CpIvQNN4wwA="
+-- stderr
+== dog -U --short -q openpgpkey.dogtest.example -t 61 --class IN
+-- status 0
+-- stdout
+"mDMEaqRRLxYJKwYBBAHaRw8BAQdAwI0icRHrMgwLIG8F4ACwRJvC2D4LBKHTvQeIwb1wTq60I2RvZyB0ZXN0IGtleSA8dGVzdEBkb2d0ZXN0LmV4YW1wbGU+iJAEExYIADgWIQQbX3MK9vSGW+hi9MaSImWx0G0yYAUCaqRRLwIbAwULCQgHAgYVCgkICwIEFgIDAQIeAQIXgAAKCRCSImWx0G0yYJCkAQCtbSokO/DmnNDRnO6lKSTCIg3/DQntvf726zlj6wzqzAD/dCCzYUnhVYhsaHmfULDgLw+vPDKP7pN+CpIvQNN4wwA="
+-- stderr
+== dog -U --json -q openpgpkey.dogtest.example -t 61 --class IN
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":true,"tc":false,"rd":true,"ra":false,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"openpgpkey.dogtest.example.","class":"IN","type":"OPENPGPKEY"}],"answers":[{"name":"openpgpkey.dogtest.example.","class":"IN","ttl":3600,"type":"OPENPGPKEY","data":{"key":"mDMEaqRRLxYJKwYBBAHaRw8BAQdAwI0icRHrMgwLIG8F4ACwRJvC2D4LBKHTvQeIwb1wTq60I2RvZyB0ZXN0IGtleSA8dGVzdEBkb2d0ZXN0LmV4YW1wbGU+iJAEExYIADgWIQQbX3MK9vSGW+hi9MaSImWx0G0yYAUCaqRRLwIbAwULCQgHAgYVCgkICwIEFgIDAQIeAQIXgAAKCRCSImWx0G0yYJCkAQCtbSokO/DmnNDRnO6lKSTCIg3/DQntvf726zlj6wzqzAD/dCCzYUnhVYhsaHmfULDgLw+vPDKP7pN+CpIvQNN4wwA="}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q openpgpkey.dogtest.example -t 61 --class IN
+-- status 0
+-- stdout
+OPENPGPKEY openpgpkey.dogtest.example. 1h00m00s   "mDMEaqRRLxYJKwYBBAHaRw8BAQdAwI0icRHrMgwLIG8F4ACwRJvC2D4LBKHTvQeIwb1wTq60I2RvZyB0ZXN0IGtleSA8dGVzdEBkb2d0ZXN0LmV4YW1wbGU+iJAEExYIADgWIQQbX3MK9vSGW+hi9MaSImWx0G0yYAUCaqRRLwIbAwULCQgHAgYVCgkICwIEFgIDAQIeAQIXgAAKCRCSImWx0G0yYJCkAQCtbSokO/DmnNDRnO6lKSTCIg3/DQntvf726zlj6wzqzAD/dCCzYUnhVYhsaHmfULDgLw+vPDKP7pN+CpIvQNN4wwA="
+       OPT .                                    + 4096 0 0 0 []
+-- stderr

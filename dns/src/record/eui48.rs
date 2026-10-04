@@ -21,17 +21,16 @@ impl Wire for EUI48 {
     const NAME: &'static str = "EUI48";
     const RR_TYPE: u16 = 108;
 
-    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         if stated_length != 6 {
-            warn!("Length is incorrect (record length {:?}, but should be six)", stated_length);
+            warn!("Length is incorrect (record length {stated_length:?}, but should be six)");
             let mandated_length = MandatedLength::Exactly(6);
             return Err(WireError::WrongRecordLength { stated_length, mandated_length });
         }
 
         let mut octets = [0_u8; 6];
         c.read_exact(&mut octets)?;
-        trace!("Parsed 6-byte address -> {:#x?}", octets);
+        trace!("Parsed 6-byte address -> {octets:#x?}");
 
         Ok(Self { octets })
     }
@@ -60,7 +59,7 @@ mod test {
             0x00, 0x7F, 0x23, 0x12, 0x34, 0x56,  // identifier
         ];
 
-        assert_eq!(EUI48::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
+        assert_eq!(EUI48::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)).unwrap(),
                    EUI48 { octets: [ 0x00, 0x7F, 0x23, 0x12, 0x34, 0x56 ] });
     }
 
@@ -70,7 +69,7 @@ mod test {
             0x00, 0x7F, 0x23,  // a mere OUI
         ];
 
-        assert_eq!(EUI48::read(buf.len() as _, &mut Cursor::new(buf)),
+        assert_eq!(EUI48::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)),
                    Err(WireError::WrongRecordLength { stated_length: 3, mandated_length: MandatedLength::Exactly(6) }));
     }
 
@@ -81,7 +80,7 @@ mod test {
             0x01,  // an unexpected extra byte
         ];
 
-        assert_eq!(EUI48::read(buf.len() as _, &mut Cursor::new(buf)),
+        assert_eq!(EUI48::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)),
                    Err(WireError::WrongRecordLength { stated_length: 7, mandated_length: MandatedLength::Exactly(6) }));
     }
 

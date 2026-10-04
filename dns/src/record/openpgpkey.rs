@@ -20,7 +20,6 @@ impl Wire for OPENPGPKEY {
     const NAME: &'static str = "OPENPGPKEY";
     const RR_TYPE: u16 = 61;
 
-    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         if stated_length == 0 {
             let mandated_length = MandatedLength::AtLeast(1);
@@ -29,7 +28,7 @@ impl Wire for OPENPGPKEY {
 
         let mut key = vec![0_u8; usize::from(stated_length)];
         c.read_exact(&mut key)?;
-        trace!("Parsed key -> {:#x?}", key);
+        trace!("Parsed key -> {key:#x?}");
 
         Ok(Self { key })
     }
@@ -39,7 +38,8 @@ impl OPENPGPKEY {
 
     /// The base64-encoded PGP key.
     pub fn base64_key(&self) -> String {
-        base64::encode(&self.key)
+        use base64::Engine as _;
+        base64::engine::general_purpose::STANDARD.encode(&self.key)
     }
 }
 
@@ -55,7 +55,7 @@ mod test {
             0x12, 0x34, 0x56, 0x78,  // key
         ];
 
-        assert_eq!(OPENPGPKEY::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
+        assert_eq!(OPENPGPKEY::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)).unwrap(),
                    OPENPGPKEY {
                        key: vec![ 0x12, 0x34, 0x56, 0x78 ],
                    });
@@ -67,7 +67,7 @@ mod test {
             0x2b,  // one byte of key
         ];
 
-        assert_eq!(OPENPGPKEY::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
+        assert_eq!(OPENPGPKEY::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)).unwrap(),
                    OPENPGPKEY {
                        key: vec![ 0x2b ],
                    });

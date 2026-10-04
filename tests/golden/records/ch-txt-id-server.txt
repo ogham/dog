@@ -1,0 +1,26 @@
+== dog -U --colour=never -q id.server -t 16 --class CH
+-- status 0
+-- stdout
+TXT id.server. 0s   "ord12"
+-- stderr
+== dog -U --colour=always -q id.server -t 16 --class CH
+-- status 0
+-- stdout
+[33mTXT[0m [1;34mid.server.[0m 0s   "ord12"
+-- stderr
+== dog -U --short -q id.server -t 16 --class CH
+-- status 0
+-- stdout
+"ord12"
+-- stderr
+== dog -U --json -q id.server -t 16 --class CH
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":false,"tc":false,"rd":true,"ra":true,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"id.server.","class":"CH","type":"TXT"}],"answers":[{"name":"id.server.","class":"CH","ttl":0,"type":"TXT","data":{"messages":["ord12"]}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q id.server -t 16 --class CH
+-- status 0
+-- stdout
+TXT id.server. 0s   "ord12"
+OPT .             + 1232 0 0 0 []
+-- stderr

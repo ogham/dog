@@ -1,0 +1,30 @@
+== dog -U --colour=never -q cloudflare.com -t 43 --class IN -Z do -Z bufsize=1232
+-- status 0
+-- stdout
+   DS cloudflare.com. 1d0h00m00s   2371 13 2 32996839a6d808afe3eb4a795a0e6a7a39a76fc52ff228b22b76f6d63826f2b9
+RRSIG cloudflare.com. 1d0h00m00s   DS 13 41446 "com." dHdGGbxut9wmcg16A/Rq5hcdagEgB2yla47fhERKuNt3eZtDXPFQoBffmfJgq76k3qG3S7pUMASJkFntvm1qbw==
+-- stderr
+== dog -U --colour=always -q cloudflare.com -t 43 --class IN -Z do -Z bufsize=1232
+-- status 0
+-- stdout
+   [35mDS[0m [1;34mcloudflare.com.[0m 1d0h00m00s   2371 13 2 32996839a6d808afe3eb4a795a0e6a7a39a76fc52ff228b22b76f6d63826f2b9
+[35mRRSIG[0m [1;34mcloudflare.com.[0m 1d0h00m00s   DS 13 41446 "com." dHdGGbxut9wmcg16A/Rq5hcdagEgB2yla47fhERKuNt3eZtDXPFQoBffmfJgq76k3qG3S7pUMASJkFntvm1qbw==
+-- stderr
+== dog -U --short -q cloudflare.com -t 43 --class IN -Z do -Z bufsize=1232
+-- status 0
+-- stdout
+2371 13 2 32996839a6d808afe3eb4a795a0e6a7a39a76fc52ff228b22b76f6d63826f2b9
+DS 13 41446 "com." dHdGGbxut9wmcg16A/Rq5hcdagEgB2yla47fhERKuNt3eZtDXPFQoBffmfJgq76k3qG3S7pUMASJkFntvm1qbw==
+-- stderr
+== dog -U --json -q cloudflare.com -t 43 --class IN -Z do -Z bufsize=1232
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":false,"tc":false,"rd":true,"ra":true,"ad":true,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"cloudflare.com.","class":"IN","type":"DS"}],"answers":[{"name":"cloudflare.com.","class":"IN","ttl":86400,"type":"DS","data":{"key_tag":2371,"algorithm":13,"algorithm_name":"ECDSAP256SHA256","digest_type":2,"digest_type_name":"SHA-256","digest":"32996839a6d808afe3eb4a795a0e6a7a39a76fc52ff228b22b76f6d63826f2b9"}},{"name":"cloudflare.com.","class":"IN","ttl":86400,"type":"RRSIG","data":{"type_covered":43,"type_covered_name":"DS","algorithm":13,"algorithm_name":"ECDSAP256SHA256","labels":2,"original_ttl":86400,"signature_expiration":1789693208,"signature_inception":1789084208,"key_tag":41446,"signer_name":"com.","signature":"dHdGGbxut9wmcg16A/Rq5hcdagEgB2yla47fhERKuNt3eZtDXPFQoBffmfJgq76k3qG3S7pUMASJkFntvm1qbw=="}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q cloudflare.com -t 43 --class IN -Z do -Z bufsize=1232
+-- status 0
+-- stdout
+   DS cloudflare.com. 1d0h00m00s   2371 13 2 32996839a6d808afe3eb4a795a0e6a7a39a76fc52ff228b22b76f6d63826f2b9
+RRSIG cloudflare.com. 1d0h00m00s   DS 13 41446 "com." dHdGGbxut9wmcg16A/Rq5hcdagEgB2yla47fhERKuNt3eZtDXPFQoBffmfJgq76k3qG3S7pUMASJkFntvm1qbw==
+  OPT .                          + 1232 0 0 32768 []
+-- stderr

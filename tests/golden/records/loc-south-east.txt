@@ -1,0 +1,26 @@
+== dog -U --colour=never -q loc-se.dogtest.example -t 29 --class IN
+-- status 0
+-- stdout
+LOC loc-se.dogtest.example. 1h00m00s   10m (100m, 10m) (33°51′35.900″ S, 151°12′40.100″ E, 58m)
+-- stderr
+== dog -U --colour=always -q loc-se.dogtest.example -t 29 --class IN
+-- status 0
+-- stdout
+[33mLOC[0m [1;34mloc-se.dogtest.example.[0m 1h00m00s   10m (100m, 10m) (33°51′35.900″ S, 151°12′40.100″ E, 58m)
+-- stderr
+== dog -U --short -q loc-se.dogtest.example -t 29 --class IN
+-- status 0
+-- stdout
+10m (100m, 10m) (33°51′35.900″ S, 151°12′40.100″ E, 58m)
+-- stderr
+== dog -U --json -q loc-se.dogtest.example -t 29 --class IN
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":true,"tc":false,"rd":true,"ra":false,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"loc-se.dogtest.example.","class":"IN","type":"LOC"}],"answers":[{"name":"loc-se.dogtest.example.","class":"IN","ttl":3600,"type":"LOC","data":{"size":"10m","precision":{"horizontal":"100m","vertical":"10m"},"point":{"latitude":"33°51′35.900″ S","longitude":"151°12′40.100″ E","altitude":"58m"}}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q loc-se.dogtest.example -t 29 --class IN
+-- status 0
+-- stdout
+LOC loc-se.dogtest.example. 1h00m00s   10m (100m, 10m) (33°51′35.900″ S, 151°12′40.100″ E, 58m)
+OPT .                                + 4096 0 0 0 []
+-- stderr

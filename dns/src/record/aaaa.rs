@@ -22,10 +22,9 @@ impl Wire for AAAA {
     const NAME: &'static str = "AAAA";
     const RR_TYPE: u16 = 28;
 
-    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         if stated_length != 16 {
-            warn!("Length is incorrect (stated length {:?}, but should be sixteen)", stated_length);
+            warn!("Length is incorrect (stated length {stated_length:?}, but should be sixteen)");
             let mandated_length = MandatedLength::Exactly(16);
             return Err(WireError::WrongRecordLength { stated_length, mandated_length });
         }
@@ -34,7 +33,7 @@ impl Wire for AAAA {
         c.read_exact(&mut buf)?;
 
         let address = Ipv6Addr::from(buf);
-        trace!("Parsed IPv6 address -> {:#x?}", address);
+        trace!("Parsed IPv6 address -> {address:#x?}");
 
         Ok(Self { address })
     }
@@ -53,8 +52,8 @@ mod test {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // IPv6 address
         ];
 
-        assert_eq!(AAAA::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
-                   AAAA { address: Ipv6Addr::new(0,0,0,0,0,0,0,0) });
+        assert_eq!(AAAA::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)).unwrap(),
+                   AAAA { address: Ipv6Addr::UNSPECIFIED });
     }
 
     #[test]
@@ -65,7 +64,7 @@ mod test {
             0x09,  // Unexpected extra byte
         ];
 
-        assert_eq!(AAAA::read(buf.len() as _, &mut Cursor::new(buf)),
+        assert_eq!(AAAA::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)),
                    Err(WireError::WrongRecordLength { stated_length: 17, mandated_length: MandatedLength::Exactly(16) }));
     }
 
@@ -75,7 +74,7 @@ mod test {
             0x05, 0x05, 0x05, 0x05, 0x05,  // Five arbitrary bytes
         ];
 
-        assert_eq!(AAAA::read(buf.len() as _, &mut Cursor::new(buf)),
+        assert_eq!(AAAA::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)),
                    Err(WireError::WrongRecordLength { stated_length: 5, mandated_length: MandatedLength::Exactly(16) }));
     }
 

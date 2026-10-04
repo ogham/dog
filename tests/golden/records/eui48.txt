@@ -1,0 +1,26 @@
+== dog -U --colour=never -q eui48.dogtest.example -t 108 --class IN
+-- status 0
+-- stdout
+EUI48 eui48.dogtest.example. 1h00m00s   "00-00-5e-00-53-2a"
+-- stderr
+== dog -U --colour=always -q eui48.dogtest.example -t 108 --class IN
+-- status 0
+-- stdout
+[33mEUI48[0m [1;34meui48.dogtest.example.[0m 1h00m00s   "00-00-5e-00-53-2a"
+-- stderr
+== dog -U --short -q eui48.dogtest.example -t 108 --class IN
+-- status 0
+-- stdout
+"00-00-5e-00-53-2a"
+-- stderr
+== dog -U --json -q eui48.dogtest.example -t 108 --class IN
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":true,"tc":false,"rd":true,"ra":false,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"eui48.dogtest.example.","class":"IN","type":"EUI48"}],"answers":[{"name":"eui48.dogtest.example.","class":"IN","ttl":3600,"type":"EUI48","data":{"identifier":"00-00-5e-00-53-2a"}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q eui48.dogtest.example -t 108 --class IN
+-- status 0
+-- stdout
+EUI48 eui48.dogtest.example. 1h00m00s   "00-00-5e-00-53-2a"
+  OPT .                               + 4096 0 0 0 []
+-- stderr

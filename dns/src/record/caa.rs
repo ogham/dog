@@ -28,20 +28,19 @@ impl Wire for CAA {
     const NAME: &'static str = "CAA";
     const RR_TYPE: u16 = 257;
 
-    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
 
         // flags
         let flags = c.read_u8()?;
-        trace!("Parsed flags -> {:#08b}", flags);
+        trace!("Parsed flags -> {flags:#08b}");
 
         let has_bit = |bit| { flags & bit == bit };
         let critical = has_bit(0b_1000_0000);
-        trace!("Parsed critical flag -> {:?}", critical);
+        trace!("Parsed critical flag -> {critical:?}");
 
         // tag
         let tag_length = c.read_u8()?;
-        trace!("Parsed tag length -> {:?}", tag_length);
+        trace!("Parsed tag length -> {tag_length:?}");
 
         let mut tag = vec![0_u8; usize::from(tag_length)].into_boxed_slice();
         c.read_exact(&mut tag)?;
@@ -49,7 +48,7 @@ impl Wire for CAA {
 
         // value
         let remaining_length = stated_length.saturating_sub(u16::from(tag_length)).saturating_sub(2);
-        trace!("Remaining length -> {:?}", remaining_length);
+        trace!("Remaining length -> {remaining_length:?}");
 
         let mut value = vec![0_u8; usize::from(remaining_length)].into_boxed_slice();
         c.read_exact(&mut value)?;
@@ -74,7 +73,7 @@ mod test {
             0x65, 0x6e, 0x74, 0x72, 0x75, 0x73, 0x74, 0x2e, 0x6e, 0x65, 0x74,  // value
         ];
 
-        assert_eq!(CAA::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
+        assert_eq!(CAA::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)).unwrap(),
                    CAA {
                        critical: false,
                        tag: Box::new(*b"issuewild"),
@@ -91,7 +90,7 @@ mod test {
             0x65, 0x6e, 0x74, 0x72, 0x75, 0x73, 0x74, 0x2e, 0x6e, 0x65, 0x74,  // value
         ];
 
-        assert_eq!(CAA::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
+        assert_eq!(CAA::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)).unwrap(),
                    CAA {
                        critical: true,
                        tag: Box::new(*b"issuewild"),
@@ -108,7 +107,7 @@ mod test {
             0x45,  // value
         ];
 
-        assert_eq!(CAA::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
+        assert_eq!(CAA::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)).unwrap(),
                    CAA {
                        critical: false,
                        tag: Box::new(*b"e"),

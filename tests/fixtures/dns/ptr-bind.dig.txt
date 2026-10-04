@@ -1,0 +1,1 @@
+ptr.dogtest.example.	IN	PTR	a.dogtest.example.

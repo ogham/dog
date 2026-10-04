@@ -1,0 +1,2 @@
+naptr.dogtest.example.	IN	NAPTR	100 10 "S" "SIP+D2U" "" _sip._udp.dogtest.example.
+naptr.dogtest.example.	IN	NAPTR	102 10 "U" "E2U+sip" "!^.*$!sip:info@dogtest.example!" .

@@ -1,0 +1,26 @@
+== dog -U --colour=never -q unicode.dogtest.example -t 16 --class IN
+-- status 0
+-- stdout
+TXT unicode.dogtest.example. 1h00m00s   "snowman \226\152\131 caf\195\169"
+-- stderr
+== dog -U --colour=always -q unicode.dogtest.example -t 16 --class IN
+-- status 0
+-- stdout
+[33mTXT[0m [1;34municode.dogtest.example.[0m 1h00m00s   "snowman \226\152\131 caf\195\169"
+-- stderr
+== dog -U --short -q unicode.dogtest.example -t 16 --class IN
+-- status 0
+-- stdout
+"snowman \226\152\131 caf\195\169"
+-- stderr
+== dog -U --json -q unicode.dogtest.example -t 16 --class IN
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":true,"tc":false,"rd":true,"ra":false,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"unicode.dogtest.example.","class":"IN","type":"TXT"}],"answers":[{"name":"unicode.dogtest.example.","class":"IN","ttl":3600,"type":"TXT","data":{"messages":["snowman ☃ café"]}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q unicode.dogtest.example -t 16 --class IN
+-- status 0
+-- stdout
+TXT unicode.dogtest.example. 1h00m00s   "snowman \226\152\131 caf\195\169"
+OPT .                                 + 4096 0 0 0 []
+-- stderr

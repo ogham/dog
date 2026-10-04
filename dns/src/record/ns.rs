@@ -22,17 +22,16 @@ impl Wire for NS {
     const NAME: &'static str = "NS";
     const RR_TYPE: u16 = 2;
 
-    #[cfg_attr(feature = "with_mutagen", ::mutagen::mutate)]
     fn read(stated_length: u16, c: &mut Cursor<&[u8]>) -> Result<Self, WireError> {
         let (nameserver, nameserver_length) = c.read_labels()?;
-        trace!("Parsed nameserver -> {:?}", nameserver);
+        trace!("Parsed nameserver -> {nameserver:?}");
 
         if stated_length == nameserver_length {
             trace!("Length is correct");
             Ok(Self { nameserver })
         }
         else {
-            warn!("Length is incorrect (stated length {:?}, nameserver length {:?}", stated_length, nameserver_length);
+            warn!("Length is incorrect (stated length {stated_length:?}, nameserver length {nameserver_length:?}");
             Err(WireError::WrongLabelLength { stated_length, length_after_labels: nameserver_length })
         }
     }
@@ -52,7 +51,7 @@ mod test {
             0x00,  // nameserver terminator
         ];
 
-        assert_eq!(NS::read(buf.len() as _, &mut Cursor::new(buf)).unwrap(),
+        assert_eq!(NS::read(u16::try_from(buf.len()).unwrap(), &mut Cursor::new(buf)).unwrap(),
                    NS {
                        nameserver: Labels::encode("a.gtld-servers.net").unwrap(),
                    });

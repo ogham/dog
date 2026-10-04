@@ -1,0 +1,26 @@
+== dog -U --colour=never -q nullmx.dogtest.example -t 15 --class IN
+-- status 0
+-- stdout
+MX nullmx.dogtest.example. 1h00m00s   0 "."
+-- stderr
+== dog -U --colour=always -q nullmx.dogtest.example -t 15 --class IN
+-- status 0
+-- stdout
+[36mMX[0m [1;34mnullmx.dogtest.example.[0m 1h00m00s   0 "."
+-- stderr
+== dog -U --short -q nullmx.dogtest.example -t 15 --class IN
+-- status 0
+-- stdout
+0 "."
+-- stderr
+== dog -U --json -q nullmx.dogtest.example -t 15 --class IN
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":true,"tc":false,"rd":true,"ra":false,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"nullmx.dogtest.example.","class":"IN","type":"MX"}],"answers":[{"name":"nullmx.dogtest.example.","class":"IN","ttl":3600,"type":"MX","data":{"preference":0,"exchange":"."}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q nullmx.dogtest.example -t 15 --class IN
+-- status 0
+-- stdout
+ MX nullmx.dogtest.example. 1h00m00s   0 "."
+OPT .                                + 4096 0 0 0 []
+-- stderr

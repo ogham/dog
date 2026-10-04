@@ -19,7 +19,7 @@ _dog()
             ;;
 
         -Z)
-            COMPREPLY=( $( compgen -W 'aa ad bufsize= cd' -- "$cur" ) )
+            COMPREPLY=( $( compgen -W 'aa ad bufsize= cd do' -- "$cur" ) )
             return
             ;;
 

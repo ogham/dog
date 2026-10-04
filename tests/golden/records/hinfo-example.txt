@@ -1,0 +1,26 @@
+== dog -U --colour=never -q hinfo-example.lookup.dog -t 13 --class IN
+-- status 0
+-- stdout
+HINFO hinfo-example.lookup.dog. 1h00m00s   "some-kinda-cpu" "some-kinda-os"
+-- stderr
+== dog -U --colour=always -q hinfo-example.lookup.dog -t 13 --class IN
+-- status 0
+-- stdout
+[33mHINFO[0m [1;34mhinfo-example.lookup.dog.[0m 1h00m00s   "some-kinda-cpu" "some-kinda-os"
+-- stderr
+== dog -U --short -q hinfo-example.lookup.dog -t 13 --class IN
+-- status 0
+-- stdout
+"some-kinda-cpu" "some-kinda-os"
+-- stderr
+== dog -U --json -q hinfo-example.lookup.dog -t 13 --class IN
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":false,"tc":false,"rd":true,"ra":true,"ad":false,"cd":false,"rcode":"NOERROR"},"queries":[{"name":"hinfo-example.lookup.dog.","class":"IN","type":"HINFO"}],"answers":[{"name":"hinfo-example.lookup.dog.","class":"IN","ttl":3600,"type":"HINFO","data":{"cpu":"some-kinda-cpu","os":"some-kinda-os"}}],"authorities":[],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q hinfo-example.lookup.dog -t 13 --class IN
+-- status 0
+-- stdout
+HINFO hinfo-example.lookup.dog. 1h00m00s   "some-kinda-cpu" "some-kinda-os"
+  OPT .                                  + 1232 0 0 0 []
+-- stderr

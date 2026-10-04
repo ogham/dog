@@ -1,0 +1,29 @@
+== dog -U --colour=never -q missing.dogtest.example -t 1 --class IN
+-- status 0
+-- stdout
+Status: NXDomain
+SOA dogtest.example. 5m00s A "ns1.dogtest.example." "hostmaster.dogtest.example." 2026091101 2h00m00s 1h00m00s 14d0h00m00s 5m00s
+-- stderr
+== dog -U --colour=always -q missing.dogtest.example -t 1 --class IN
+-- status 0
+-- stdout
+Status: NXDomain
+[35mSOA[0m [1;34mdogtest.example.[0m 5m00s [36mA[0m "ns1.dogtest.example." "hostmaster.dogtest.example." 2026091101 2h00m00s 1h00m00s 14d0h00m00s 5m00s
+-- stderr
+== dog -U --short -q missing.dogtest.example -t 1 --class IN
+-- status 2
+-- stdout
+-- stderr
+No results
+== dog -U --json -q missing.dogtest.example -t 1 --class IN
+-- status 0
+-- stdout
+{"responses":[{"flags":{"qr":true,"opcode":"QUERY","aa":true,"tc":false,"rd":true,"ra":false,"ad":false,"cd":false,"rcode":"NXDOMAIN"},"queries":[{"name":"missing.dogtest.example.","class":"IN","type":"A"}],"answers":[],"authorities":[{"name":"dogtest.example.","class":"IN","ttl":300,"type":"SOA","data":{"mname":"ns1.dogtest.example.","rname":"hostmaster.dogtest.example.","serial":2026091101,"refresh":7200,"retry":3600,"expire":1209600,"minimum":300}}],"additionals":[]}]}
+-- stderr
+== dog -U --edns show --colour=never -q missing.dogtest.example -t 1 --class IN
+-- status 0
+-- stdout
+Status: NXDomain
+SOA dogtest.example. 5m00s A "ns1.dogtest.example." "hostmaster.dogtest.example." 2026091101 2h00m00s 1h00m00s 14d0h00m00s 5m00s
+OPT .                      + 4096 0 0 0 []
+-- stderr

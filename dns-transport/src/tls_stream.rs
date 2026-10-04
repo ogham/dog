@@ -1,69 +1,32 @@
+//! Opening TLS connections, for the TLS and HTTPS transports.
+
 use std::net::TcpStream;
-use super::Error;
-use super::HttpsTransport;
-use super::TlsTransport;
+use std::time::Duration;
 
-#[cfg(any(feature = "with_nativetls", feature = "with_nativetls_vendored"))]
-fn stream_nativetls(domain: &str, port: u16) -> Result<native_tls::TlsStream<TcpStream>, Error> {
-    let connector = native_tls::TlsConnector::new()?;
-    let stream = TcpStream::connect((domain, port))?;
-    Ok(connector.connect(domain, stream)?)
+use native_tls::{HandshakeError, TlsConnector, TlsStream};
+
+use super::{net, Error};
+use super::net::{Deadline, DeadlineStream};
+
+
+/// A TLS connection whose every read and write keeps to one deadline.
+pub(crate) type Stream = TlsStream<DeadlineStream<TcpStream>>;
+
+/// Connects to the host and port and performs a TLS handshake, all before
+/// the deadline, trusting the certificates the system’s TLS library trusts.
+/// The server is offered the given application protocols (ALPN, RFC 7301),
+/// if there are any, to choose one from.
+pub(crate) fn connect(host: &str, port: u16, deadline: Deadline, protocols: &[&str]) -> Result<Stream, Error> {
+    let connector = TlsConnector::builder().request_alpns(protocols).build().map_err(Error::TlsError)?;
+    let stream = net::connect_tcp(host, port, deadline)?;
+    connector.connect(host, stream).map_err(|e| handshake_error(e, deadline.timeout()))
 }
 
-#[cfg(feature = "with_rustls")]
-fn stream_rustls(domain: &str, port: u16) -> Result<rustls::StreamOwned<rustls::ClientSession,TcpStream>, Error> {
-    use std::sync::Arc;
-
-    let mut config = rustls::ClientConfig::new();
-
-    config.root_store.add_server_trust_anchors(&webpki_roots::TLS_SERVER_ROOTS);
-
-    let dns_name = webpki::DNSNameRef::try_from_ascii_str(domain)?;
-
-    let conn = rustls::ClientSession::new(&Arc::new(config), dns_name);
-
-    let sock = TcpStream::connect((domain, port))?;
-    let tls = rustls::StreamOwned::new(conn, sock);
-
-    Ok(tls)
-}
-
-pub trait TlsStream<S: std::io::Read + std::io::Write> {
-    fn stream(domain: &str, port: u16) -> Result<S, Error>;
-}
-
-#[cfg(any(feature = "with_tls", feature = "with_https"))]
-cfg_if::cfg_if! {
-    if #[cfg(any(feature = "with_nativetls", feature = "with_nativetls_vendored"))] {
-
-        impl TlsStream<native_tls::TlsStream<TcpStream>> for HttpsTransport {
-            fn stream(domain: &str, port: u16) -> Result<native_tls::TlsStream<TcpStream>, Error> {
-                stream_nativetls(domain, port)
-            }
-        }
-
-        impl TlsStream<native_tls::TlsStream<TcpStream>> for TlsTransport {
-            fn stream(domain: &str, port: u16) -> Result<native_tls::TlsStream<TcpStream>, Error> {
-                stream_nativetls(domain, port)
-            }
-        }
-
-    } else if #[cfg(feature = "with_rustls")] {
-
-        impl TlsStream<rustls::StreamOwned<rustls::ClientSession,TcpStream>> for HttpsTransport {
-            fn stream(domain: &str, port: u16) -> Result<rustls::StreamOwned<rustls::ClientSession,TcpStream>, Error> {
-                stream_rustls(domain, port)
-            }
-        }
-
-        impl TlsStream<rustls::StreamOwned<rustls::ClientSession,TcpStream>> for TlsTransport {
-            fn stream(domain: &str, port: u16) -> Result<rustls::StreamOwned<rustls::ClientSession,TcpStream>, Error> {
-                stream_rustls(domain, port)
-            }
-        }
-
-    } else {
-        unreachable!("tls/https enabled but no tls implementation provided")
+/// A stream that runs out of time during the handshake reports that the
+/// handshake would block, which for dog’s blocking sockets means it timed out.
+fn handshake_error<S>(error: HandshakeError<S>, timeout: Duration) -> Error {
+    match error {
+        HandshakeError::WouldBlock(_)  => Error::Timeout(timeout),
+        HandshakeError::Failure(e)     => Error::TlsHandshakeError(e),
     }
 }
-

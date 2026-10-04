@@ -1,0 +1,1 @@
+eui64.dogtest.example.	IN	EUI64	00-00-5e-ef-10-00-00-2a
